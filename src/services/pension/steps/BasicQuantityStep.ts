@@ -6,7 +6,7 @@
  * Fuente: Art. 167 LSS 1973 — Tabla de cuantías básicas.
  */
 import type { CalculationContext, CalculationStep } from '../types';
-import { DIAS_PROMEDIO_MES, TABLA_ART167 } from '../../../constants/ley73';
+import { DIAS_ANIO_UMA, TABLA_ART167 } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
 /**
@@ -53,8 +53,10 @@ export const BasicQuantityStep: CalculationStep = (ctx): CalculationContext => {
   const vecesSMG = salarioEfectivoDiario / smgRef;
   const entrada = buscarEntradaTabla(vecesSMG);
 
-  const salarioMensualEfectivo = round2(salarioEfectivoDiario * DIAS_PROMEDIO_MES);
-  const cuantiaBasicaMensual = round2(salarioMensualEfectivo * (entrada.cuantiaBasicaPct / 100));
+  // Fórmula: Cuantía Básica Anual = Salario Diario × 365 × Porcentaje
+  // Cuantía Básica Mensual = Cuantía Básica Anual / 12
+  const cuantiaBasicaAnual = round2(salarioEfectivoDiario * DIAS_ANIO_UMA * (entrada.cuantiaBasicaPct / 100));
+  const cuantiaBasicaMensual = round2(cuantiaBasicaAnual / 12);
 
   advertencias.push(
     `⚠️ ESTIMACIÓN: La tabla del Art. 167 LSS 1973 usa el SMG como referencia salarial. ` +
@@ -69,9 +71,10 @@ export const BasicQuantityStep: CalculationStep = (ctx): CalculationContext => {
     descripcion:
       `SBC: $${salarioEfectivoDiario.toFixed(2)}/día = ${vecesSMG.toFixed(4)} veces UMA/SMG → ` +
       `Rango: ${entrada.rangoMin}–${entrada.rangoMax === Infinity ? '∞' : entrada.rangoMax} → ` +
-      `Cuantía básica: ${entrada.cuantiaBasicaPct}% × $${salarioMensualEfectivo.toFixed(2)}/mes = $${cuantiaBasicaMensual.toFixed(2)}/mes`,
+      `Cuantía básica: $${salarioEfectivoDiario.toFixed(2)}/día × 365 días × ${entrada.cuantiaBasicaPct}% = $${cuantiaBasicaAnual.toFixed(2)}/año → ` +
+      `$${cuantiaBasicaAnual.toFixed(2)}/año ÷ 12 meses = $${cuantiaBasicaMensual.toFixed(2)}/mes`,
     valor: cuantiaBasicaMensual,
-    formula: `SBC_mensual × ${entrada.cuantiaBasicaPct}%`,
+    formula: `SBC_diario × 365 × ${entrada.cuantiaBasicaPct}% ÷ 12`,
     baseLegal: 'Art. 167 LSS 1973 — Tabla de cuantías básicas (500 semanas)',
     esEstimacion: true,
     supuesto:

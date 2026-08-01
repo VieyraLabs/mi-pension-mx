@@ -150,9 +150,9 @@ describe('calcularPension — Pensión de Vejez (65 años)', () => {
     expect(result.tipoPension).toBe('vejez');
     expect(result.factorEdad).toBe(1.0);
     expect(result.pensionMensual).toBeGreaterThan(0);
-    // Con 500 semanas y 80% → 80% de SBC mensual
-    const sbcMensual = UMA_2025 * DIAS_PROMEDIO_MES;
-    const esperado = sbcMensual * 0.8; // 80%
+    // Fórmula: Cuantía Básica Anual = Salario Diario × 365 × Porcentaje
+    // Cuantía Básica Mensual = Cuantía Básica Anual / 12
+    const esperado = (UMA_2025 * 365 * 0.8) / 12; // 80% del SBC anual / 12
     expect(result.cuantiaBasica).toBeCloseTo(esperado, 0);
     expect(result.incrementosAnuales).toBe(0); // sin excedentes
     expect(result.esEstimacion).toBe(true);
@@ -170,10 +170,9 @@ describe('calcularPension — Pensión de Vejez (65 años)', () => {
     });
     const result = calcularPension(input);
 
-    // 77.11% del SBC mensual (rango 1.01–1.25), NO 13% (último rango)
-    const sbcMensual = salario1005UMA * DIAS_PROMEDIO_MES;
-    const esperado7711 = sbcMensual * 0.7711;
-    const incorrecto13 = sbcMensual * 0.13;
+    // 77.11% del SBC anual / 12 (rango 1.01–1.25), NO 13% (último rango)
+    const esperado7711 = (salario1005UMA * 365 * 0.7711) / 12;
+    const incorrecto13 = (salario1005UMA * 365 * 0.13) / 12;
     expect(result.cuantiaBasica).toBeCloseTo(esperado7711, 0);
     expect(result.cuantiaBasica).not.toBeCloseTo(incorrecto13, 0);
   });
@@ -188,9 +187,8 @@ describe('calcularPension — Pensión de Vejez (65 años)', () => {
     const result = calcularPension(input);
 
     expect(result.incrementosAnuales).toBeGreaterThan(0);
-    // 1 año excedente = 0.563% del SBC mensual (primer rango)
-    const sbcMensual = UMA_2025 * DIAS_PROMEDIO_MES;
-    const incrementoEsperado = sbcMensual * 0.00563;
+    // 1 año excedente = 0.563% del SBC anual / 12 (primer rango)
+    const incrementoEsperado = (UMA_2025 * 365 * 0.00563) / 12;
     expect(result.incrementosAnuales).toBeCloseTo(incrementoEsperado, 0);
   });
 

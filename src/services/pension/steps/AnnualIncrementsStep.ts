@@ -6,7 +6,7 @@
  * Fuente: Art. 167 LSS 1973 — párrafo de incrementos anuales.
  */
 import type { CalculationContext, CalculationStep } from '../types';
-import { DIAS_PROMEDIO_MES, SEMANAS_MINIMAS_VEJEZ, SEMANAS_POR_ANIO } from '../../../constants/ley73';
+import { DIAS_ANIO_UMA, SEMANAS_MINIMAS_VEJEZ, SEMANAS_POR_ANIO } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
 export const AnnualIncrementsStep: CalculationStep = (ctx): CalculationContext => {
@@ -19,11 +19,12 @@ export const AnnualIncrementsStep: CalculationStep = (ctx): CalculationContext =
   // Años completos excedentes (cada 52 semanas = 1 año de incremento)
   const aniosExcedentes = Math.floor(semanasExcedentes / SEMANAS_POR_ANIO);
 
-  // El incremento se calcula sobre el SBC mensual efectivo (no sobre la cuantía básica)
+  // El incremento se calcula sobre el SBC anual y luego se divide entre 12 para obtener el mensual
   // Fuente: Art. 167 LSS 1973 — cada año adicional incrementa en incrementoAnualPct% del SBC
-  const sbcMensual = round2(salarioEfectivoDiario * DIAS_PROMEDIO_MES);
-  const incrementoPorAnio = round2(sbcMensual * (incrementoAnualPct / 100));
-  const incrementosMensual = round2(incrementoPorAnio * aniosExcedentes);
+  // Fórmula: Incremento Anual = Salario Diario × 365 × Porcentaje
+  // Incremento Mensual = Incremento Anual / 12
+  const incrementoAnual = round2(salarioEfectivoDiario * DIAS_ANIO_UMA * (incrementoAnualPct / 100));
+  const incrementosMensual = round2(incrementoAnual / 12 * aniosExcedentes);
   const subtotalAntesFactor = round2(cuantiaBasicaMensual + incrementosMensual);
 
   pasos.push({
@@ -31,10 +32,10 @@ export const AnnualIncrementsStep: CalculationStep = (ctx): CalculationContext =
     titulo: '3. Incrementos Anuales por Semanas Excedentes',
     descripcion:
       `Semanas totales: ${semanasTotales} − 500 mínimas = ${semanasExcedentes} excedentes → ` +
-      `${aniosExcedentes} años completos × ${incrementoAnualPct}% × $${sbcMensual.toFixed(2)}/mes = ` +
-      `$${incrementosMensual.toFixed(2)}/mes adicionales`,
+      `${aniosExcedentes} años completos × ${incrementoAnualPct}% × $${salarioEfectivoDiario.toFixed(2)}/día × 365 días = ` +
+      `$${incrementoAnual.toFixed(2)}/año → $${incrementosMensual.toFixed(2)}/mes adicionales`,
     valor: incrementosMensual,
-    formula: `floor((semanas − 500) / 52) × ${incrementoAnualPct}% × SBC_mensual`,
+    formula: `floor((semanas − 500) / 52) × ${incrementoAnualPct}% × SBC_diario × 365 ÷ 12`,
     baseLegal: 'Art. 167 LSS 1973 — incrementos anuales por semanas adicionales',
     esEstimacion: false,
   });
