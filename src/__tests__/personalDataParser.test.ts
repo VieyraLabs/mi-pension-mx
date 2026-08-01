@@ -5,8 +5,10 @@
  * El texto de prueba replica el orden real de extracción de pdfjs-dist
  * para este documento (orden de dibujado del content stream, NO el orden
  * visual de lectura): el nombre aparece intercalado entre "NSS:" y su
- * valor, y "Entidad federativa" se intercala entre la etiqueta de SBC y su
- * monto. Los datos (nombre, CURP, NSS) son sintéticos.
+ * valor, y texto no relacionado (incluyendo fechas) puede intercalarse
+ * entre la etiqueta de SBC y su monto — por eso el SBC se busca anclado al
+ * signo "$" en vez de a la etiqueta. Los datos (nombre, CURP, NSS) son
+ * sintéticos.
  */
 import { ConstanciaIMSSParser } from '../services/pdf/parsers/PersonalDataParser';
 
@@ -71,6 +73,21 @@ describe('ConstanciaIMSSParser', () => {
   test('extrae el último SBC (el del registro más reciente) aunque "Entidad federativa" se intercale antes del monto', () => {
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
     expect(result.data?.ultimoSBC).toBe(500);
+  });
+
+  test('extrae el último SBC aunque una fecha quede entre la etiqueta y el monto (no confunde el día con el SBC)', () => {
+    // Orden en el que la etiqueta antecede a la fecha (en vez de sucederla),
+    // como ocurrió en un caso real: sin anclar al signo "$", una búsqueda
+    // "primer número después de la etiqueta" capturaría "16" de la fecha.
+    const textoConFechaTrasEtiqueta = `Vigente
+CIUDAD DE MÉXICO
+Salario Base de Cotización */
+Fecha de alta 16/01/2021 Fecha de baja
+Entidad federativa
+$ 2172.0
+Nombre del patrón EMPRESA DE PRUEBA SA DE CV`;
+    const result = ConstanciaIMSSParser.parse(textoConFechaTrasEtiqueta);
+    expect(result.data?.ultimoSBC).toBe(2172);
   });
 
   test('extrae el sexo desde el 10° carácter del CURP', () => {

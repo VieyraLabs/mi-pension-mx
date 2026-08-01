@@ -91,18 +91,17 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
     }
 
     // ─── Último SBC ───────────────────────────────────────────
-    // Igual que con NSS: el monto puede no estar inmediatamente después de
-    // la etiqueta (p. ej. "Entidad federativa" puede intercalarse antes del
-    // valor). Se asume que la primera ocurrencia de la etiqueta en el texto
-    // corresponde al registro más reciente (los patrones se listan en orden
-    // reverso-cronológico en la constancia).
-    const sbcValor = buscarValorTrasEtiqueta(
-      text,
-      /(?:salario base de cotización|sbc|último salario)/i,
-      /\$?\s*(\d{1,6}(?:[.,]\d{1,4})?)/,
-    );
-    if (sbcValor) {
-      const valor = parseFloat(sbcValor.replace(',', '.'));
+    // No se ancla a la etiqueta "Salario Base de Cotización": el orden de
+    // extracción de pdfjs-dist puede intercalar una fecha (también
+    // numérica, p. ej. "16/01/2021") entre la etiqueta y su monto, y una
+    // búsqueda sin el signo "$" puede capturar el día/mes de esa fecha en
+    // vez del monto real. En este documento el signo "$" solo antecede a
+    // montos de SBC, así que se busca directamente en todo el texto. Se
+    // asume que el primer monto encontrado corresponde al registro más
+    // reciente (los patrones se listan en orden reverso-cronológico).
+    const sbcMatch = text.match(/\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/);
+    if (sbcMatch?.[1]) {
+      const valor = parseFloat(sbcMatch[1].replace(',', '.'));
       if (!isNaN(valor) && valor > 0) {
         datos.ultimoSBC = valor;
       } else {
