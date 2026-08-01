@@ -5,22 +5,28 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, Share } from 'react-native';
 import { Text, Card, Button, Divider, useTheme, Chip, List } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
 import { generarPDF } from '../services/export/pdfExport';
 import { formatCurrency, formatPercent, formatInteger } from '../utils/format';
 import type { PensionResult } from '../models';
 
+type Nav = NativeStackNavigationProp<RootStackParamList>;
+
 export default function ResultScreen() {
   const theme = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
+  const route = useRoute();
   const { simulaciones } = useHistory();
   const [desgloseExpanded, setDesgloseExpanded] = useState(false);
   const [exportando, setExportando] = useState(false);
 
-  // Obtener la simulación más reciente
-  const ultimaSimulacion = simulaciones[0];
-  const resultado: PensionResult | undefined = ultimaSimulacion?.resultado;
+  // Obtener simulación específica del route params o la más reciente
+  const simulacionId = (route.params as { simulacionId?: string })?.simulacionId;
+  const simulacionSeleccionada = simulaciones.find((s) => s.id === simulacionId);
+  const resultado: PensionResult | undefined = simulacionSeleccionada?.resultado;
 
   if (!resultado) {
     return (
@@ -131,20 +137,21 @@ export default function ResultScreen() {
           <>
             <Divider />
             {resultado.pasos.map((paso) => (
-              <List.Item
-                key={paso.id}
-                title={paso.titulo}
-                description={`${paso.descripcion}${paso.baseLegal ? `\n📋 ${paso.baseLegal}` : ''}${paso.esEstimacion ? '\n⚠️ ESTIMACIÓN' : ''}`}
-                descriptionNumberOfLines={6}
-                right={() => (
-                  <Text variant="labelLarge" style={{ color: theme.colors.primary, alignSelf: 'center', marginRight: 8 }}>
-                    {formatCurrency(paso.valor)}
+              <View key={paso.id} style={styles.desgloseItem}>
+                <View style={styles.desgloseContent}>
+                  <Text variant="bodyMedium" style={styles.desgloseTitle}>
+                    {paso.titulo}
                   </Text>
-                )}
-                titleStyle={{ fontWeight: 'bold', fontSize: 13 }}
-                descriptionStyle={{ fontSize: 11, lineHeight: 16 }}
-                style={{ paddingVertical: 4 }}
-              />
+                  <Text variant="bodySmall" style={styles.desgloseDescription}>
+                    {paso.descripcion}
+                    {paso.baseLegal && <Text style={styles.desgloseLegal}>📋 {paso.baseLegal}</Text>}
+                    {paso.esEstimacion && <Text style={styles.desgloseEstimacion}>⚠️ ESTIMACIÓN</Text>}
+                  </Text>
+                </View>
+                <Text variant="labelLarge" style={styles.desgloseValue}>
+                  {formatCurrency(paso.valor)}
+                </Text>
+              </View>
             ))}
           </>
         )}
@@ -209,4 +216,11 @@ const styles = StyleSheet.create({
   resumenRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   actions: { gap: 12, marginBottom: 20 },
   actionBtn: { borderRadius: 8 },
+  desgloseItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
+  desgloseContent: { flex: 1 },
+  desgloseTitle: { fontWeight: 'bold', fontSize: 13, marginBottom: 4, width: '100%' },
+  desgloseDescription: { fontSize: 11, lineHeight: 16, color: '#757575', width: '100%' },
+  desgloseLegal: { color: '#1976D2' },
+  desgloseEstimacion: { color: '#FF6F00' },
+  desgloseValue: { color: '#1976D2', fontWeight: 'bold', fontSize: 13, alignSelf: 'center' },
 });

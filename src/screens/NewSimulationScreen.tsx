@@ -352,7 +352,7 @@ function PasoUMA({ input, onSeleccionarAnio, onPersonalizar, personalizada, setP
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                {TABLA_UMA_SMG.slice(-5).map((r) => (
+                {[...TABLA_UMA_SMG].slice(-5).reverse().map((r) => (
                   <Chip
                     key={r.anio}
                     selected={input.uma.anio === r.anio}
