@@ -2,7 +2,7 @@
  * Pantalla de nueva simulación — formulario por pasos (stepper).
  * Reúne todos los datos necesarios para calcular la pensión.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import {
   Text,
@@ -16,8 +16,8 @@ import {
   HelperText,
   Chip,
 } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { usePensionForm } from '../hooks/usePensionForm';
 import { calcularPension, validarInput } from '../services/pension/PensionCalculator';
@@ -28,6 +28,7 @@ import { diarioAMensual, mensualADiario } from '../utils/format';
 import { mostrarAlerta } from '../utils/alert';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Props = NativeStackScreenProps<RootStackParamList, 'NewSimulation'>;
 
 const PASOS = [
   'Datos personales',
@@ -41,12 +42,38 @@ const PASOS = [
 export default function NewSimulationScreen() {
   const theme = useTheme();
   const navigation = useNavigation<Nav>();
+  const route = useRoute<Props['route']>();
   const { input, actualizarDatosPersonales, actualizarHistorial, actualizarSalarioDiario, actualizarSalarioMensual, seleccionarUMAPorAnio, establecerUMAPersonalizada, actualizarModalidad40, actualizarBeneficiarios } = usePensionForm();
   const { guardar } = useHistory();
 
   const [paso, setPaso] = useState(0);
   const [salarioModoMensual, setSalarioModoMensual] = useState(false);
   const [umaPersonalizada, setUmaPersonalizada] = useState(false);
+  const [precargadoDePdf, setPrecargadoDePdf] = useState(false);
+
+  // Precarga el formulario con los datos revisados en ValidationScreen
+  // (importación de PDF). Solo corre una vez, al entrar a la pantalla.
+  useEffect(() => {
+    const datosImportados = route.params?.datosImportados;
+    if (!datosImportados) return;
+
+    const { nombre, sexo, fechaNacimiento, semanasTotales, ultimoSBC } = datosImportados;
+
+    const fecha = fechaNacimiento ? new Date(fechaNacimiento + 'T00:00:00') : undefined;
+    actualizarDatosPersonales({
+      ...(nombre ? { nombre } : {}),
+      ...(sexo ? { sexo } : {}),
+      ...(fecha && !isNaN(fecha.getTime()) ? { fechaNacimiento: fecha } : {}),
+    });
+    if (semanasTotales) {
+      actualizarHistorial({ semanasTotales });
+    }
+    if (ultimoSBC) {
+      actualizarSalarioDiario(ultimoSBC);
+    }
+    setPrecargadoDePdf(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.params?.datosImportados]);
 
   const ir = (n: number) => setPaso((p) => Math.max(0, Math.min(PASOS.length - 1, p + n)));
 
@@ -119,6 +146,17 @@ export default function NewSimulationScreen() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        {precargadoDePdf && (
+          <Card style={[styles.card, { backgroundColor: '#E3F2FD', marginBottom: 16 }]} elevation={0}>
+            <Card.Content>
+              <Text variant="bodySmall" style={{ color: '#1565C0', lineHeight: 18 }}>
+                📄 Este formulario se precargó con los datos de tu constancia IMSS. Revisa cada paso —
+                especialmente el SBC, que corresponde a tu último salario registrado, no necesariamente al
+                promedio de tus últimas 250 semanas.
+              </Text>
+            </Card.Content>
+          </Card>
+        )}
         {renderPaso()}
       </ScrollView>
 

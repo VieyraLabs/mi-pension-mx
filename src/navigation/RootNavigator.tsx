@@ -23,9 +23,19 @@ import ValidationScreen from '../screens/ValidationScreen';
 // Tipos de rutas
 // ─────────────────────────────────────────────
 
+/** Datos ya revisados/corregidos por el usuario en ValidationScreen, para precargar NewSimulationScreen. */
+export interface DatosImportadosSimulacion {
+  nombre?: string;
+  sexo?: 'masculino' | 'femenino';
+  /** Fecha en formato AAAA-MM-DD */
+  fechaNacimiento?: string;
+  semanasTotales?: number;
+  ultimoSBC?: number;
+}
+
 export type RootStackParamList = {
   MainTabs: undefined;
-  NewSimulation: undefined;
+  NewSimulation: { datosImportados?: DatosImportadosSimulacion } | undefined;
   Result: { simulacionId?: string };
   PdfImport: undefined;
   Validation: { textoExtraido: string };

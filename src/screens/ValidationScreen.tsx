@@ -27,6 +27,7 @@ export default function ValidationScreen() {
     semanasTotales: '',
     ultimoSBC: '',
     fechaNacimiento: '',
+    sexo: undefined as 'masculino' | 'femenino' | undefined,
   });
   const [advertencias, setAdvertencias] = useState<string[]>([]);
   const [camposFaltantes, setCamposFaltantes] = useState<string[]>([]);
@@ -42,6 +43,7 @@ export default function ValidationScreen() {
         semanasTotales: d.semanasTotales ? String(d.semanasTotales) : '',
         ultimoSBC: d.ultimoSBC ? String(d.ultimoSBC) : '',
         fechaNacimiento: d.fechaNacimiento ? d.fechaNacimiento.toISOString().split('T')[0] ?? '' : '',
+        sexo: d.sexo,
       });
       setAdvertencias(resultado.advertencias);
       setCamposFaltantes(resultado.camposFaltantes);
@@ -53,12 +55,28 @@ export default function ValidationScreen() {
       mostrarAlerta('Error', 'Por favor ingresa el número de semanas cotizadas.');
       return;
     }
-    // Los datos validados se pasan via navegación a NewSimulation
-    // En un flujo real, se cargarían en el PensionForm context
+
+    const semanasTotales = parseInt(datos.semanasTotales);
+    const ultimoSBC = datos.ultimoSBC ? parseFloat(datos.ultimoSBC) : undefined;
+
     mostrarAlerta(
-      'Datos validados',
-      'Los datos han sido revisados. Ve a "Nueva Simulación" para calcular tu pensión con estos datos.',
-      [{ text: 'OK', onPress: () => navigation.navigate('NewSimulation') }],
+      'Datos listos',
+      'Tu formulario de nueva simulación se precargará con estos datos. Revisa cada paso antes de calcular tu pensión.',
+      [
+        {
+          text: 'Continuar',
+          onPress: () =>
+            navigation.navigate('NewSimulation', {
+              datosImportados: {
+                nombre: datos.nombre || undefined,
+                sexo: datos.sexo,
+                fechaNacimiento: datos.fechaNacimiento || undefined,
+                semanasTotales: !isNaN(semanasTotales) ? semanasTotales : undefined,
+                ultimoSBC: ultimoSBC && !isNaN(ultimoSBC) ? ultimoSBC : undefined,
+              },
+            }),
+        },
+      ],
     );
   };
 
