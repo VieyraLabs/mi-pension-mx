@@ -121,6 +121,7 @@ export default function DashboardScreen() {
           {[
             '✓ Cuantía básica según tabla Art. 167 LSS 1973',
             '✓ Incrementos anuales por semanas excedentes',
+            '✓ Incremento del 11% (Decreto DOF 2001/2004)',
             '✓ Factor por edad (Cesantía 60–64 años)',
             '✓ Asignaciones familiares (cónyuge, hijos)',
             '✓ Ayuda asistencial',
