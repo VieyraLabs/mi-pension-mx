@@ -3,12 +3,13 @@
  * Permite al usuario revisar y corregir los datos extraídos.
  */
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Card, Button, TextInput, useTheme, Divider, Chip } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { ConstanciaIMSSParser } from '../services/pdf/parsers/PersonalDataParser';
+import { mostrarAlerta } from '../utils/alert';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Validation'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -49,12 +50,12 @@ export default function ValidationScreen() {
 
   const usarDatos = () => {
     if (!datos.semanasTotales || parseInt(datos.semanasTotales) <= 0) {
-      Alert.alert('Error', 'Por favor ingresa el número de semanas cotizadas.');
+      mostrarAlerta('Error', 'Por favor ingresa el número de semanas cotizadas.');
       return;
     }
     // Los datos validados se pasan via navegación a NewSimulation
     // En un flujo real, se cargarían en el PensionForm context
-    Alert.alert(
+    mostrarAlerta(
       'Datos validados',
       'Los datos han sido revisados. Ve a "Nueva Simulación" para calcular tu pensión con estos datos.',
       [{ text: 'OK', onPress: () => navigation.navigate('NewSimulation') }],

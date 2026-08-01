@@ -3,7 +3,7 @@
  * Muestra el resumen, resultado principal y desglose detallado.
  */
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Alert, Share } from 'react-native';
+import { View, ScrollView, StyleSheet, Share } from 'react-native';
 import { Text, Card, Button, Divider, useTheme, Chip, List } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -11,6 +11,7 @@ import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
 import { generarPDF } from '../services/export/pdfExport';
 import { formatCurrency, formatPercent, formatInteger } from '../utils/format';
+import { mostrarAlerta } from '../utils/alert';
 import type { PensionResult } from '../models';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -46,7 +47,7 @@ export default function ResultScreen() {
     try {
       await generarPDF(resultado);
     } catch (e) {
-      Alert.alert('Error', 'No se pudo generar el PDF. Intenta de nuevo.');
+      mostrarAlerta('Error', 'No se pudo generar el PDF. Intenta de nuevo.');
     } finally {
       setExportando(false);
     }

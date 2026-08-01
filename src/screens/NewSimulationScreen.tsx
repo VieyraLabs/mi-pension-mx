@@ -3,7 +3,7 @@
  * Reúne todos los datos necesarios para calcular la pensión.
  */
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import {
   Text,
   TextInput,
@@ -25,6 +25,7 @@ import { useHistory } from '../hooks/useHistory';
 import { TABLA_UMA_SMG } from '../constants/uma';
 import { calcularEdad } from '../utils/date';
 import { diarioAMensual, mensualADiario } from '../utils/format';
+import { mostrarAlerta } from '../utils/alert';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -52,7 +53,7 @@ export default function NewSimulationScreen() {
   const calcular = async () => {
     const validation = validarInput(input);
     if (!validation.valido) {
-      Alert.alert('Datos insuficientes', validation.errores.join('\n'));
+      mostrarAlerta('Datos insuficientes', validation.errores.join('\n'));
       return;
     }
     const resultado = calcularPension(input);

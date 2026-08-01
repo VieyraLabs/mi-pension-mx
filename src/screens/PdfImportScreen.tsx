@@ -2,7 +2,7 @@
  * Pantalla para importar la Constancia de Semanas Cotizadas del IMSS en PDF.
  */
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Card, Button, useTheme, ActivityIndicator, Chip } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
