@@ -4,13 +4,17 @@
  *
  * Estrategia de extracción:
  * 1. Seleccionar el archivo PDF desde el dispositivo (expo-document-picker)
- * 2. Intentar extracción de texto digital directo (PdfTextExtractor)
- * 3. Si el texto es vacío/insuficiente → informar que OCR requiere development build
+ * 2. Intentar extracción de texto digital directo (PdfTextExtractor — real
+ *    con pdfjs-dist en web, heurístico en nativo sin development build)
+ * 3. Si el texto es vacío/insuficiente → informar que el PDF puede estar
+ *    escaneado o requerir entrada manual
  * 4. Devolver resultado con texto extraído o solicitar entrada manual
  */
+import { Platform } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import type { ParseResult } from '../../models';
+import { extraerTextoPDF } from './PdfTextExtractor';
 
 export interface ImportResult {
   textoExtraido: string;
@@ -52,32 +56,81 @@ export async function importarPDF(): Promise<ParseResult<ImportResult>> {
   const asset = fileResult.assets[0];
   const uri = asset.uri;
 
-  // 2. Leer el contenido del archivo como base64
+  // 2. Leer el contenido del archivo como base64.
+  // En web, expo-document-picker entrega la URI como data: URL (vía
+  // FileReader.readAsDataURL) y expo-file-system no está implementado
+  // (es un shim sin acceso real al filesystem), por lo que ahí se extrae
+  // el base64 directamente de la data: URL en vez de usar FileSystem.
   let contenidoBase64: string;
-  try {
-    contenidoBase64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-  } catch {
-    return {
-      ok: false,
-      error: 'No se pudo leer el archivo PDF. Verifica que el archivo sea válido.',
-      advertencias: [],
-      camposFaltantes: [],
-    };
+  if (Platform.OS === 'web' || uri.startsWith('data:')) {
+    const match = uri.match(/^data:[^;]*;base64,(.*)$/);
+    if (!match?.[1]) {
+      return {
+        ok: false,
+        error: 'No se pudo leer el archivo PDF. Verifica que el archivo sea válido.',
+        advertencias: [],
+        camposFaltantes: [],
+      };
+    }
+    contenidoBase64 = match[1];
+  } else {
+    // Verificar que el archivo exista localmente y tenga contenido.
+    // Nota: si el PDF se eligió desde iCloud Drive / Google Drive y aún no se
+    // descargó al dispositivo, copyToCacheDirectory puede devolver un archivo
+    // de 0 bytes en lugar de lanzar un error.
+    try {
+      const info = await FileSystem.getInfoAsync(uri, { size: true });
+      if (!info.exists || info.size === 0) {
+        return {
+          ok: false,
+          error:
+            'El archivo no se descargó por completo al dispositivo (frecuente con PDFs en iCloud Drive u otro almacenamiento en la nube). ' +
+            'Ábrelo primero en la app Archivos para descargarlo y vuelve a intentarlo.',
+          advertencias: [],
+          camposFaltantes: [],
+        };
+      }
+    } catch (e) {
+      console.error('[PdfImporter] Error al verificar el archivo:', e);
+    }
+
+    try {
+      contenidoBase64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+    } catch (e) {
+      console.error('[PdfImporter] Error al leer el archivo PDF:', e);
+      const detalle = e instanceof Error ? e.message : String(e);
+      return {
+        ok: false,
+        error: `No se pudo leer el archivo PDF. Verifica que el archivo sea válido. (${detalle})`,
+        advertencias: [],
+        camposFaltantes: [],
+      };
+    }
   }
 
-  // 3. Extraer texto del PDF digital
-  // En Expo Go sin módulos nativos, intentamos extracción básica de texto
-  // de PDFs que contienen texto embebido (no escaneados)
-  const textoExtraido = extraerTextoBasico(contenidoBase64);
+  // 3. Extraer texto del PDF digital.
+  // En web se usa pdfjs-dist (decodifica streams comprimidos y fuentes
+  // embebidas). En nativo (sin development build) se usa un fallback
+  // heurístico que solo funciona con PDFs no comprimidos.
+  let textoExtraido: string;
+  try {
+    textoExtraido = await extraerTextoPDF(contenidoBase64);
+  } catch (e) {
+    console.error('[PdfImporter] Error al extraer texto del PDF:', e);
+    textoExtraido = '';
+  }
   const advertencias: string[] = [];
 
   if (!textoExtraido || textoExtraido.trim().length < 50) {
     advertencias.push(
-      'El PDF parece estar escaneado o no contiene texto seleccionable. ' +
-        'La extracción automática no está disponible para este tipo de PDF en Expo Go. ' +
-        'Por favor ingresa los datos manualmente.',
+      Platform.OS === 'web'
+        ? 'El PDF parece estar escaneado (imagen) o no contiene texto seleccionable. ' +
+          'Por favor ingresa los datos manualmente.'
+        : 'El PDF parece estar escaneado o no contiene texto seleccionable. ' +
+          'La extracción automática completa no está disponible para este tipo de PDF en Expo Go. ' +
+          'Por favor ingresa los datos manualmente.',
     );
     // Devolver texto vacío pero con advertencia — el usuario ingresará manualmente
     return {
@@ -102,38 +155,4 @@ export async function importarPDF(): Promise<ParseResult<ImportResult>> {
     advertencias,
     camposFaltantes: [],
   };
-}
-
-/**
- * Extracción básica de texto de un PDF en base64.
- * Solo funciona para PDFs digitales (no escaneados) que tienen texto embebido.
- * Busca cadenas de texto legibles decodificando el base64 a texto.
- *
- * NOTA: Esta implementación es una aproximación simplificada.
- * Para extracción completa se requiere pdfjs-dist (via WebView) o un dev build.
- */
-function extraerTextoBasico(base64: string): string {
-  try {
-    // Decodificar base64 a string binario
-    const binario = atob(base64);
-
-    // Extraer texto legible usando regex que busca cadenas ASCII imprimibles
-    // en el contenido del PDF (texto embebido en PDFs digitales)
-    const textoVisible = binario.match(/[\x20-\x7E\xC0-\xFF]{4,}/g);
-    if (!textoVisible) return '';
-
-    return textoVisible
-      .filter(
-        (s) =>
-          // Filtrar cadenas que parecen texto real (no datos binarios)
-          /[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{2,}/.test(s) &&
-          !s.startsWith('/') && // Operadores PDF
-          s.length < 200,
-      )
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  } catch {
-    return '';
-  }
 }
