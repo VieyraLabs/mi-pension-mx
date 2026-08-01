@@ -95,8 +95,21 @@ Nombre del patrón EMPRESA DE PRUEBA SA DE CV`;
     expect(result.data?.sexo).toBe('masculino');
   });
 
-  test('marca Fecha de nacimiento como faltante cuando el documento no la incluye', () => {
+  test('deriva la fecha de nacimiento del CURP cuando el documento no la incluye directamente', () => {
+    // CURP de prueba "XEXX010101...": los primeros 6 dígitos (AAMMDD) son
+    // 01/01/01 → como este documento no trae un campo explícito de fecha de
+    // nacimiento, se deriva del CURP en vez de quedar como faltante.
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
+    expect(result.camposFaltantes).not.toContain('Fecha de nacimiento');
+    expect(result.data?.fechaNacimiento?.getFullYear()).toBe(2001);
+    expect(result.data?.fechaNacimiento?.getMonth()).toBe(0);
+    expect(result.data?.fechaNacimiento?.getDate()).toBe(1);
+    expect(result.advertencias.some((a) => /fecha de nacimiento.*curp/i.test(a))).toBe(true);
+  });
+
+  test('marca Fecha de nacimiento como faltante cuando tampoco hay CURP para derivarla', () => {
+    const sinCurp = TEXTO_CONSTANCIA.replace('CURP: XEXX010101HNEXXX04', '');
+    const result = ConstanciaIMSSParser.parse(sinCurp);
     expect(result.camposFaltantes).toContain('Fecha de nacimiento');
   });
 

@@ -76,6 +76,19 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
       if (!isNaN(fecha.getTime())) {
         datos.fechaNacimiento = fecha;
       }
+    } else if (datos.curp) {
+      // La Constancia de Semanas Cotizadas no incluye un campo explícito de
+      // fecha de nacimiento, pero el CURP la codifica en sus primeros 6
+      // dígitos (AAMMDD).
+      const fechaDesdeCurp = fechaNacimientoDesdeCURP(datos.curp);
+      if (fechaDesdeCurp) {
+        datos.fechaNacimiento = fechaDesdeCurp;
+        advertencias.push(
+          'La fecha de nacimiento se infirió del CURP (este documento no la incluye directamente). Verifícala.',
+        );
+      } else {
+        camposFaltantes.push('Fecha de nacimiento');
+      }
     } else {
       camposFaltantes.push('Fecha de nacimiento');
     }
@@ -170,6 +183,32 @@ function buscarValorTrasEtiqueta(
   const inicio = etiquetaMatch.index + etiquetaMatch[0].length;
   const ventanaTexto = text.slice(inicio, inicio + ventana);
   return ventanaTexto.match(valorRegex)?.[1]?.trim() ?? null;
+}
+
+/**
+ * Deriva la fecha de nacimiento a partir de los primeros 6 dígitos del CURP
+ * (AAMMDD). El siglo no está codificado en el CURP, así que se infiere
+ * comparando los 2 dígitos del año con el año actual (heurística estándar
+ * de validadores de CURP): si son mayores al año actual de 2 dígitos, se
+ * asume 19XX; si no, 20XX.
+ */
+function fechaNacimientoDesdeCURP(curp: string): Date | null {
+  const match = curp.match(/^[A-Z]{4}(\d{2})(\d{2})(\d{2})/);
+  if (!match) return null;
+
+  const anio2d = parseInt(match[1] as string, 10);
+  const mes = parseInt(match[2] as string, 10);
+  const dia = parseInt(match[3] as string, 10);
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+
+  const anioActual2d = new Date().getFullYear() % 100;
+  const siglo = anio2d > anioActual2d ? 1900 : 2000;
+  const fecha = new Date(siglo + anio2d, mes - 1, dia);
+
+  // new Date hace "rollover" de días inválidos (ej. 30 de febrero); si el
+  // mes resultante no coincide, la fecha original no era válida.
+  if (isNaN(fecha.getTime()) || fecha.getMonth() !== mes - 1) return null;
+  return fecha;
 }
 
 /** Normaliza un candidato a nombre y descarta los que claramente no lo son. */
