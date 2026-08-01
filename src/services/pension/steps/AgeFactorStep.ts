@@ -42,7 +42,7 @@ export const AgeFactorStep: CalculationStep = (ctx): CalculationContext => {
 
   pasos.push({
     id: 'factor_edad',
-    titulo: `5. Factor por Edad de Retiro (${tipoPension === 'vejez' ? 'Vejez' : 'Cesantía en Edad Avanzada'})`,
+    titulo: `6. Factor por Edad de Retiro (${tipoPension === 'vejez' ? 'Vejez' : 'Cesantía en Edad Avanzada'})`,
     descripcion:
       tipoPension === 'vejez'
         ? `Pensión de Vejez a los ${edadRetiro} años: factor 100% (sin reducción). ` +

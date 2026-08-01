@@ -57,7 +57,7 @@ export const LimitsStep: CalculationStep = (ctx): CalculationContext => {
 
   pasos.push({
     id: 'subtotal_bruto',
-    titulo: '8. Subtotal Bruto (Cuantía + Asignaciones + Ayuda)',
+    titulo: '9. Subtotal Bruto (Cuantía + Asignaciones + Ayuda)',
     descripcion:
       `Cuantía con factor: $${cuantiaConFactor.toFixed(2)} + ` +
       `Asignaciones: $${asignacionesFamiliares.toFixed(2)} + ` +
@@ -71,7 +71,7 @@ export const LimitsStep: CalculationStep = (ctx): CalculationContext => {
 
   pasos.push({
     id: 'limites',
-    titulo: '9. Aplicación de Límites (Tope y PMG)',
+    titulo: '10. Aplicación de Límites (Tope y PMG)',
     descripcion:
       aplicoTope
         ? `Se aplica tope 25 UMA mensual: $${topeUMAMensual.toFixed(2)}/mes`

@@ -28,6 +28,8 @@ export interface CalculationContext {
   incrementosMensual: number;
   /** Subtotal antes de factor de edad */
   subtotalAntesFactor: number;
+  /** Monto del incremento del 11% (Decreto DOF 2001/2004) ya incluido en subtotalAntesFactor */
+  incrementoDecreto11Monto: number;
   /** Factor de edad (0.75 a 1.0) */
   factorEdad: number;
   /** Cuantía después de factor de edad */

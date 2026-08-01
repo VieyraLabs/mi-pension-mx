@@ -42,7 +42,7 @@ export const AssistanceAidStep: CalculationStep = (ctx): CalculationContext => {
 
   pasos.push({
     id: 'ayuda_asistencial',
-    titulo: '7. Ayuda Asistencial',
+    titulo: '8. Ayuda Asistencial',
     descripcion,
     valor: ayudaAsistencial,
     formula,

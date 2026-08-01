@@ -61,7 +61,7 @@ export const FamilyAssignmentsStep: CalculationStep = (ctx): CalculationContext 
 
   pasos.push({
     id: 'asignaciones_familiares',
-    titulo: '6. Asignaciones Familiares',
+    titulo: '7. Asignaciones Familiares',
     descripcion:
       detalles.length > 0
         ? detalles.join('; ') + ` | Total asignaciones: +$${asignacionesFamiliares.toFixed(2)}/mes`

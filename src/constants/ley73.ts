@@ -312,6 +312,22 @@ export const CONSERVACION_DERECHOS_FRACCION = 0.25;
 export const CONSERVACION_DERECHOS_MAX_SEMANAS = 60; // (según criterio IMSS)
 
 // ─────────────────────────────────────────────
+// Incremento del 11% (Decreto DOF 2001/2004)
+// ─────────────────────────────────────────────
+
+/**
+ * Incremento del 11% aplicado a la cuantía de la pensión Ley 73
+ * (cuantía básica + incrementos anuales), previo al factor de edad.
+ *
+ * Fuente: Decreto por el que se reforman y adicionan los artículos Décimo
+ * Cuarto y Vigésimo Cuarto Transitorios del Decreto que reforma y adiciona
+ * diversas disposiciones de la Ley del Seguro Social.
+ * DOF: 20 de diciembre de 2001. Modificación: DOF 5 de enero de 2004.
+ * https://www.diputados.gob.mx/LeyesBiblio/ref/lss/LSS_ref04_05ene04.pdf
+ */
+export const INCREMENTO_DECRETO_11 = 0.11;
+
+// ─────────────────────────────────────────────
 // Modalidad 40
 // ─────────────────────────────────────────────
 

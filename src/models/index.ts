@@ -167,6 +167,8 @@ export interface PensionResult {
   cuantiaBasica: number;
   /** Incrementos anuales totales */
   incrementosAnuales: number;
+  /** Incremento del 11% (Decreto DOF 2001/2004) sobre cuantía básica + incrementos */
+  incrementoDecreto11: number;
   /** Factor de edad aplicado (0.75 a 1.0) */
   factorEdad: number;
   /** Asignaciones familiares sumadas */

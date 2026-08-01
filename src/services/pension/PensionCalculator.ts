@@ -13,6 +13,7 @@ import type { CalculationContext } from './types';
 import { AverageSalaryStep } from './steps/AverageSalaryStep';
 import { BasicQuantityStep } from './steps/BasicQuantityStep';
 import { AnnualIncrementsStep } from './steps/AnnualIncrementsStep';
+import { DecreeIncrementStep } from './steps/DecreeIncrementStep';
 import { AgeFactorStep } from './steps/AgeFactorStep';
 import { FamilyAssignmentsStep } from './steps/FamilyAssignmentsStep';
 import { AssistanceAidStep } from './steps/AssistanceAidStep';
@@ -87,6 +88,7 @@ function crearContextoInicial(input: PensionInput): CalculationContext {
     cuantiaBasicaMensual: 0,
     incrementosMensual: 0,
     subtotalAntesFactor: 0,
+    incrementoDecreto11Monto: 0,
     factorEdad: 1.0,
     cuantiaConFactor: 0,
     asignacionesFamiliares: 0,
@@ -105,6 +107,7 @@ const PIPELINE = [
   AverageSalaryStep,
   BasicQuantityStep,
   AnnualIncrementsStep,
+  DecreeIncrementStep,
   AgeFactorStep,
   FamilyAssignmentsStep,
   AssistanceAidStep,
@@ -152,6 +155,7 @@ export function calcularPension(input: PensionInput): PensionResult {
     montoDiario,
     cuantiaBasica: ctxFinal.cuantiaBasicaMensual,
     incrementosAnuales: ctxFinal.incrementosMensual,
+    incrementoDecreto11: ctxFinal.incrementoDecreto11Monto,
     factorEdad: ctxFinal.factorEdad,
     asignacionesFamiliares: ctxFinal.asignacionesFamiliares,
     ayudaAsistencial: ctxFinal.ayudaAsistencial,

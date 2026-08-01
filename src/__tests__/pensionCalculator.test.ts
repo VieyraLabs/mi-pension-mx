@@ -284,8 +284,9 @@ describe('calcularPension — Asignaciones familiares', () => {
 
     expect(result.asignacionesFamiliares).toBe(0);
     expect(result.ayudaAsistencial).toBeGreaterThan(0);
-    // 15% de la cuantía con factor (básica + incrementos) según Art. 165 LSS 1973
-    const cuantiaConFactor = (result.cuantiaBasica + result.incrementosAnuales) * result.factorEdad;
+    // 15% de la cuantía con factor (básica + incrementos + decreto 11%) según Art. 165 LSS 1973
+    const cuantiaConFactor =
+      (result.cuantiaBasica + result.incrementosAnuales + result.incrementoDecreto11) * result.factorEdad;
     expect(result.ayudaAsistencial).toBeCloseTo(cuantiaConFactor * 0.15, 0);
   });
 
@@ -308,9 +309,10 @@ describe('calcularPension — Asignaciones familiares', () => {
     const result2 = calcularPension(input2hijos);
 
     expect(result2.asignacionesFamiliares).toBeGreaterThan(result1.asignacionesFamiliares);
-    // La diferencia debe ser ~10% de la cuantía con factor (básica + incrementos) según Art. 164 LSS 1973
+    // La diferencia debe ser ~10% de la cuantía con factor (básica + incrementos + decreto 11%) según Art. 164 LSS 1973
     const diff = result2.asignacionesFamiliares - result1.asignacionesFamiliares;
-    const cuantiaConFactor1 = (result1.cuantiaBasica + result1.incrementosAnuales) * result1.factorEdad;
+    const cuantiaConFactor1 =
+      (result1.cuantiaBasica + result1.incrementosAnuales + result1.incrementoDecreto11) * result1.factorEdad;
     expect(diff).toBeCloseTo(cuantiaConFactor1 * 0.1, 0);
   });
 });
@@ -388,6 +390,7 @@ describe('calcularPension — Desglose', () => {
     expect(ids).toContain('salario_promedio');
     expect(ids).toContain('cuantia_basica');
     expect(ids).toContain('incrementos_anuales');
+    expect(ids).toContain('incremento_decreto_11');
     expect(ids).toContain('factor_edad');
     expect(ids).toContain('resultado_final');
   });
@@ -406,6 +409,35 @@ describe('calcularPension — Desglose', () => {
     const input = buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 65 });
     const result = calcularPension(input);
     expect(result.esEstimacion).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────
+// Incremento del 11% (Decreto DOF 2001/2004)
+// ─────────────────────────────────────────────
+
+describe('calcularPension — Incremento del 11% (Decreto DOF 2001/2004)', () => {
+  test('el incremento equivale al 11% de cuantía básica + incrementos anuales', () => {
+    const input = buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 65 });
+    const result = calcularPension(input);
+
+    const cuantiaAntesDecreto = result.cuantiaBasica + result.incrementosAnuales;
+    expect(result.incrementoDecreto11).toBeCloseTo(cuantiaAntesDecreto * 0.11, 1);
+  });
+
+  test('con salario 0 el incremento es 0', () => {
+    const input = buildInput({ semanas: 500, salarioDiario: 0, edadRetiro: 65 });
+    const result = calcularPension(input);
+    expect(result.incrementoDecreto11).toBe(0);
+  });
+
+  test('el incremento se refleja en la pensión final (comparado sin el paso)', () => {
+    const input = buildInput({ semanas: 500, salarioDiario: 300, edadRetiro: 65 });
+    const result = calcularPension(input);
+
+    const cuantiaAntesDecreto = result.cuantiaBasica + result.incrementosAnuales;
+    const pensionSinDecretoAprox = cuantiaAntesDecreto * result.factorEdad;
+    expect(result.pensionMensual).toBeGreaterThan(pensionSinDecretoAprox);
   });
 });
 
