@@ -17,7 +17,7 @@ import { AgeFactorStep } from './steps/AgeFactorStep';
 import { FamilyAssignmentsStep } from './steps/FamilyAssignmentsStep';
 import { AssistanceAidStep } from './steps/AssistanceAidStep';
 import { LimitsStep } from './steps/LimitsStep';
-import { SEMANAS_MINIMAS_VEJEZ } from '../../constants/ley73';
+import { DIAS_ANIO_UMA, DIAS_PROMEDIO_MES, MESES_POR_ANIO, SEMANAS_MINIMAS_VEJEZ } from '../../constants/ley73';
 import { round2 } from '../../utils/format';
 
 /** Resultado de validación previa al cálculo. */
@@ -125,8 +125,8 @@ export function calcularPension(input: PensionInput): PensionResult {
   );
 
   const pensionMensual = round2(ctxFinal.pensionMensual);
-  const pensionAnual = round2(pensionMensual * 12);
-  const montoDiario = round2(pensionMensual / 30.4);
+  const pensionAnual = round2(pensionMensual * MESES_POR_ANIO);
+  const montoDiario = round2(pensionMensual / DIAS_PROMEDIO_MES);
 
   // Agregar paso final de resumen
   const pasosConResumen = [
@@ -195,13 +195,13 @@ export function calcularEscenarioSimple(params: {
     },
     salarioPromedio: {
       salarioDiario: params.salarioDiario,
-      salarioMensual: round2(params.salarioDiario * 30.4),
+      salarioMensual: round2(params.salarioDiario * DIAS_PROMEDIO_MES),
       esManual: true,
     },
     uma: {
       umaDiaria: params.umaDiaria,
-      umaMensual: round2(params.umaDiaria * 30.4),
-      umaAnual: round2(params.umaDiaria * 365),
+      umaMensual: round2(params.umaDiaria * DIAS_PROMEDIO_MES),
+      umaAnual: round2(params.umaDiaria * DIAS_ANIO_UMA),
       anio: new Date().getFullYear(),
       esPersonalizada: false,
     },

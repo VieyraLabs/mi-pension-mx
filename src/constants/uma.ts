@@ -7,6 +7,7 @@
  * para los cálculos. La resolución oficial corresponde al IMSS.
  */
 import type { RegistroUMA } from '../models';
+import { DIAS_ANIO_UMA, DIAS_PROMEDIO_MES } from './ley73';
 
 export const TABLA_UMA_SMG: readonly RegistroUMA[] = [
   {
@@ -97,9 +98,11 @@ export const TABLA_UMA_SMG: readonly RegistroUMA[] = [
     umaDiaria: 117.7,
     umaMensual: 3578.28,
     umaAnual: 42960.5,
-    smgCdmx: 300.0,
+    smgCdmx: 315.04,
     esEstimacion: true,
-    fuente: 'Estimación proyectada — verificar publicación DOF enero 2026 (INEGI/CONASAMI)',
+    fuente:
+      'UMA estimada — verificar publicación DOF enero 2026 (INEGI). ' +
+      'SMG ZSMG 2026 oficial CONASAMI, Tabla de Salarios Mínimos 2026 (PDF gob.mx).',
   },
 ] as const;
 
@@ -129,7 +132,7 @@ export function calcularUMADesdeValorDiario(umaDiaria: number): {
 } {
   return {
     umaDiaria,
-    umaMensual: parseFloat((umaDiaria * 30.4).toFixed(2)),
-    umaAnual: parseFloat((umaDiaria * 365).toFixed(2)),
+    umaMensual: parseFloat((umaDiaria * DIAS_PROMEDIO_MES).toFixed(2)),
+    umaAnual: parseFloat((umaDiaria * DIAS_ANIO_UMA).toFixed(2)),
   };
 }

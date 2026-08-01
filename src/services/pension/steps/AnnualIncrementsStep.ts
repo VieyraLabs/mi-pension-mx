@@ -6,7 +6,7 @@
  * Fuente: Art. 167 LSS 1973 — párrafo de incrementos anuales.
  */
 import type { CalculationContext, CalculationStep } from '../types';
-import { SEMANAS_MINIMAS_VEJEZ, SEMANAS_POR_ANIO } from '../../../constants/ley73';
+import { DIAS_PROMEDIO_MES, SEMANAS_MINIMAS_VEJEZ, SEMANAS_POR_ANIO } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
 export const AnnualIncrementsStep: CalculationStep = (ctx): CalculationContext => {
@@ -21,7 +21,7 @@ export const AnnualIncrementsStep: CalculationStep = (ctx): CalculationContext =
 
   // El incremento se calcula sobre el SBC mensual efectivo (no sobre la cuantía básica)
   // Fuente: Art. 167 LSS 1973 — cada año adicional incrementa en incrementoAnualPct% del SBC
-  const sbcMensual = round2(salarioEfectivoDiario * 30.4);
+  const sbcMensual = round2(salarioEfectivoDiario * DIAS_PROMEDIO_MES);
   const incrementoPorAnio = round2(sbcMensual * (incrementoAnualPct / 100));
   const incrementosMensual = round2(incrementoPorAnio * aniosExcedentes);
   const subtotalAntesFactor = round2(cuantiaBasicaMensual + incrementosMensual);

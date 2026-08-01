@@ -5,7 +5,12 @@
  * Fuente: Art. 167 LSS 1973 — promedio de las últimas 250 semanas.
  */
 import type { CalculationContext, CalculationStep } from '../types';
-import { TOPE_SBC_VECES_UMA, SEMANAS_PROMEDIO_SBC, MODALIDAD_40_TOPE_VECES_UMA } from '../../../constants/ley73';
+import {
+  DIAS_PROMEDIO_MES,
+  MODALIDAD_40_TOPE_VECES_UMA,
+  SEMANAS_PROMEDIO_SBC,
+  TOPE_SBC_VECES_UMA,
+} from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
 /**
@@ -81,7 +86,7 @@ export const AverageSalaryStep: CalculationStep = (ctx): CalculationContext => {
     descripcion: aplicoTope
       ? `${descripcionSalario} → topado a 25 UMA = $${salarioEfectivoDiario.toFixed(2)}/día`
       : descripcionSalario,
-    valor: salarioEfectivoDiario * 30.4,
+    valor: salarioEfectivoDiario * DIAS_PROMEDIO_MES,
     formula: aplicoTope ? `min(${formulaSalario}, 25 × UMA_diaria)` : formulaSalario,
     baseLegal: 'Art. 167 LSS 1973 (promedio 250 semanas); Art. 28 LSS vigente (tope 25 UMA)',
     esEstimacion: esEstimacionSalario,

@@ -44,10 +44,9 @@ export interface EntradaTablaArt167 {
 /**
  * Tabla del Art. 167 LSS 1973 — Cuantía básica e incrementos anuales.
  *
- * ⚠️ ESTIMACIÓN: Los porcentajes son los comúnmente referenciados en la
- * literatura jurídica y calculadoras oficiales del IMSS. Se recomienda
- * verificar con el texto oficial del DOF y criterios operativos del IMSS
- * antes de cualquier uso legal.
+ * Porcentajes conforme a la tabla del Art. 167 LSS 1973 para pensiones de
+ * invalidez, vejez y cesantía en edad avanzada: cuantía básica para 500
+ * semanas e incrementos anuales por cada 52 semanas excedentes.
  *
  * Fuente de referencia:
  * - Ley del Seguro Social 1973, Art. 167
@@ -57,112 +56,145 @@ export const TABLA_ART167: readonly EntradaTablaArt167[] = [
   {
     rangoMin: 0,
     rangoMax: 1.0,
-    cuantiaBasicaPct: 90.0,
-    incrementoAnualPct: 0.5625,
+    cuantiaBasicaPct: 80.0,
+    incrementoAnualPct: 0.563,
   },
   {
     rangoMin: 1.01,
     rangoMax: 1.25,
-    cuantiaBasicaPct: 82.5,
-    incrementoAnualPct: 0.5625,
+    cuantiaBasicaPct: 77.11,
+    incrementoAnualPct: 0.814,
   },
   {
     rangoMin: 1.26,
     rangoMax: 1.5,
-    cuantiaBasicaPct: 75.0,
-    incrementoAnualPct: 0.5313,
+    cuantiaBasicaPct: 58.18,
+    incrementoAnualPct: 1.178,
   },
   {
     rangoMin: 1.51,
     rangoMax: 1.75,
-    cuantiaBasicaPct: 72.5,
-    incrementoAnualPct: 0.5,
+    cuantiaBasicaPct: 49.23,
+    incrementoAnualPct: 1.43,
   },
   {
     rangoMin: 1.76,
     rangoMax: 2.0,
-    cuantiaBasicaPct: 70.0,
-    incrementoAnualPct: 0.4688,
+    cuantiaBasicaPct: 42.67,
+    incrementoAnualPct: 1.615,
   },
   {
     rangoMin: 2.01,
     rangoMax: 2.25,
-    cuantiaBasicaPct: 67.0,
-    incrementoAnualPct: 0.4375,
+    cuantiaBasicaPct: 37.65,
+    incrementoAnualPct: 1.756,
   },
   {
     rangoMin: 2.26,
     rangoMax: 2.5,
-    cuantiaBasicaPct: 64.0,
-    incrementoAnualPct: 0.4063,
+    cuantiaBasicaPct: 33.68,
+    incrementoAnualPct: 1.868,
   },
   {
     rangoMin: 2.51,
+    rangoMax: 2.75,
+    cuantiaBasicaPct: 30.48,
+    incrementoAnualPct: 1.958,
+  },
+  {
+    rangoMin: 2.76,
     rangoMax: 3.0,
-    cuantiaBasicaPct: 61.0,
-    incrementoAnualPct: 0.375,
+    cuantiaBasicaPct: 27.83,
+    incrementoAnualPct: 2.033,
   },
   {
     rangoMin: 3.01,
+    rangoMax: 3.25,
+    cuantiaBasicaPct: 25.6,
+    incrementoAnualPct: 2.096,
+  },
+  {
+    rangoMin: 3.26,
     rangoMax: 3.5,
-    cuantiaBasicaPct: 58.0,
-    incrementoAnualPct: 0.3438,
+    cuantiaBasicaPct: 23.7,
+    incrementoAnualPct: 2.149,
   },
   {
     rangoMin: 3.51,
+    rangoMax: 3.75,
+    cuantiaBasicaPct: 22.07,
+    incrementoAnualPct: 2.195,
+  },
+  {
+    rangoMin: 3.76,
     rangoMax: 4.0,
-    cuantiaBasicaPct: 55.0,
-    incrementoAnualPct: 0.3125,
+    cuantiaBasicaPct: 20.65,
+    incrementoAnualPct: 2.235,
   },
   {
     rangoMin: 4.01,
+    rangoMax: 4.25,
+    cuantiaBasicaPct: 19.39,
+    incrementoAnualPct: 2.271,
+  },
+  {
+    rangoMin: 4.26,
     rangoMax: 4.5,
-    cuantiaBasicaPct: 52.0,
-    incrementoAnualPct: 0.2813,
+    cuantiaBasicaPct: 18.29,
+    incrementoAnualPct: 2.302,
   },
   {
     rangoMin: 4.51,
+    rangoMax: 4.75,
+    cuantiaBasicaPct: 17.3,
+    incrementoAnualPct: 2.33,
+  },
+  {
+    rangoMin: 4.76,
     rangoMax: 5.0,
-    cuantiaBasicaPct: 49.0,
-    incrementoAnualPct: 0.25,
+    cuantiaBasicaPct: 16.41,
+    incrementoAnualPct: 2.355,
   },
   {
     rangoMin: 5.01,
+    rangoMax: 5.25,
+    cuantiaBasicaPct: 15.61,
+    incrementoAnualPct: 2.377,
+  },
+  {
+    rangoMin: 5.26,
+    rangoMax: 5.5,
+    cuantiaBasicaPct: 14.88,
+    incrementoAnualPct: 2.398,
+  },
+  {
+    rangoMin: 5.51,
+    rangoMax: 5.75,
+    cuantiaBasicaPct: 14.22,
+    incrementoAnualPct: 2.416,
+  },
+  {
+    rangoMin: 5.76,
     rangoMax: 6.0,
-    cuantiaBasicaPct: 46.0,
-    incrementoAnualPct: 0.25,
+    cuantiaBasicaPct: 13.62,
+    incrementoAnualPct: 2.433,
   },
   {
     rangoMin: 6.01,
-    rangoMax: 7.0,
-    cuantiaBasicaPct: 43.5,
-    incrementoAnualPct: 0.25,
-  },
-  {
-    rangoMin: 7.01,
-    rangoMax: 8.0,
-    cuantiaBasicaPct: 41.0,
-    incrementoAnualPct: 0.25,
-  },
-  {
-    rangoMin: 8.01,
-    rangoMax: 9.0,
-    cuantiaBasicaPct: 39.0,
-    incrementoAnualPct: 0.25,
-  },
-  {
-    rangoMin: 9.01,
-    rangoMax: 10.0,
-    cuantiaBasicaPct: 37.5,
-    incrementoAnualPct: 0.25,
-  },
-  {
-    rangoMin: 10.01,
     rangoMax: Infinity,
-    cuantiaBasicaPct: 37.5,
-    incrementoAnualPct: 0.25,
+    cuantiaBasicaPct: 13.0,
+    incrementoAnualPct: 2.45,
   },
 ] as const;
+
+/** Días promedio por mes usados por UMA/IMSS para conversión mensual. */
+export const DIAS_PROMEDIO_MES = 30.4;
+
+/** Días por año para cálculo anual de UMA. */
+export const DIAS_ANIO_UMA = 365;
+
+/** Meses por año para cálculo anual de pensión. */
+export const MESES_POR_ANIO = 12;
 
 // ─────────────────────────────────────────────
 // Factores de edad — Cesantía en Edad Avanzada

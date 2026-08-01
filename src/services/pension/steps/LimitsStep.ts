@@ -6,7 +6,7 @@
  * Fuente: Art. 28 LSS vigente; Art. 170 LSS 1973.
  */
 import type { CalculationContext, CalculationStep } from '../types';
-import { TOPE_SBC_VECES_UMA } from '../../../constants/ley73';
+import { DIAS_PROMEDIO_MES, TOPE_SBC_VECES_UMA } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
 export const LimitsStep: CalculationStep = (ctx): CalculationContext => {
@@ -27,8 +27,8 @@ export const LimitsStep: CalculationStep = (ctx): CalculationContext => {
   // Usamos smgCdmx del registro UMA ya que el usuario seleccionó el año
   // SUPUESTO: usamos SMG de CDMX (más alto) como referencia conservadora
   // El IMSS usa el SMG de la zona del trabajador
-  const smgDiario = uma.umaDiaria; // Proxy: UMA ≈ SMG para estimación
-  const pmgMensual = round2(smgDiario * 30.4);
+  const smgDiario = uma.smgCdmx ?? uma.umaDiaria;
+  const pmgMensual = round2(smgDiario * DIAS_PROMEDIO_MES);
 
   let pensionMensual = totalBrutoDiario;
   let aplicoTope = ctx.aplicoTope;
@@ -49,7 +49,7 @@ export const LimitsStep: CalculationStep = (ctx): CalculationContext => {
     pensionMensual = pmgMensual;
     aplicoPMG = true;
     advertencias.push(
-      `La pensión calculada es menor a la Pensión Mínima Garantizada ($${pmgMensual.toFixed(2)}/mes = SMG estimado). ` +
+      `La pensión calculada es menor a la Pensión Mínima Garantizada ($${pmgMensual.toFixed(2)}/mes = SMG de referencia). ` +
         `Se aplica la PMG. (Art. 170 LSS 1973) ` +
         `ESTIMACIÓN: El IMSS usará el SMG de tu zona geográfica.`,
     );
@@ -83,7 +83,9 @@ export const LimitsStep: CalculationStep = (ctx): CalculationContext => {
     baseLegal: 'Art. 28 LSS vigente (tope); Art. 170 LSS 1973 (PMG)',
     esEstimacion: true,
     supuesto:
-      'PMG estimada usando UMA como proxy del SMG. El IMSS usará el SMG de la zona geográfica del trabajador.',
+      uma.smgCdmx
+        ? 'PMG estimada usando el SMG de referencia capturado en la configuración UMA/SMG. El IMSS usará el SMG de la zona geográfica del trabajador.'
+        : 'PMG estimada usando UMA como proxy del SMG porque no hay SMG capturado. El IMSS usará el SMG de la zona geográfica del trabajador.',
   });
 
   return {

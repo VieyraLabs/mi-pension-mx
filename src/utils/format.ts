@@ -2,6 +2,7 @@
  * Utilidades de formateo de moneda, números y fechas para la aplicación.
  * Usa Intl para formateo correcto en español mexicano (es-MX).
  */
+import { DIAS_PROMEDIO_MES } from '../constants/ley73';
 
 const LOCALE = 'es-MX';
 
@@ -76,12 +77,12 @@ export function formatDecimalAsPercent(value: number): string {
 
 /** Convierte salario mensual a diario (÷ 30.4 según IMSS) */
 export function mensualADiario(salarioMensual: number): number {
-  return parseFloat((salarioMensual / 30.4).toFixed(4));
+  return parseFloat((salarioMensual / DIAS_PROMEDIO_MES).toFixed(4));
 }
 
 /** Convierte salario diario a mensual (× 30.4 según IMSS) */
 export function diarioAMensual(salarioDiario: number): number {
-  return parseFloat((salarioDiario * 30.4).toFixed(2));
+  return parseFloat((salarioDiario * DIAS_PROMEDIO_MES).toFixed(2));
 }
 
 /** Redondea a 2 decimales para moneda */

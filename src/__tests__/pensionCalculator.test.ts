@@ -10,6 +10,7 @@ import {
   calcularEscenarioSimple,
 } from '../services/pension/PensionCalculator';
 import type { PensionInput } from '../models';
+import { DIAS_ANIO_UMA, DIAS_PROMEDIO_MES, MESES_POR_ANIO } from '../constants/ley73';
 
 // ─────────────────────────────────────────────
 // Helpers para construir inputs de prueba
@@ -30,6 +31,7 @@ function buildInput(overrides: Partial<{
   m40Salario: number;
   m40Meses: number;
   umaDiaria: number;
+  smgCdmx: number;
 }>): PensionInput {
   const {
     semanas = 500,
@@ -43,6 +45,7 @@ function buildInput(overrides: Partial<{
     m40Salario = 0,
     m40Meses = 0,
     umaDiaria = UMA_2025,
+    smgCdmx = SMG_2025,
   } = overrides;
 
   return {
@@ -59,13 +62,14 @@ function buildInput(overrides: Partial<{
     },
     salarioPromedio: {
       salarioDiario,
-      salarioMensual: parseFloat((salarioDiario * 30.4).toFixed(2)),
+      salarioMensual: parseFloat((salarioDiario * DIAS_PROMEDIO_MES).toFixed(2)),
       esManual: true,
     },
     uma: {
       umaDiaria,
-      umaMensual: parseFloat((umaDiaria * 30.4).toFixed(2)),
-      umaAnual: parseFloat((umaDiaria * 365).toFixed(2)),
+      umaMensual: parseFloat((umaDiaria * DIAS_PROMEDIO_MES).toFixed(2)),
+      umaAnual: parseFloat((umaDiaria * DIAS_ANIO_UMA).toFixed(2)),
+      smgCdmx,
       anio: 2025,
       esPersonalizada: false,
     },
@@ -135,7 +139,7 @@ describe('validarInput', () => {
 
 describe('calcularPension — Pensión de Vejez (65 años)', () => {
   test('calcula pensión básica con 500 semanas y salario bajo (≤1 UMA)', () => {
-    // Salario = 1 UMA diaria → cuantía básica 90%
+    // Salario = 1 UMA diaria → cuantía básica 80% (Art. 167 LSS 1973)
     const input = buildInput({
       semanas: 500,
       salarioDiario: UMA_2025, // exactamente 1 UMA
@@ -146,12 +150,32 @@ describe('calcularPension — Pensión de Vejez (65 años)', () => {
     expect(result.tipoPension).toBe('vejez');
     expect(result.factorEdad).toBe(1.0);
     expect(result.pensionMensual).toBeGreaterThan(0);
-    // Con 500 semanas y 90% → 90% de SBC mensual
-    const sbcMensual = UMA_2025 * 30.4;
-    const esperado = sbcMensual * 0.9; // 90%
+    // Con 500 semanas y 80% → 80% de SBC mensual
+    const sbcMensual = UMA_2025 * DIAS_PROMEDIO_MES;
+    const esperado = sbcMensual * 0.8; // 80%
     expect(result.cuantiaBasica).toBeCloseTo(esperado, 0);
     expect(result.incrementosAnuales).toBe(0); // sin excedentes
     expect(result.esEstimacion).toBe(true);
+  });
+
+  test('cuantía básica correcta con salario en el hueco entre rangos (1.005x UMA)', () => {
+    // vecesSMG = 1.005 cae entre rangoMax 1.0 y rangoMin 1.01 de la tabla original.
+    // Con el matcher antiguo (find con rangoMax) se asignaba el último rango (37.5%).
+    // Con el fix debe asignarse el rango 1.01–1.25 (77.11%).
+    const salario1005UMA = UMA_2025 * 1.005;
+    const input = buildInput({
+      semanas: 500,
+      salarioDiario: salario1005UMA,
+      edadRetiro: 65,
+    });
+    const result = calcularPension(input);
+
+    // 77.11% del SBC mensual (rango 1.01–1.25), NO 13% (último rango)
+    const sbcMensual = salario1005UMA * DIAS_PROMEDIO_MES;
+    const esperado7711 = sbcMensual * 0.7711;
+    const incorrecto13 = sbcMensual * 0.13;
+    expect(result.cuantiaBasica).toBeCloseTo(esperado7711, 0);
+    expect(result.cuantiaBasica).not.toBeCloseTo(incorrecto13, 0);
   });
 
   test('calcula incrementos anuales correctamente', () => {
@@ -164,29 +188,32 @@ describe('calcularPension — Pensión de Vejez (65 años)', () => {
     const result = calcularPension(input);
 
     expect(result.incrementosAnuales).toBeGreaterThan(0);
-    // 1 año excedente = 0.5625% del SBC mensual (primer rango)
-    const sbcMensual = UMA_2025 * 30.4;
-    const incrementoEsperado = sbcMensual * 0.005625;
+    // 1 año excedente = 0.563% del SBC mensual (primer rango)
+    const sbcMensual = UMA_2025 * DIAS_PROMEDIO_MES;
+    const incrementoEsperado = sbcMensual * 0.00563;
     expect(result.incrementosAnuales).toBeCloseTo(incrementoEsperado, 0);
   });
 
   test('mayor cantidad de semanas produce pensión mayor', () => {
-    const input500 = buildInput({ semanas: 500, salarioDiario: 300, edadRetiro: 65 });
-    const input1000 = buildInput({ semanas: 1000, salarioDiario: 300, edadRetiro: 65 });
+    const input500 = buildInput({ semanas: 500, salarioDiario: UMA_2025 * 10, edadRetiro: 65 });
+    const input1000 = buildInput({ semanas: 1000, salarioDiario: UMA_2025 * 10, edadRetiro: 65 });
 
     const result500 = calcularPension(input500);
     const result1000 = calcularPension(input1000);
 
+    expect(result1000.incrementosAnuales).toBeGreaterThan(result500.incrementosAnuales);
     expect(result1000.pensionMensual).toBeGreaterThan(result500.pensionMensual);
   });
 
   test('mayor salario produce pensión mayor (mismo número de semanas)', () => {
-    const inputBajo = buildInput({ semanas: 800, salarioDiario: 150, edadRetiro: 65 });
-    const inputAlto = buildInput({ semanas: 800, salarioDiario: 500, edadRetiro: 65 });
+    const inputBajo = buildInput({ semanas: 1200, salarioDiario: UMA_2025 * 5, edadRetiro: 65 });
+    const inputAlto = buildInput({ semanas: 1200, salarioDiario: UMA_2025 * 10, edadRetiro: 65 });
 
     const resultBajo = calcularPension(inputBajo);
     const resultAlto = calcularPension(inputAlto);
 
+    expect(resultAlto.aplicoPMG).toBe(false);
+    expect(resultBajo.aplicoPMG).toBe(false);
     expect(resultAlto.pensionMensual).toBeGreaterThan(resultBajo.pensionMensual);
   });
 
@@ -194,14 +221,14 @@ describe('calcularPension — Pensión de Vejez (65 años)', () => {
     const input = buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 65 });
     const result = calcularPension(input);
 
-    expect(result.pensionAnual).toBeCloseTo(result.pensionMensual * 12, 1);
+    expect(result.pensionAnual).toBeCloseTo(result.pensionMensual * MESES_POR_ANIO, 1);
   });
 
-  test('el monto diario es la mensual / 30.4', () => {
+  test('el monto diario es la mensual / días promedio del mes', () => {
     const input = buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 65 });
     const result = calcularPension(input);
 
-    expect(result.montoDiario).toBeCloseTo(result.pensionMensual / 30.4, 1);
+    expect(result.montoDiario).toBeCloseTo(result.pensionMensual / DIAS_PROMEDIO_MES, 1);
   });
 });
 
@@ -211,8 +238,8 @@ describe('calcularPension — Pensión de Vejez (65 años)', () => {
 
 describe('calcularPension — Cesantía en Edad Avanzada', () => {
   test('retiro a 60 años aplica factor 75%', () => {
-    const inputVejez = buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 65 });
-    const inputCesantia60 = buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 60 });
+    const inputVejez = buildInput({ semanas: 1200, salarioDiario: UMA_2025 * 10, edadRetiro: 65 });
+    const inputCesantia60 = buildInput({ semanas: 1200, salarioDiario: UMA_2025 * 10, edadRetiro: 60 });
 
     const resultVejez = calcularPension(inputVejez);
     const resultCesantia60 = calcularPension(inputCesantia60);
@@ -265,8 +292,8 @@ describe('calcularPension — Asignaciones familiares', () => {
   });
 
   test('con cónyuge suma 15% de asignación familiar', () => {
-    const inputSin = buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 65, tieneConyuge: false });
-    const inputCon = buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 65, tieneConyuge: true });
+    const inputSin = buildInput({ semanas: 1200, salarioDiario: UMA_2025 * 10, edadRetiro: 65, tieneConyuge: false });
+    const inputCon = buildInput({ semanas: 1200, salarioDiario: UMA_2025 * 10, edadRetiro: 65, tieneConyuge: true });
 
     const resultSin = calcularPension(inputSin);
     const resultCon = calcularPension(inputCon);

@@ -82,6 +82,8 @@ export interface ConfiguracionUMA {
   umaMensual: number;
   /** UMA anual (umaDiaria * 365) */
   umaAnual: number;
+  /** Salario Mínimo General diario aplicable como referencia (ZSMG/CDMX) */
+  smgCdmx?: number;
   /** Año de la UMA seleccionada */
   anio: number;
   /** Si fue capturada manualmente por el usuario */

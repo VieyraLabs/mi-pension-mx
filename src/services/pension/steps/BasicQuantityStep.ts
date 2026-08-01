@@ -6,25 +6,36 @@
  * Fuente: Art. 167 LSS 1973 — Tabla de cuantías básicas.
  */
 import type { CalculationContext, CalculationStep } from '../types';
-import { TABLA_ART167 } from '../../../constants/ley73';
+import { DIAS_PROMEDIO_MES, TABLA_ART167 } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
 /**
  * Busca la entrada de la tabla Art. 167 correspondiente al salario
  * expresado en veces el Salario Mínimo General (SMG).
+ *
+ * Primero intenta una coincidencia exacta dentro de rango. Si el valor cae
+ * en un hueco decimal entre rangos (p. ej. 1.0 → 1.01), selecciona el
+ * siguiente rango por su límite superior. Esto evita que valores intermedios
+ * caigan en un fallback incorrecto.
  */
 function buscarEntradaTabla(vecesSMG: number) {
-  const entrada = TABLA_ART167.find(
+  const entradaExacta = TABLA_ART167.find(
     (e) => vecesSMG >= e.rangoMin && vecesSMG <= e.rangoMax,
   );
-  // Fallback al último rango si excede el máximo
-  return entrada ?? TABLA_ART167[TABLA_ART167.length - 1]!;
+
+  if (entradaExacta) {
+    return entradaExacta;
+  }
+
+  const siguienteEntrada = TABLA_ART167.find((e) => vecesSMG <= e.rangoMax);
+
+  // Fallback defensivo: primer rango para valores menores al mínimo,
+  // último rango para valores superiores al máximo definido.
+  return siguienteEntrada ?? TABLA_ART167[TABLA_ART167.length - 1]!;
 }
 
 export const BasicQuantityStep: CalculationStep = (ctx): CalculationContext => {
   const { input, salarioEfectivoDiario } = ctx;
-  const { uma } = input;
-  const smgDiario = uma.anio <= 2026 ? input.uma.umaDiaria : input.uma.umaDiaria;
   const pasos = [...ctx.pasos];
   const advertencias = [...ctx.advertencias];
 
@@ -42,7 +53,7 @@ export const BasicQuantityStep: CalculationStep = (ctx): CalculationContext => {
   const vecesSMG = salarioEfectivoDiario / smgRef;
   const entrada = buscarEntradaTabla(vecesSMG);
 
-  const salarioMensualEfectivo = round2(salarioEfectivoDiario * 30.4);
+  const salarioMensualEfectivo = round2(salarioEfectivoDiario * DIAS_PROMEDIO_MES);
   const cuantiaBasicaMensual = round2(salarioMensualEfectivo * (entrada.cuantiaBasicaPct / 100));
 
   advertencias.push(
