@@ -35,10 +35,15 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
     };
 
     // ─── Nombre ───────────────────────────────────────────
-    const nombreMatch = text.match(/(?:nombre[:\s]+|trabajador[:\s]+)([A-ZÁÉÍÓÚÑÜ ]{5,60})/i);
-    if (nombreMatch?.[1]) {
-      datos.nombre = nombreMatch[1].trim();
-    } else {
+    // NOTA IMPORTANTE: el orden de texto que entrega la extracción de PDF
+    // (pdfjs-dist) sigue el orden de dibujado del content stream, NO el
+    // orden visual de lectura. En la Constancia de Semanas Cotizadas, el
+    // nombre del asegurado puede aparecer intercalado entre otras etiquetas
+    // (p. ej. entre "NSS:" y el número de NSS) en vez de justo después de
+    // un rótulo "Nombre:". Por eso se prueban varias estrategias en orden
+    // de confiabilidad, en vez de asumir adyacencia estricta.
+    datos.nombre = extraerNombre(text) ?? undefined;
+    if (!datos.nombre) {
       camposFaltantes.push('Nombre');
     }
 
@@ -51,9 +56,12 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
     }
 
     // ─── NSS ───────────────────────────────────────────
-    const nssMatch = text.match(/(?:nss|n\.s\.s\.|número de seguridad social)[:\s]*(\d{10,11})/i);
-    if (nssMatch?.[1]) {
-      datos.nss = nssMatch[1].trim();
+    // El valor no siempre está inmediatamente después de la etiqueta (puede
+    // haber otro texto intercalado por el orden de extracción); se busca en
+    // una ventana posterior a la etiqueta en vez de exigir adyacencia.
+    const nssValor = buscarValorTrasEtiqueta(text, /(?:nss|n\.s\.s\.|número de seguridad social)/i, /\b(\d{10,11})\b/);
+    if (nssValor) {
+      datos.nss = nssValor;
     } else {
       camposFaltantes.push('NSS');
     }
@@ -83,13 +91,22 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
     }
 
     // ─── Último SBC ───────────────────────────────────────────
-    const sbcMatch = text.match(
-      /(?:salario base de cotización|sbc|último salario)[:\s]*\$?\s*(\d{1,6}(?:[.,]\d{1,4})?)/i,
+    // Igual que con NSS: el monto puede no estar inmediatamente después de
+    // la etiqueta (p. ej. "Entidad federativa" puede intercalarse antes del
+    // valor). Se asume que la primera ocurrencia de la etiqueta en el texto
+    // corresponde al registro más reciente (los patrones se listan en orden
+    // reverso-cronológico en la constancia).
+    const sbcValor = buscarValorTrasEtiqueta(
+      text,
+      /(?:salario base de cotización|sbc|último salario)/i,
+      /\$?\s*(\d{1,6}(?:[.,]\d{1,4})?)/,
     );
-    if (sbcMatch?.[1]) {
-      const valor = parseFloat(sbcMatch[1].replace(',', '.'));
+    if (sbcValor) {
+      const valor = parseFloat(sbcValor.replace(',', '.'));
       if (!isNaN(valor) && valor > 0) {
         datos.ultimoSBC = valor;
+      } else {
+        camposFaltantes.push('Último SBC');
       }
     } else {
       camposFaltantes.push('Último SBC');
@@ -103,8 +120,8 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
 
     // ─── Sexo ───────────────────────────────────────────
     if (datos.curp) {
-      // El 10° carácter de la CURP indica el sexo: H=masculino, M=femenino
-      const sexoChar = datos.curp[9];
+      // El 11° carácter de la CURP (índice 10) indica el sexo: H=masculino, M=femenino
+      const sexoChar = datos.curp[10];
       if (sexoChar === 'H') datos.sexo = 'masculino';
       else if (sexoChar === 'M') datos.sexo = 'femenino';
     }
@@ -134,3 +151,72 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
     };
   },
 };
+
+/**
+ * Busca la primera ocurrencia de `etiquetaRegex` y, dentro de una ventana de
+ * texto posterior a ella (no necesariamente adyacente), busca `valorRegex`.
+ * Necesario porque el orden de extracción de pdfjs-dist sigue el orden de
+ * dibujado del PDF, que puede intercalar texto no relacionado entre una
+ * etiqueta y su valor.
+ */
+function buscarValorTrasEtiqueta(
+  text: string,
+  etiquetaRegex: RegExp,
+  valorRegex: RegExp,
+  ventana = 200,
+): string | null {
+  const etiquetaMatch = text.match(etiquetaRegex);
+  if (!etiquetaMatch || etiquetaMatch.index === undefined) return null;
+
+  const inicio = etiquetaMatch.index + etiquetaMatch[0].length;
+  const ventanaTexto = text.slice(inicio, inicio + ventana);
+  return ventanaTexto.match(valorRegex)?.[1]?.trim() ?? null;
+}
+
+/** Normaliza un candidato a nombre y descarta los que claramente no lo son. */
+function limpiarCandidatoNombre(candidato: string | undefined): string | null {
+  if (!candidato) return null;
+  const limpio = candidato.split('\n')[0]?.trim().replace(/\s+/g, ' ') ?? '';
+  if (limpio.length < 5 || limpio.length > 80) return null;
+  if (/patr[oó]n|registro|entidad|federativa/i.test(limpio)) return null;
+  return limpio.toUpperCase();
+}
+
+/**
+ * Extrae el nombre del asegurado probando varias estrategias en orden de
+ * confiabilidad, ya que el orden de texto extraído no es fiable como
+ * indicador de adyacencia visual (ver nota en el llamador).
+ */
+function extraerNombre(text: string): string | null {
+  // 1. Campos estructurados de la "cadena original" del sello digital
+  //    (Apellido Paterno / Apellido Materno / Nombre del Asegurado).
+  //    Es la fuente más confiable cuando está presente.
+  const apPaterno = text.match(/apellido\s*paterno\s*:\s*([a-záéíóúñ]+)/i)?.[1];
+  const apMaterno = text.match(/apellido\s*materno\s*:\s*([a-záéíóúñ]+)/i)?.[1];
+  const nombreAsegurado = text.match(/nombre\s*del\s*asegurado\s*:\s*([a-záéíóúñ]+)/i)?.[1];
+  if (nombreAsegurado || apPaterno || apMaterno) {
+    const completo = [nombreAsegurado, apPaterno, apMaterno].filter(Boolean).join(' ');
+    const limpio = limpiarCandidatoNombre(completo);
+    if (limpio) return limpio;
+  }
+
+  // 2. El nombre puede aparecer intercalado entre la etiqueta "NSS:" y su
+  //    valor numérico (ver nota en el llamador sobre el orden de extracción).
+  const entreNssYValor = text.match(/nss[:\s]*\n?\s*([a-záéíóúñü ]{5,60})\n?\s*\d{10,11}/i)?.[1];
+  const candidatoNss = limpiarCandidatoNombre(entreNssYValor);
+  if (candidatoNss) return candidatoNss;
+
+  // 3. Saludo "Estimado(a), NOMBRE" (formato de constancia de semanas).
+  const saludo = text.match(/estimado\(a\)[,:]?\s*([a-záéíóúñü ]{5,60})/i)?.[1];
+  const candidatoSaludo = limpiarCandidatoNombre(saludo);
+  if (candidatoSaludo) return candidatoSaludo;
+
+  // 4. Etiqueta explícita "Nombre:" / "Trabajador:" (otros tipos de
+  //    documento). Se excluye "Nombre del patrón" para no confundir el
+  //    nombre del asegurado con el de un empleador.
+  const etiqueta = text.match(/\b(?:nombre|trabajador)\b(?!\s*del\s*patr)[:\s]+([a-záéíóúñü ]{5,60})/i)?.[1];
+  const candidatoEtiqueta = limpiarCandidatoNombre(etiqueta);
+  if (candidatoEtiqueta) return candidatoEtiqueta;
+
+  return null;
+}
