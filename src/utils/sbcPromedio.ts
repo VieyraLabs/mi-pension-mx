@@ -34,12 +34,11 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
  * Calcula el SBC promedio ponderado por días dentro de la ventana de
  * `weeks` semanas previas a `referenceDate`.
  *
- * Si dos o más periodos se traslapan (más de un patrón simultáneo), cada
- * día de traslape se cuenta UNA sola vez — nunca una vez por patrón — y se
- * usa el SBC más alto entre los patrones activos ese día. De lo contrario
- * los días simultáneos se contarían de más (inflando `daysCovered` más
- * allá de los días reales de la ventana) y el promedio quedaría subestimado
- * al dividir entre más días de los que en realidad hay.
+ * Si dos o más periodos se traslapan (más de un patrón simultáneo), el SBC
+ * de esos días es la SUMA de los SBC de los patrones activos (integración
+ * de salarios por empleo simultáneo), pero esos días de traslape se cuentan
+ * UNA sola vez — nunca una vez por patrón — en `daysCovered`: las semanas
+ * cotizadas no se duplican por tener más de un patrón a la vez.
  *
  * @returns null si no hay periodos o ninguno se traslapa con la ventana.
  */
@@ -67,7 +66,7 @@ export function calculateWeightedAverageSBC(
 
   // Barrido de intervalos: entre cada par de fronteras consecutivas (inicio
   // o fin de algún periodo recortado), se determina qué periodos siguen
-  // activos y se toma el SBC más alto entre ellos para ese tramo.
+  // activos y se suman sus SBC para ese tramo.
   const boundaries = [...new Set(clipped.flatMap((p) => [p.start, p.end]))].sort((a, b) => a - b);
 
   let weightedSum = 0;
@@ -82,7 +81,8 @@ export function calculateWeightedAverageSBC(
     if (activeSbcs.length === 0) continue;
 
     const days = (segmentEnd - segmentStart) / MS_PER_DAY;
-    weightedSum += days * Math.max(...activeSbcs);
+    const combinedSbc = activeSbcs.reduce((sum, sbc) => sum + sbc, 0);
+    weightedSum += days * combinedSbc;
     daysCovered += days;
   }
 

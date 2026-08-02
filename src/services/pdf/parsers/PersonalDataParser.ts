@@ -156,7 +156,7 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
               ? ''
               : ' Tu historial no cubre las 250 semanas completas; el promedio se calculó solo con los días disponibles.') +
             (workHistoryResult.hadOverlap
-              ? ' Detectamos periodos con más de un patrón simultáneo; para esos días se usó el SBC más alto entre ellos, sin duplicar las semanas cotizadas.'
+              ? ' Detectamos periodos con más de un patrón simultáneo; para esos días se sumaron los SBC de los patrones, sin duplicar las semanas cotizadas.'
               : '') +
             (workHistoryResult.usesPastReferenceDate
               ? ` Como tu historial no indica que sigas cotizando actualmente, se usó tu fecha de baja más reciente (${workHistoryResult.referenceDate.toLocaleDateString('es-MX')}) como referencia en vez de la fecha de hoy.`

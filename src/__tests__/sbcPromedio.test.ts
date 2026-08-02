@@ -70,11 +70,11 @@ describe('calcularSbcPromedioPonderado', () => {
     expect(resultado?.isComplete).toBe(true);
   });
 
-  test('cuando dos patrones se traslapan, usa el SBC más alto en esos días sin duplicarlos', () => {
+  test('cuando dos patrones se traslapan, suma sus SBC en esos días sin duplicar los días', () => {
     const hoy = new Date(2026, 0, 1);
     const inicioVentana = new Date(hoy.getTime() - SEMANAS * 7 * 24 * 60 * 60 * 1000);
     // Patrón A cubre toda la ventana (1750 días) con SBC 100.
-    // Patrón B se traslapa con los últimos 100 días de A con un SBC mayor (500).
+    // Patrón B se traslapa con los últimos 100 días de A con SBC 500.
     const resultado = calculateWeightedAverageSBC(
       [
         { startDate: inicioVentana, endDate: hoy, sbc: 100 },
@@ -83,8 +83,8 @@ describe('calcularSbcPromedioPonderado', () => {
       hoy,
       SEMANAS,
     );
-    // 1650 días × 100 + 100 días (traslapados, SBC más alto) × 500 = 215000 ÷ 1750 días.
-    expect(resultado?.average).toBeCloseTo(122.86, 1);
+    // 1650 días × 100 + 100 días (traslapados, SBC sumado 100+500=600) × 600 = 225000 ÷ 1750 días.
+    expect(resultado?.average).toBeCloseTo(128.57, 1);
     // Los 100 días traslapados se cuentan una sola vez, no una vez por patrón.
     expect(resultado?.daysCovered).toBe(1750);
     expect(resultado?.isComplete).toBe(true);
