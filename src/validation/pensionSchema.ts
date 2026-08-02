@@ -4,6 +4,7 @@
  */
 import { z } from 'zod';
 import { MINIMUM_WEEKS_VEJEZ } from '../constants/ley73';
+import { calculateM40PlannedWeeks } from '../utils/modalidad40';
 
 // ─────────────────────────────────────────────
 // Esquemas base
@@ -27,13 +28,13 @@ export const PersonalDataSchema = z.object({
 });
 
 export const WorkHistorySchema = z.object({
+  // El mínimo de 500 semanas (Arts. 138 y 145 LSS 1973) se valida a nivel de
+  // PensionInputSchema (ver más abajo), no aquí — considera también las
+  // semanas proyectadas por Modalidad 40, que viven en otro campo.
   totalWeeks: z
     .number({ required_error: 'Las semanas cotizadas son requeridas' })
     .int('Las semanas deben ser un número entero')
-    .min(
-      MINIMUM_WEEKS_VEJEZ,
-      `Se requieren mínimo ${MINIMUM_WEEKS_VEJEZ} semanas cotizadas (Arts. 138 y 145 LSS 1973).`,
-    )
+    .min(0, 'Las semanas cotizadas no pueden ser negativas')
     .max(5000, 'El número de semanas parece incorrecto (máximo 5000)'),
   recognizedWeeks: z.number().int().min(0).optional(),
   deductedWeeks: z.number().int().min(0).optional(),
@@ -90,14 +91,33 @@ export const BeneficiariesSchema = z.object({
 // Esquema completo del formulario
 // ─────────────────────────────────────────────
 
-export const PensionInputSchema = z.object({
-  personalData: PersonalDataSchema,
-  workHistory: WorkHistorySchema,
-  averageSalary: AverageContributionSalarySchema,
-  uma: UMAConfigurationSchema,
-  modalidad40: Modalidad40Schema,
-  beneficiaries: BeneficiariesSchema,
-});
+export const PensionInputSchema = z
+  .object({
+    personalData: PersonalDataSchema,
+    workHistory: WorkHistorySchema,
+    averageSalary: AverageContributionSalarySchema,
+    uma: UMAConfigurationSchema,
+    modalidad40: Modalidad40Schema,
+    beneficiaries: BeneficiariesSchema,
+  })
+  .superRefine((data, ctx) => {
+    // El mínimo de 500 semanas considera tanto las ya cotizadas como las
+    // proyectadas por los meses de Modalidad 40 que el usuario planea
+    // contratar a futuro (no incluidas en workHistory.totalWeeks).
+    const m40PlannedWeeks = calculateM40PlannedWeeks(data.modalidad40);
+    const effectiveWeeks = data.workHistory.totalWeeks + m40PlannedWeeks;
+    if (effectiveWeeks < MINIMUM_WEEKS_VEJEZ) {
+      const detail =
+        m40PlannedWeeks > 0
+          ? ` (${data.workHistory.totalWeeks} cotizadas + ${m40PlannedWeeks} planeadas en Modalidad 40 = ${effectiveWeeks})`
+          : '';
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['workHistory', 'totalWeeks'],
+        message: `Se requieren mínimo ${MINIMUM_WEEKS_VEJEZ} semanas cotizadas (Arts. 138 y 145 LSS 1973)${detail}.`,
+      });
+    }
+  });
 
 export type PensionInputForm = z.infer<typeof PensionInputSchema>;
 

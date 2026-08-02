@@ -239,6 +239,9 @@ export const SBC_AVERAGE_WEEKS = 250;
 /** Semanas que representan un año cotizado (para incrementos anuales) */
 export const WEEKS_PER_YEAR = 52;
 
+/** Semanas promedio por mes (52 ÷ 12), para proyectar meses de Modalidad 40 a semanas. */
+export const WEEKS_PER_MONTH = WEEKS_PER_YEAR / 12;
+
 // ─────────────────────────────────────────────
 // Asignaciones familiares y ayuda asistencial
 // Arts. 163–165 LSS 1973

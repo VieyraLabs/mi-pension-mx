@@ -131,6 +131,67 @@ describe('validateInput', () => {
     expect(result.valid).toBe(true);
     expect(result.warnings.length).toBeGreaterThan(0);
   });
+
+  test('rechaza semanas menores a 500 aunque falte poco, si Modalidad 40 no está activa', () => {
+    const input = buildInput({ semanas: 480 });
+    const result = validateInput(input);
+    expect(result.valid).toBe(false);
+  });
+
+  test('acepta semanas menores a 500 cuando Modalidad 40 planeada completa el mínimo', () => {
+    // 480 semanas ya cotizadas + 24 meses de M40 (~104 semanas) = 584, sí alcanza el mínimo.
+    const input = buildInput({ semanas: 480, modalidad40Activa: true, m40Salario: 300, m40Meses: 24 });
+    const result = validateInput(input);
+    expect(result.valid).toBe(true);
+  });
+
+  test('rechaza semanas menores a 500 si ni con Modalidad 40 planeada se alcanza el mínimo', () => {
+    // 400 semanas + 6 meses de M40 (~26 semanas) = 426, no alcanza.
+    const input = buildInput({ semanas: 400, modalidad40Activa: true, m40Salario: 300, m40Meses: 6 });
+    const result = validateInput(input);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('planeadas en Modalidad 40'))).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────
+// Modalidad 40 — semanas proyectadas
+// ─────────────────────────────────────────────
+//
+// Los meses de Modalidad 40 que el usuario planea contratar a futuro
+// (`expectedMonths`) no están incluidos en `workHistory.totalWeeks` — deben
+// sumarse al total de semanas usado para el mínimo de 500 y los incrementos
+// anuales, no solo usarse para el promedio ponderado del SBC.
+
+describe('calculatePension — Modalidad 40 (semanas proyectadas)', () => {
+  test('las semanas planeadas de Modalidad 40 se suman a las semanas excedentes', () => {
+    // 500 semanas ya cotizadas (0 excedentes por sí solas) + 52 semanas
+    // proyectadas por 12 meses de M40 = 552 → 52 excedentes → 1 año completo.
+    // Se compara el paso de incrementos directamente (no la pensión final)
+    // para no depender de si la Pensión Mínima Garantizada u otro tope
+    // termina dominando el resultado con un salario de prueba dado.
+    const sinM40 = calculatePension(buildInput({ semanas: 500 }));
+    const conM40 = calculatePension(
+      buildInput({ semanas: 500, modalidad40Activa: true, m40Salario: 200, m40Meses: 12 }),
+    );
+
+    const pasoSinM40 = sinM40.steps.find((p) => p.id === 'incrementos_anuales');
+    const pasoConM40 = conM40.steps.find((p) => p.id === 'incrementos_anuales');
+
+    expect(pasoSinM40?.description).not.toMatch(/Modalidad 40/i);
+    expect(pasoSinM40?.value).toBe(0);
+    expect(pasoConM40?.description).toMatch(/552/);
+    expect(pasoConM40?.description).toMatch(/Modalidad 40/i);
+    // 52 semanas excedentes = 1 año completo de incremento, en vez de 0.
+    expect(pasoConM40?.value).toBeGreaterThan(0);
+  });
+
+  test('sin Modalidad 40 activa, las semanas proyectadas no se suman', () => {
+    const input = buildInput({ semanas: 500, modalidad40Activa: false, m40Meses: 12 });
+    const result = calculatePension(input);
+    const paso = result.steps.find((p) => p.id === 'incrementos_anuales');
+    expect(paso?.description).not.toMatch(/Modalidad 40/i);
+  });
 });
 
 // ─────────────────────────────────────────────

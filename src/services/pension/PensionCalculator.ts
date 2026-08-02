@@ -20,6 +20,7 @@ import { AssistanceAidStep } from './steps/AssistanceAidStep';
 import { LimitsStep } from './steps/LimitsStep';
 import { DAYS_PER_YEAR_UMA, AVERAGE_DAYS_PER_MONTH, MONTHS_PER_YEAR, MINIMUM_WEEKS_VEJEZ } from '../../constants/ley73';
 import { round2 } from '../../utils/format';
+import { calculateM40PlannedWeeks } from '../../utils/modalidad40';
 import { PensionInputSchema } from '../../validation/pensionSchema';
 
 /** Resultado de validación previa al cálculo. */
@@ -40,7 +41,7 @@ export function validateInput(input: PensionInput): ValidationResult {
   const parseResult = PensionInputSchema.safeParse(input);
   const errors = parseResult.success ? [] : parseResult.error.issues.map((issue) => issue.message);
 
-  const weeks = input.workHistory.totalWeeks;
+  const weeks = input.workHistory.totalWeeks + calculateM40PlannedWeeks(input.modalidad40);
   if (weeks >= MINIMUM_WEEKS_VEJEZ && weeks < 520) {
     warnings.push(
       'Tienes justo el mínimo de semanas. Considera cotizar más para incrementar tu pensión.',

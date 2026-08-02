@@ -10,6 +10,8 @@ import {
   MODALIDAD_40_CAP_TIMES_UMA,
   SBC_AVERAGE_WEEKS,
   SBC_CAP_TIMES_UMA,
+  WEEKS_PER_MONTH,
+  WEEKS_PER_YEAR,
 } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
@@ -41,14 +43,14 @@ export const AverageSalaryStep: CalculationStep = (ctx): CalculationContext => {
     // Semanas totales del período de referencia
     const referenceWeeks = SBC_AVERAGE_WEEKS; // 250
     // Semanas de M40 dentro del período de referencia
-    const m40Weeks = Math.min(modalidad40.expectedMonths * 4.33, referenceWeeks);
+    const m40Weeks = Math.min(modalidad40.expectedMonths * WEEKS_PER_MONTH, referenceWeeks);
     const baseWeeks = referenceWeeks - m40Weeks;
 
     // Incremento anual de M40 si aplica
     let adjustedDailyM40Salary = sbcM40Topado;
     if (modalidad40.annualSalaryIncrease && modalidad40.annualSalaryIncrease > 0) {
       // Para simplificar, aplicamos el incremento promedio en la mitad del período
-      const m40Years = m40Weeks / 52;
+      const m40Years = m40Weeks / WEEKS_PER_YEAR;
       const increaseFactor = 1 + (modalidad40.annualSalaryIncrease / 100) * (m40Years / 2);
       adjustedDailyM40Salary = Math.min(sbcM40Topado * increaseFactor, MODALIDAD_40_CAP_TIMES_UMA * uma.dailyUMA);
       isSalaryEstimate = true;

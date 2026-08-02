@@ -8,10 +8,16 @@
 import type { CalculationContext, CalculationStep } from '../types';
 import { DAYS_PER_YEAR_UMA, MINIMUM_WEEKS_VEJEZ, WEEKS_PER_YEAR } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
+import { calculateM40PlannedWeeks } from '../../../utils/modalidad40';
 
 export const AnnualIncrementsStep: CalculationStep = (ctx): CalculationContext => {
   const { input, basicAmount, annualIncrementPct, effectiveDailySalary } = ctx;
-  const totalWeeks = input.workHistory.totalWeeks;
+  const contributedWeeks = input.workHistory.totalWeeks;
+  // Meses de Modalidad 40 que el usuario planea contratar a futuro: no están
+  // incluidos en las semanas ya cotizadas, así que se suman al total con el
+  // que se calculan el mínimo de 500 semanas y los incrementos anuales.
+  const m40PlannedWeeks = calculateM40PlannedWeeks(input.modalidad40);
+  const totalWeeks = contributedWeeks + m40PlannedWeeks;
   const steps = [...ctx.steps];
 
   // Semanas excedentes sobre el mínimo
@@ -31,13 +37,20 @@ export const AnnualIncrementsStep: CalculationStep = (ctx): CalculationContext =
     id: 'incrementos_anuales',
     title: '3. Incrementos Anuales por Semanas Excedentes',
     description:
-      `Semanas totales: ${totalWeeks} − 500 mínimas = ${excessWeeks} excedentes → ` +
+      (m40PlannedWeeks > 0
+        ? `Semanas totales: ${contributedWeeks} cotizadas + ${m40PlannedWeeks} planeadas en Modalidad 40 = ${totalWeeks} `
+        : `Semanas totales: ${totalWeeks} `) +
+      `− 500 mínimas = ${excessWeeks} excedentes → ` +
       `${excessYears} años completos × ${annualIncrementPct}% × $${effectiveDailySalary.toFixed(2)}/día × 365 días = ` +
       `$${annualIncrement.toFixed(2)}/año → $${annualIncrements.toFixed(2)}/mes adicionales`,
     value: annualIncrements,
     formula: `floor((semanas − 500) / 52) × ${annualIncrementPct}% × SBC_diario × 365 ÷ 12`,
     legalBasis: 'Art. 167 LSS 1973 — incrementos anuales por semanas adicionales',
-    isEstimate: false,
+    isEstimate: m40PlannedWeeks > 0,
+    assumption:
+      m40PlannedWeeks > 0
+        ? 'Incluye las semanas proyectadas por los meses de Modalidad 40 que planeas contratar, además de las ya cotizadas.'
+        : undefined,
   });
 
   steps.push({
