@@ -54,6 +54,16 @@ describe('importPdf', () => {
     expect(result.error).toBe('No se seleccionó ningún archivo.');
   });
 
+  test('pide explícitamente base64 al selector de archivos (necesario en web)', async () => {
+    mockGetDocumentAsync.mockResolvedValue({ canceled: true, assets: null });
+
+    await importPdf();
+
+    expect(mockGetDocumentAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ base64: true }),
+    );
+  });
+
   test('extrae el texto de una data: URL (flujo web) y lo devuelve cuando es suficiente', async () => {
     const base64 = 'Y29udGVuaWRvLWRlLXBydWViYQ==';
     mockGetDocumentAsync.mockResolvedValue({
@@ -67,6 +77,30 @@ describe('importPdf', () => {
     expect(result.ok).toBe(true);
     expect(result.data?.extractedText).toBe(LONG_TEXT);
     expect(result.missingFields).toEqual([]);
+    expect(mockExtractPdfText).toHaveBeenCalledWith(base64);
+  });
+
+  test('en web, lee el contenido de asset.base64 aunque asset.uri sea un blob: URL', async () => {
+    // Regresión: expo-document-picker@57 en web devuelve `uri` como
+    // blob:... (URL.createObjectURL) sin el contenido del archivo; el
+    // data: URL real solo llega en `asset.base64` cuando se pide
+    // explícitamente `base64: true`.
+    const base64 = 'Y29udGVuaWRvLWRlLXBydWViYQ==';
+    mockGetDocumentAsync.mockResolvedValue({
+      canceled: false,
+      assets: [
+        {
+          uri: 'blob:http://localhost:8081/1234-5678',
+          base64: `data:application/pdf;base64,${base64}`,
+        },
+      ],
+    });
+    mockExtractPdfText.mockResolvedValue(LONG_TEXT);
+
+    const result = await importPdf();
+
+    expect(result.ok).toBe(true);
+    expect(result.data?.extractedText).toBe(LONG_TEXT);
     expect(mockExtractPdfText).toHaveBeenCalledWith(base64);
   });
 

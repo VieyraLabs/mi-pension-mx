@@ -36,6 +36,11 @@ export async function importPdf(): Promise<ParseResult<ImportResult>> {
     fileResult = await DocumentPicker.getDocumentAsync({
       type: 'application/pdf',
       copyToCacheDirectory: true,
+      // En web, expo-document-picker@57 solo llena `asset.base64` (como
+      // data: URL) cuando se pide explícitamente; sin esto, `asset.uri`
+      // es un blob: URL (URL.createObjectURL) que no trae el contenido
+      // del archivo de forma legible.
+      base64: true,
     });
   } catch {
     return {
@@ -57,15 +62,19 @@ export async function importPdf(): Promise<ParseResult<ImportResult>> {
 
   const asset = fileResult.assets[0];
   const uri = asset.uri;
+  // En web, expo-document-picker@57 entrega el contenido como data: URL en
+  // `asset.base64` (solicitado explícitamente arriba con `base64: true`);
+  // `asset.uri` en web es un blob: URL (URL.createObjectURL) sin el
+  // contenido del archivo. En nativo, `asset.base64` no existe.
+  const dataUrl = asset.base64 ?? (uri.startsWith('data:') ? uri : undefined);
 
   // 2. Leer el contenido del archivo como base64.
-  // En web, expo-document-picker entrega la URI como data: URL (vía
-  // FileReader.readAsDataURL) y expo-file-system no está implementado
-  // (es un shim sin acceso real al filesystem), por lo que ahí se extrae
-  // el base64 directamente de la data: URL en vez de usar FileSystem.
+  // En web no se usa expo-file-system (es un shim sin acceso real al
+  // filesystem), por lo que ahí se extrae el base64 directamente del
+  // data: URL en vez de usar FileSystem.
   let base64Content: string;
-  if (Platform.OS === 'web' || uri.startsWith('data:')) {
-    const match = uri.match(/^data:[^;]*;base64,(.*)$/);
+  if (Platform.OS === 'web' || dataUrl) {
+    const match = dataUrl?.match(/^data:[^;]*;base64,(.*)$/);
     if (!match?.[1]) {
       return {
         ok: false,
