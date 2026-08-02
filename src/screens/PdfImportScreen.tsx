@@ -56,7 +56,7 @@ export default function PdfImportScreen() {
         <Card.Title title="¿Cómo funciona?" titleVariant="titleMedium" />
         <Card.Content>
           {[
-            '1. Descarga tu Constancia de Semanas Cotizadas desde el portal del IMSS (imss.gob.mx)',
+            '1. Descarga tu Constancia de Semanas Cotizadas desde el portal del IMSS (imss.gob.mx) — marca la casilla de incluir el "Historial de Registros Afiliatorios" para que traiga el detalle de modificaciones salariales; sin eso no se puede calcular tu SBC (Salario Base de Cotización) promedio automáticamente',
             '2. Selecciona el archivo PDF desde tu dispositivo',
             '3. La aplicación extrae los datos automáticamente',
             '4. Revisa y corrige la información extraída antes de calcular',
