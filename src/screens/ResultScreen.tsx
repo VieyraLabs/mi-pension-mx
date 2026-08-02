@@ -3,8 +3,8 @@
  * Muestra el resumen, resultado principal y desglose detallado.
  */
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Share } from 'react-native';
-import { Text, Card, Button, Divider, useTheme, Chip, List } from 'react-native-paper';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text, Card, Button, Divider, useTheme, Chip } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -12,6 +12,9 @@ import { useHistory } from '../hooks/useHistory';
 import { generarPDF } from '../services/export/pdfExport';
 import { formatCurrency, formatPercent, formatInteger } from '../utils/format';
 import { mostrarAlerta } from '../utils/alert';
+import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
+import { EmptyState } from '../components/EmptyState';
+import { SummaryRow } from '../components/SummaryRow';
 import type { PensionResult } from '../models';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -31,14 +34,11 @@ export default function ResultScreen() {
 
   if (!resultado) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <Text variant="bodyLarge" style={{ color: theme.colors.onBackground }}>
-          No hay resultado disponible.
-        </Text>
-        <Button mode="contained" onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
-          Volver
-        </Button>
-      </View>
+      <EmptyState
+        mensaje="No hay resultado disponible."
+        textoBoton="Volver"
+        onPressBoton={() => navigation.goBack()}
+      />
     );
   }
 
@@ -46,7 +46,8 @@ export default function ResultScreen() {
     setExportando(true);
     try {
       await generarPDF(resultado);
-    } catch (e) {
+    } catch (error) {
+      console.error('[ResultScreen] Error al generar el PDF:', error);
       mostrarAlerta('Error', 'No se pudo generar el PDF. Intenta de nuevo.');
     } finally {
       setExportando(false);
@@ -58,14 +59,7 @@ export default function ResultScreen() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={styles.content}
     >
-      {/* Banner de estimación */}
-      <Card style={[styles.bannerCard, { backgroundColor: '#FFF8E1' }]} elevation={0}>
-        <Card.Content>
-          <Text variant="labelSmall" style={{ color: '#795548' }}>
-            ⚠️ ESTIMACIÓN — Resultado con fines informativos. La resolución oficial corresponde al IMSS.
-          </Text>
-        </Card.Content>
-      </Card>
+      <EstimationDisclaimerCard />
 
       {/* Resumen */}
       <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={2}>
@@ -73,15 +67,15 @@ export default function ResultScreen() {
         <Divider />
         <Card.Content style={{ paddingTop: 12 }}>
           {resultado.input.datosPersonales.nombre && (
-            <ResumenRow label="Nombre" value={resultado.input.datosPersonales.nombre} theme={theme} />
+            <SummaryRow label="Nombre" value={resultado.input.datosPersonales.nombre} theme={theme} />
           )}
-          <ResumenRow label="Edad de retiro" value={`${resultado.input.datosPersonales.edadRetiro} años`} theme={theme} />
-          <ResumenRow label="Tipo de pensión" value={resultado.tipoPension === 'vejez' ? 'Vejez (Art. 145)' : 'Cesantía Edad Avanzada (Art. 138)'} theme={theme} />
-          <ResumenRow label="Semanas cotizadas" value={formatInteger(resultado.input.historialLaboral.semanasTotales)} theme={theme} />
-          <ResumenRow label="Salario diario promedio" value={formatCurrency(resultado.input.salarioPromedio.salarioDiario)} theme={theme} />
-          <ResumenRow label="UMA utilizada" value={`$${resultado.input.uma.umaDiaria}/día (${resultado.input.uma.anio}${resultado.input.uma.esPersonalizada ? ', personalizada' : ''})`} theme={theme} />
+          <SummaryRow label="Edad de retiro" value={`${resultado.input.datosPersonales.edadRetiro} años`} theme={theme} />
+          <SummaryRow label="Tipo de pensión" value={resultado.tipoPension === 'vejez' ? 'Vejez (Art. 145)' : 'Cesantía Edad Avanzada (Art. 138)'} theme={theme} />
+          <SummaryRow label="Semanas cotizadas" value={formatInteger(resultado.input.historialLaboral.semanasTotales)} theme={theme} />
+          <SummaryRow label="Salario diario promedio" value={formatCurrency(resultado.input.salarioPromedio.salarioDiario)} theme={theme} />
+          <SummaryRow label="UMA utilizada" value={`$${resultado.input.uma.umaDiaria}/día (${resultado.input.uma.anio}${resultado.input.uma.esPersonalizada ? ', personalizada' : ''})`} theme={theme} />
           {resultado.input.modalidad40.activa && (
-            <ResumenRow label="Modalidad 40" value={`Activa — $${resultado.input.modalidad40.salarioCotizacion}/día`} theme={theme} />
+            <SummaryRow label="Modalidad 40" value={`Activa — $${resultado.input.modalidad40.salarioCotizacion}/día`} theme={theme} />
           )}
         </Card.Content>
       </Card>
@@ -196,25 +190,14 @@ export default function ResultScreen() {
   );
 }
 
-function ResumenRow({ label, value, theme }: { label: string; value: string; theme: any }) {
-  return (
-    <View style={styles.resumenRow}>
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, flex: 1 }}>{label}</Text>
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurface, fontWeight: 'bold', flex: 1, textAlign: 'right' }}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   card: { borderRadius: 12, marginBottom: 16 },
-  bannerCard: { borderRadius: 12, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: '#FF6F00' },
   mainResultCard: { borderRadius: 16, marginBottom: 16 },
   subResults: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
   subResult: { alignItems: 'center' },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  resumenRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   actions: { gap: 12, marginBottom: 20 },
   actionBtn: { borderRadius: 8 },
   desgloseItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },

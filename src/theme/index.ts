@@ -19,6 +19,18 @@ const COLORS = {
   surfaceDark: '#121212',
 } as const;
 
+/**
+ * Pares fondo/texto para banners de mensaje (MessageBanner).
+ * Únicos en toda la app — evita que cada pantalla defina sus propios
+ * hex literales para "aviso"/"error"/"éxito"/"info".
+ */
+export const BANNER_COLORS = {
+  warning: { background: '#FFF8E1', text: '#795548' },
+  success: { background: '#E8F5E9', text: '#2E7D32' },
+  error: { background: '#FFEBEE', text: '#C62828' },
+  info: { background: '#E3F2FD', text: '#1565C0' },
+} as const;
+
 /** Tema claro (Material Design 3). */
 export const lightTheme: MD3Theme = {
   ...MD3LightTheme,

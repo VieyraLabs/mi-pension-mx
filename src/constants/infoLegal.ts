@@ -10,6 +10,18 @@ export interface SeccionInfo {
   fuente?: string;
 }
 
+/**
+ * Texto canónico del aviso de estimación/disclaimer legal.
+ * Única fuente de verdad — antes había 7+ variantes redactadas de forma
+ * distinta (mayúsculas, emoji y frase final inconsistentes) repetidas en
+ * cada pantalla y en el PDF exportado.
+ */
+export const AVISO_ESTIMACION =
+  'ESTIMACIÓN — Resultado con fines informativos. La resolución oficial de tu pensión corresponde exclusivamente al IMSS.';
+
+/** Versión corta para chips/etiquetas. */
+export const AVISO_ESTIMACION_CORTO = 'Solo estimaciones — resolución oficial por IMSS';
+
 export const INFO_LEY73: readonly SeccionInfo[] = [
   {
     id: 'que_es_ley73',
