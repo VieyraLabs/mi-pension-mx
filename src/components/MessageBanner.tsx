@@ -9,7 +9,7 @@ import { BANNER_COLORS } from '../theme';
 
 export type MessageBannerVariant = 'warning' | 'success' | 'error' | 'info';
 
-const EMOJI_POR_VARIANTE: Record<MessageBannerVariant, string> = {
+const EMOJI_BY_VARIANT: Record<MessageBannerVariant, string> = {
   warning: '⚠️',
   success: '✓',
   error: '❌',
@@ -25,14 +25,14 @@ export interface MessageBannerProps {
 }
 
 export function MessageBanner({ variant, children, title, style }: MessageBannerProps) {
-  const colores = BANNER_COLORS[variant];
-  const emoji = EMOJI_POR_VARIANTE[variant];
+  const colors = BANNER_COLORS[variant];
+  const emoji = EMOJI_BY_VARIANT[variant];
 
   return (
-    <Card style={[{ backgroundColor: colores.background, borderRadius: 12, marginBottom: 16 }, style]} elevation={0}>
+    <Card style={[{ backgroundColor: colors.background, borderRadius: 12, marginBottom: 16 }, style]} elevation={0}>
       {title && <Card.Title title={`${emoji} ${title}`} titleVariant="titleSmall" />}
       <Card.Content>
-        <Text variant="bodySmall" style={{ color: colores.text, lineHeight: 18 }}>
+        <Text variant="bodySmall" style={{ color: colors.text, lineHeight: 18 }}>
           {!title && `${emoji} `}
           {children}
         </Text>

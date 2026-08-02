@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Button, Card, useTheme } from 'react-native-paper';
+import { Text, Button, useTheme } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -12,6 +12,7 @@ import { usePensionForm } from '../hooks/usePensionForm';
 import { calculatePension, validateInput } from '../services/pension/PensionCalculator';
 import { useHistory } from '../hooks/useHistory';
 import { showAlert } from '../utils/alert';
+import { MessageBanner } from '../components/MessageBanner';
 import { PersonalDataStep } from '../components/PersonalDataStep';
 import { WorkHistoryStep } from '../components/WorkHistoryStep';
 import { SalaryStep } from '../components/SalaryStep';
@@ -154,16 +155,12 @@ export default function NewSimulationScreen() {
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {preloadedFromPdf && (
-          <Card style={[styles.card, { backgroundColor: '#E3F2FD', marginBottom: 16 }]} elevation={0}>
-            <Card.Content>
-              <Text variant="bodySmall" style={{ color: '#1565C0', lineHeight: 18 }}>
-                📄 Este formulario se precargó con los datos de tu constancia IMSS. Revisa cada paso —
-                {preloadedSbcIsAverage
-                  ? ' el SBC es un promedio calculado a partir del historial detallado de modificaciones salariales de tus patrones; verifícalo.'
-                  : ' tu constancia no incluía el historial de modificaciones salariales necesario para calcular el SBC promedio, así que ese campo quedó en blanco. Complétalo manualmente.'}
-              </Text>
-            </Card.Content>
-          </Card>
+          <MessageBanner variant="info" style={[styles.card, { marginBottom: 16 }]}>
+            Este formulario se precargó con los datos de tu constancia IMSS. Revisa cada paso —
+            {preloadedSbcIsAverage
+              ? ' el SBC es un promedio calculado a partir del historial detallado de modificaciones salariales de tus patrones; verifícalo.'
+              : ' tu constancia no incluía el historial de modificaciones salariales necesario para calcular el SBC promedio, así que ese campo quedó en blanco. Complétalo manualmente.'}
+          </MessageBanner>
         )}
         {renderStep()}
       </ScrollView>

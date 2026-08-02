@@ -168,9 +168,11 @@ describe('ConstanciaIMSSParser — historial laboral y SBC promedio', () => {
     ).toBe(true);
     expect(
       result.warnings.some((a) =>
-        a.includes('gob.mx/imss/prensa/el-imss-te-invita-a-obtener-tu-constancia-de-semanas-cotizadas'),
+        a.includes('Constancia de Semanas Cotizadas e Historial de Registros Afiliatorios'),
       ),
     ).toBe(true);
+    // El aviso no debe incrustar una URL cruda — solo el nombre del documento a solicitar.
+    expect(result.warnings.some((a) => a.includes('http'))).toBe(false);
   });
 
   test('omite el patrón más reciente del cálculo si no está marcado "Vigente" (no se sabe cuándo terminó)', () => {

@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { INFO_LEY73 } from '../constants/infoLegal';
+import { MessageBanner } from '../components/MessageBanner';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -64,13 +65,9 @@ export default function InfoScreen() {
         </Card.Content>
       </Card>
 
-      <Card style={[styles.card, { backgroundColor: '#FFF8E1' }]} elevation={0}>
-        <Card.Content>
-          <Text variant="bodySmall" style={{ color: '#795548', lineHeight: 18 }}>
-            ⚖️ La información presentada es de carácter educativo e informativo. Para obtener asesoría oficial sobre tu pensión, acude a la Subdelegación del IMSS correspondiente o consulta el portal imss.gob.mx.
-          </Text>
-        </Card.Content>
-      </Card>
+      <MessageBanner variant="warning" style={styles.card}>
+        La información presentada es de carácter educativo e informativo. Para obtener asesoría oficial sobre tu pensión, acude a la Subdelegación del IMSS correspondiente o consulta el portal imss.gob.mx.
+      </MessageBanner>
 
       {/* Botón FAQ */}
       <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={2}>

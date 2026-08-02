@@ -154,11 +154,9 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
           `SBC promedio de las últimas 250 semanas: $${data.averageSBC.toFixed(2)} (calculado a partir del historial detallado de modificaciones salariales de tus patrones). Verifica este valor.` +
             (averageResult.isComplete
               ? ''
-              : ' Tu historial laboral registrado no alcanza a cubrir las 250 semanas completas; el promedio se calculó solo con los días disponibles.') +
+              : ' Tu historial no cubre las 250 semanas completas; el promedio se calculó solo con los días disponibles.') +
             (workHistoryResult.hadOverlap
-              ? ' Detectamos periodos con más de un patrón simultáneo (ver aviso del IMSS sobre periodos traslapados); ' +
-                'en esos días el promedio pondera cada SBC por separado, lo cual puede no coincidir con cómo el IMSS combina cotizaciones simultáneas. ' +
-                'Verifica manualmente si tuviste empleos simultáneos.'
+              ? ' Detectamos periodos con más de un patrón simultáneo; verifica manualmente si tuviste empleos simultáneos.'
               : ''),
         );
       } else {
@@ -171,12 +169,9 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
     } else {
       missingFields.push('SBC promedio (250 semanas)');
       warnings.push(
-        'Esta constancia no incluye el historial detallado de modificaciones salariales por patrón (solo el último SBC de cada uno), ' +
-          'así que no es posible calcular tu SBC promedio de las últimas 250 semanas de forma confiable. ' +
-          'Para obtenerlo automáticamente, descarga la "Constancia de Semanas Cotizadas en el IMSS e Historial de Registros Afiliatorios de la Persona Asegurada" ' +
-          'desde los servicios digitales del IMSS: ' +
-          'https://www.gob.mx/imss/prensa/el-imss-te-invita-a-obtener-tu-constancia-de-semanas-cotizadas-a-traves-de-sus-servicios-digitales-sin-salir-de-casa ' +
-          'Mientras tanto, completa este campo manualmente.',
+        'Esta constancia no incluye el historial detallado de modificaciones salariales por patrón, solo el último SBC de cada uno. ' +
+          'No es posible calcular tu SBC promedio de forma confiable con estos datos. ' +
+          'Descarga la "Constancia de Semanas Cotizadas e Historial de Registros Afiliatorios" en el portal del IMSS para obtenerlo automáticamente, o complétalo manualmente.',
       );
     }
 

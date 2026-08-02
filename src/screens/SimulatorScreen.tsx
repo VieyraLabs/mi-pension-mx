@@ -9,6 +9,7 @@ import { formatCurrency } from '../utils/format';
 import { UMA_ACTUAL } from '../constants/uma';
 import { ScenarioInputs, type Scenario } from '../components/ScenarioInputs';
 import { CompRow } from '../components/CompRow';
+import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
 
 const DEFAULT_SCENARIO: Scenario = {
   retirementAge: '65',
@@ -119,13 +120,7 @@ export default function SimulatorScreen() {
             </Card.Content>
           </Card>
 
-          <Card style={{ backgroundColor: '#FFF8E1', borderRadius: 12, marginTop: 8 }} elevation={0}>
-            <Card.Content>
-              <Text variant="labelSmall" style={{ color: '#795548' }}>
-                ⚠️ ESTIMACIÓN — Estos resultados son aproximados. La resolución oficial corresponde al IMSS.
-              </Text>
-            </Card.Content>
-          </Card>
+          <EstimationDisclaimerCard style={{ marginTop: 8 }} />
         </>
       )}
     </ScrollView>

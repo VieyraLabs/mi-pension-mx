@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Text, Card, List, useTheme, Divider } from 'react-native-paper';
 import { FAQ_ITEMS } from '../constants/infoLegal';
+import { MessageBanner } from '../components/MessageBanner';
 
 export default function FAQScreen() {
   const theme = useTheme();
@@ -58,13 +59,9 @@ export default function FAQScreen() {
         </Card.Content>
       </Card>
 
-      <Card style={[styles.card, { backgroundColor: '#E3F2FD' }]} elevation={0}>
-        <Card.Content>
-          <Text variant="bodySmall" style={{ color: '#1565C0', lineHeight: 18 }}>
-            💡 ¿No encontraste tu respuesta? Para información oficial y personalizada sobre tu pensión, acude a la Subdelegación del IMSS de tu zona o llama al 800 623 2323.
-          </Text>
-        </Card.Content>
-      </Card>
+      <MessageBanner variant="info" style={styles.card}>
+        ¿No encontraste tu respuesta? Para información oficial y personalizada sobre tu pensión, acude a la Subdelegación del IMSS de tu zona o llama al 800 623 2323.
+      </MessageBanner>
     </ScrollView>
   );
 }

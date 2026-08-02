@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { importPdf } from '../services/pdf/PdfImporter';
+import { MessageBanner } from '../components/MessageBanner';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -27,8 +28,8 @@ export default function PdfImportScreen() {
       } else {
         setError(result.error ?? 'No se pudo procesar el PDF.');
       }
-    } catch (e: any) {
-      setError(e?.message ?? 'Error al importar el PDF.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al importar el PDF.');
     } finally {
       setProcessing(false);
     }
@@ -81,30 +82,20 @@ export default function PdfImportScreen() {
       </Card>
 
       {/* Privacidad */}
-      <Card style={[styles.card, { backgroundColor: '#E8F5E9' }]} elevation={0}>
-        <Card.Content>
-          <Text variant="bodySmall" style={{ color: '#2E7D32', lineHeight: 18 }}>
-            🔒 Procesamiento 100% local — Tu información NO se envía a ningún servidor externo. Todo el análisis del PDF se realiza en tu dispositivo.
-          </Text>
-        </Card.Content>
-      </Card>
+      <MessageBanner variant="success" style={styles.card}>
+        Procesamiento 100% local — Tu información NO se envía a ningún servidor externo. Todo el análisis del PDF se realiza en tu dispositivo.
+      </MessageBanner>
 
       {/* Nota OCR */}
-      <Card style={[styles.card, { backgroundColor: '#FFF8E1' }]} elevation={0}>
-        <Card.Content>
-          <Text variant="bodySmall" style={{ color: '#795548', lineHeight: 18 }}>
-            ⚠️ Para PDFs con texto seleccionable: extracción directa. Para PDFs escaneados (imagen): el OCR completo requiere un development build. En Expo Go, se solicita captura manual de los datos del PDF escaneado.
-          </Text>
-        </Card.Content>
-      </Card>
+      <MessageBanner variant="warning" style={styles.card}>
+        Para PDFs con texto seleccionable: extracción directa. Para PDFs escaneados (imagen): el OCR completo requiere un development build. En Expo Go, se solicita captura manual de los datos del PDF escaneado.
+      </MessageBanner>
 
       {/* Error */}
       {error && (
-        <Card style={[styles.card, { backgroundColor: '#FFEBEE' }]} elevation={0}>
-          <Card.Content>
-            <Text variant="bodySmall" style={{ color: '#C62828' }}>❌ {error}</Text>
-          </Card.Content>
-        </Card>
+        <MessageBanner variant="error" style={styles.card}>
+          {error}
+        </MessageBanner>
       )}
 
       {/* Botón principal */}

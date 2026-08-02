@@ -14,6 +14,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { COLORS } from '../theme';
+import { MessageBanner } from '../components/MessageBanner';
+import { ESTIMATION_DISCLAIMER_SHORT } from '../constants/infoLegal';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -68,7 +70,7 @@ export default function DashboardScreen() {
             textStyle={{ color: '#FFFFFF', fontSize: 11 }}
             compact
           >
-            ⚠️ Solo estimaciones — resolución oficial por IMSS
+            ⚠️ {ESTIMATION_DISCLAIMER_SHORT}
           </Chip>
         </View>
       </Surface>
@@ -100,16 +102,12 @@ export default function DashboardScreen() {
       ))}
 
       {/* Nota legal */}
-      <Card style={[styles.legalCard, { backgroundColor: '#FFF8E1' }]} elevation={0}>
-        <Card.Content>
-          <Text variant="labelSmall" style={{ color: '#795548', lineHeight: 18 }}>
-            ⚖️ <Text style={{ fontWeight: 'bold' }}>Aviso Legal:</Text> Esta aplicación proporciona ESTIMACIONES con fines informativos únicamente.
-            Los cálculos se basan en la Ley del Seguro Social de 1973 y valores de referencia (UMA, SMG).
-            La resolución oficial de su pensión corresponde exclusivamente al IMSS.
-            Acuda a su Subdelegación del IMSS para información precisa y oficial.
-          </Text>
-        </Card.Content>
-      </Card>
+      <MessageBanner variant="warning" title="Aviso Legal" style={styles.legalCard}>
+        Esta aplicación proporciona ESTIMACIONES con fines informativos únicamente.
+        Los cálculos se basan en la Ley del Seguro Social de 1973 y valores de referencia (UMA, SMG).
+        La resolución oficial de su pensión corresponde exclusivamente al IMSS.
+        Acuda a su Subdelegación del IMSS para información precisa y oficial.
+      </MessageBanner>
 
       {/* Info adicional */}
       <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
