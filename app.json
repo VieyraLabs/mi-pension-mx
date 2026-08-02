@@ -17,6 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.vieyralabs.mipensionmx",
+      "deploymentTarget": "16.4",
       "infoPlist": {
         "CFBundleDisplayName": "Mi Pensión MX"
       }

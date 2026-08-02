@@ -7,12 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		13A85C74138846D3FA2EC17B /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 609AADAC2C6E77F241366DD9 /* ExpoModulesProvider.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		1AC0202FE2FE8051B71D6D30 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C075A51D96124EE314D23093 /* PrivacyInfo.xcprivacy */; };
+		34DAC830C1C22C064814334D /* libPods-MiPensionMX.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A232D6633D04FE882C3B81E /* libPods-MiPensionMX.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		537D8E7EFC654797FDA50935 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8803FC06F47B9E3C3E6D5C /* ExpoModulesProvider.swift */; };
-		7F82F567ADBE16E0C1BE73F4 /* libPods-MiPensionMX.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 93DB3B17EEDA3F101CF59BBC /* libPods-MiPensionMX.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		EEE05C2BC1A6A82110DE4952 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 54F54716A8F601CD77313B78 /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -20,13 +20,13 @@
 		13B07F961A680F5B00A75B9A /* MiPensionMX.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MiPensionMX.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = MiPensionMX/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = MiPensionMX/Info.plist; sourceTree = "<group>"; };
-		3CC8823F709ECDA8E92B0FCA /* Pods-MiPensionMX.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MiPensionMX.debug.xcconfig"; path = "Target Support Files/Pods-MiPensionMX/Pods-MiPensionMX.debug.xcconfig"; sourceTree = "<group>"; };
-		93DB3B17EEDA3F101CF59BBC /* libPods-MiPensionMX.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MiPensionMX.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3A232D6633D04FE882C3B81E /* libPods-MiPensionMX.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MiPensionMX.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		513B10B22CFC55B4C43CF464 /* Pods-MiPensionMX.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MiPensionMX.debug.xcconfig"; path = "Target Support Files/Pods-MiPensionMX/Pods-MiPensionMX.debug.xcconfig"; sourceTree = "<group>"; };
+		54F54716A8F601CD77313B78 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = MiPensionMX/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		609AADAC2C6E77F241366DD9 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-MiPensionMX/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = MiPensionMX/SplashScreen.storyboard; sourceTree = "<group>"; };
-		AF8803FC06F47B9E3C3E6D5C /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-MiPensionMX/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		B0BC9E4B608324A3A608B16A /* Pods-MiPensionMX.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MiPensionMX.release.xcconfig"; path = "Target Support Files/Pods-MiPensionMX/Pods-MiPensionMX.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		C075A51D96124EE314D23093 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = MiPensionMX/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C9E3D8E068EF673CB5354F58 /* Pods-MiPensionMX.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MiPensionMX.release.xcconfig"; path = "Target Support Files/Pods-MiPensionMX/Pods-MiPensionMX.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = MiPensionMX/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* MiPensionMX-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "MiPensionMX-Bridging-Header.h"; path = "MiPensionMX/MiPensionMX-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,19 +37,19 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7F82F567ADBE16E0C1BE73F4 /* libPods-MiPensionMX.a in Frameworks */,
+				34DAC830C1C22C064814334D /* libPods-MiPensionMX.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		0250B0BFA97E7E52F69C8D0D /* ExpoModulesProviders */ = {
+		0191D84DC2A902EEAE513EC4 /* MiPensionMX */ = {
 			isa = PBXGroup;
 			children = (
-				66980CF6AB45900C95B0E26A /* MiPensionMX */,
+				609AADAC2C6E77F241366DD9 /* ExpoModulesProvider.swift */,
 			);
-			name = ExpoModulesProviders;
+			name = MiPensionMX;
 			sourceTree = "<group>";
 		};
 		13B07FAE1A68108700A75B9A /* MiPensionMX */ = {
@@ -61,7 +61,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				C075A51D96124EE314D23093 /* PrivacyInfo.xcprivacy */,
+				54F54716A8F601CD77313B78 /* PrivacyInfo.xcprivacy */,
 			);
 			name = MiPensionMX;
 			sourceTree = "<group>";
@@ -70,17 +70,27 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				93DB3B17EEDA3F101CF59BBC /* libPods-MiPensionMX.a */,
+				3A232D6633D04FE882C3B81E /* libPods-MiPensionMX.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		66980CF6AB45900C95B0E26A /* MiPensionMX */ = {
+		3FA00FE0787F6259DE6E49D3 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				AF8803FC06F47B9E3C3E6D5C /* ExpoModulesProvider.swift */,
+				0191D84DC2A902EEAE513EC4 /* MiPensionMX */,
 			);
-			name = MiPensionMX;
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
+		75AC2EDB159964DB65BE89F9 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				513B10B22CFC55B4C43CF464 /* Pods-MiPensionMX.debug.xcconfig */,
+				C9E3D8E068EF673CB5354F58 /* Pods-MiPensionMX.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -97,8 +107,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				9222BEBAC3504ABBE81B71FE /* Pods */,
-				0250B0BFA97E7E52F69C8D0D /* ExpoModulesProviders */,
+				75AC2EDB159964DB65BE89F9 /* Pods */,
+				3FA00FE0787F6259DE6E49D3 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -111,15 +121,6 @@
 				13B07F961A680F5B00A75B9A /* MiPensionMX.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		9222BEBAC3504ABBE81B71FE /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				3CC8823F709ECDA8E92B0FCA /* Pods-MiPensionMX.debug.xcconfig */,
-				B0BC9E4B608324A3A608B16A /* Pods-MiPensionMX.release.xcconfig */,
-			);
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -139,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "MiPensionMX" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				72A6DDEBC224DBB4266FA902 /* [Expo] Configure project */,
+				7BC0D3AD73362BC4690A22CB /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				35FA7F9DCD30E54D8E102ECB /* [CP] Embed Pods Frameworks */,
+				5E09DBA02AAFDD8DE4988C0E /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -195,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				1AC0202FE2FE8051B71D6D30 /* PrivacyInfo.xcprivacy in Resources */,
+				EEE05C2BC1A6A82110DE4952 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -241,7 +242,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		35FA7F9DCD30E54D8E102ECB /* [CP] Embed Pods Frameworks */ = {
+		5E09DBA02AAFDD8DE4988C0E /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -275,7 +276,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MiPensionMX/Pods-MiPensionMX-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		72A6DDEBC224DBB4266FA902 /* [Expo] Configure project */ = {
+		7BC0D3AD73362BC4690A22CB /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -339,7 +340,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				537D8E7EFC654797FDA50935 /* ExpoModulesProvider.swift in Sources */,
+				13A85C74138846D3FA2EC17B /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -348,7 +349,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3CC8823F709ECDA8E92B0FCA /* Pods-MiPensionMX.debug.xcconfig */;
+			baseConfigurationReference = 513B10B22CFC55B4C43CF464 /* Pods-MiPensionMX.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -360,7 +361,7 @@
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = MiPensionMX/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -385,14 +386,14 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B0BC9E4B608324A3A608B16A /* Pods-MiPensionMX.release.xcconfig */;
+			baseConfigurationReference = C9E3D8E068EF673CB5354F58 /* Pods-MiPensionMX.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = MiPensionMX/MiPensionMX.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = MiPensionMX/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
