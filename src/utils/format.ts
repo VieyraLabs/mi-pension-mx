@@ -57,11 +57,13 @@ export function formatInteger(value: number): string {
 
 /** Formatea una fecha en formato largo. Ej: 1 de enero de 2024 */
 export function formatDateLong(date: Date): string {
+  if (isNaN(date.getTime())) return 'Fecha no disponible';
   return DATE_FORMATTER.format(date);
 }
 
 /** Formatea una fecha en formato corto. Ej: 01/01/2024 */
 export function formatDateShort(date: Date): string {
+  if (isNaN(date.getTime())) return 'Fecha no disponible';
   return DATE_SHORT_FORMATTER.format(date);
 }
 

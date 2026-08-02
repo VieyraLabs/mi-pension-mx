@@ -55,6 +55,36 @@ describe('getSimulations', () => {
     await AsyncStorage.setItem('@mi_prension_mx:simulaciones', 'esto no es JSON');
     expect(await getSimulations()).toEqual([]);
   });
+
+  test('descarta registros de un esquema anterior en vez de crashear (p. ej. fechaCreacion en lugar de creationDate)', async () => {
+    const registroAntiguo = {
+      id: 'sim_viejo',
+      name: 'Simulación vieja',
+      fechaCreacion: '2023-01-01T00:00:00.000Z', // nombre de campo previo al rename
+      result: { pensionMensual: 5000 }, // forma previa al rename de PensionResult
+    };
+    await AsyncStorage.setItem('@mi_prension_mx:simulaciones', JSON.stringify([registroAntiguo]));
+
+    const all = await getSimulations();
+
+    expect(all).toEqual([]);
+    // Autolimpieza: la siguiente lectura ya no debe reprocesar el registro inválido.
+    expect(await AsyncStorage.getItem('@mi_prension_mx:simulaciones')).toBe('[]');
+  });
+
+  test('conserva las simulaciones válidas y descarta solo las incompatibles', async () => {
+    const valida = await saveSimulation(buildResult(), 'Válida');
+    const actual = JSON.parse((await AsyncStorage.getItem('@mi_prension_mx:simulaciones')) ?? '[]');
+    await AsyncStorage.setItem(
+      '@mi_prension_mx:simulaciones',
+      JSON.stringify([...actual, { id: 'sim_viejo', name: 'Vieja', fechaCreacion: '2023-01-01' }]),
+    );
+
+    const all = await getSimulations();
+
+    expect(all).toHaveLength(1);
+    expect(all[0]?.id).toBe(valida.id);
+  });
 });
 
 describe('saveSimulation', () => {

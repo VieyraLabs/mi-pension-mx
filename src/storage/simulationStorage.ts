@@ -13,12 +13,39 @@ function generateId(): string {
   return `sim_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 }
 
+/**
+ * Valida que una simulación leída de AsyncStorage tenga la forma actual.
+ * Descarta silenciosamente registros de versiones anteriores de la app
+ * (p. ej. guardados antes de renombrar `fechaCreacion` a `creationDate`),
+ * que de otro modo producirían fechas/montos inválidos al mostrarse.
+ */
+function isValidSavedSimulation(value: unknown): value is SavedSimulation {
+  if (!value || typeof value !== 'object') return false;
+  const s = value as Partial<SavedSimulation>;
+  return (
+    typeof s.id === 'string' &&
+    typeof s.name === 'string' &&
+    typeof s.creationDate === 'string' &&
+    !isNaN(new Date(s.creationDate).getTime()) &&
+    typeof s.result?.monthlyPension === 'number'
+  );
+}
+
 /** Obtiene todas las simulaciones guardadas. */
 export async function getSimulations(): Promise<SavedSimulation[]> {
   try {
     const json = await AsyncStorage.getItem(STORAGE_KEY);
     if (!json) return [];
-    return JSON.parse(json) as SavedSimulation[];
+    const parsed = JSON.parse(json) as unknown[];
+    const valid = parsed.filter(isValidSavedSimulation);
+
+    if (valid.length !== parsed.length) {
+      // Autolimpieza: persiste sin los registros incompatibles para no
+      // volver a filtrarlos en cada lectura.
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(valid));
+    }
+
+    return valid;
   } catch {
     return [];
   }
