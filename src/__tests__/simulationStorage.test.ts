@@ -52,7 +52,7 @@ describe('getSimulations', () => {
   });
 
   test('devuelve un arreglo vacío si el valor guardado no es JSON válido', async () => {
-    await AsyncStorage.setItem('@mi_prension_mx:simulaciones', 'esto no es JSON');
+    await AsyncStorage.setItem('@mi_pension_mx:simulaciones', 'esto no es JSON');
     expect(await getSimulations()).toEqual([]);
   });
 
@@ -63,20 +63,20 @@ describe('getSimulations', () => {
       fechaCreacion: '2023-01-01T00:00:00.000Z', // nombre de campo previo al rename
       result: { pensionMensual: 5000 }, // forma previa al rename de PensionResult
     };
-    await AsyncStorage.setItem('@mi_prension_mx:simulaciones', JSON.stringify([registroAntiguo]));
+    await AsyncStorage.setItem('@mi_pension_mx:simulaciones', JSON.stringify([registroAntiguo]));
 
     const all = await getSimulations();
 
     expect(all).toEqual([]);
     // Autolimpieza: la siguiente lectura ya no debe reprocesar el registro inválido.
-    expect(await AsyncStorage.getItem('@mi_prension_mx:simulaciones')).toBe('[]');
+    expect(await AsyncStorage.getItem('@mi_pension_mx:simulaciones')).toBe('[]');
   });
 
   test('conserva las simulaciones válidas y descarta solo las incompatibles', async () => {
     const valida = await saveSimulation(buildResult(), 'Válida');
-    const actual = JSON.parse((await AsyncStorage.getItem('@mi_prension_mx:simulaciones')) ?? '[]');
+    const actual = JSON.parse((await AsyncStorage.getItem('@mi_pension_mx:simulaciones')) ?? '[]');
     await AsyncStorage.setItem(
-      '@mi_prension_mx:simulaciones',
+      '@mi_pension_mx:simulaciones',
       JSON.stringify([...actual, { id: 'sim_viejo', name: 'Vieja', fechaCreacion: '2023-01-01' }]),
     );
 

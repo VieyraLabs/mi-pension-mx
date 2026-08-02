@@ -80,7 +80,7 @@ Cada paso:
 
 ```bash
 # Clonar el repositorio
-cd mi-prension-mx
+cd mi-pension-mx
 
 # Instalar dependencias
 npm install
@@ -177,7 +177,7 @@ Los cálculos se basan en:
 ## 🗂️ Estructura de archivos generados
 
 ```
-mi-prension-mx/
+mi-pension-mx/
 ├── App.tsx                          # Punto de entrada
 ├── index.ts                         # Registro Expo
 ├── package.json

@@ -27,7 +27,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>miprension</string>
+				<string>mipension</string>
 				<string>com.vieyralabs.mipensionmx</string>
 			</array>
 		</dict>

@@ -5,7 +5,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SavedSimulation } from '../models';
 
-const STORAGE_KEY = '@mi_prension_mx:simulaciones';
+const STORAGE_KEY = '@mi_pension_mx:simulaciones';
 const MAX_SIMULATIONS = 20;
 
 /** Genera un ID único para la simulación. */
