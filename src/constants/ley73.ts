@@ -21,24 +21,24 @@
  * NOTA: La tabla del Art. 167 históricamente usa el SMG para determinar el rango.
  * El tope de cotización se aplica por separado (25 UMA desde reforma 2016).
  */
-export interface EntradaTablaArt167 {
+export interface Art167TableEntry {
   /** Límite inferior del rango (en veces el SMG diario) */
-  rangoMin: number;
+  rangeMin: number;
   /** Límite superior del rango (en veces el SMG diario). Infinity = sin límite */
-  rangoMax: number;
+  rangeMax: number;
   /**
    * Cuantía básica: porcentaje del SBC promedio (últimas 250 semanas)
    * correspondiente a 500 semanas de cotización.
    * Fuente: Tabla del Art. 167 LSS 1973.
    * ESTIMACIÓN: porcentajes interpolados de tabla oficial; verificar con IMSS.
    */
-  cuantiaBasicaPct: number;
+  basicQuantityPct: number;
   /**
    * Incremento por cada 52 semanas cotizadas adicionales a las 500 mínimas.
    * Fuente: Art. 167 LSS 1973, párrafo de incrementos anuales.
    * ESTIMACIÓN: verificar con IMSS.
    */
-  incrementoAnualPct: number;
+  annualIncrementPct: number;
 }
 
 /**
@@ -52,149 +52,149 @@ export interface EntradaTablaArt167 {
  * - Ley del Seguro Social 1973, Art. 167
  * - "Manual de Prestaciones" IMSS (versión vigente al 2023)
  */
-export const TABLA_ART167: readonly EntradaTablaArt167[] = [
+export const ART167_TABLE: readonly Art167TableEntry[] = [
   {
-    rangoMin: 0,
-    rangoMax: 1.0,
-    cuantiaBasicaPct: 80.0,
-    incrementoAnualPct: 0.563,
+    rangeMin: 0,
+    rangeMax: 1.0,
+    basicQuantityPct: 80.0,
+    annualIncrementPct: 0.563,
   },
   {
-    rangoMin: 1.01,
-    rangoMax: 1.25,
-    cuantiaBasicaPct: 77.11,
-    incrementoAnualPct: 0.814,
+    rangeMin: 1.01,
+    rangeMax: 1.25,
+    basicQuantityPct: 77.11,
+    annualIncrementPct: 0.814,
   },
   {
-    rangoMin: 1.26,
-    rangoMax: 1.5,
-    cuantiaBasicaPct: 58.18,
-    incrementoAnualPct: 1.178,
+    rangeMin: 1.26,
+    rangeMax: 1.5,
+    basicQuantityPct: 58.18,
+    annualIncrementPct: 1.178,
   },
   {
-    rangoMin: 1.51,
-    rangoMax: 1.75,
-    cuantiaBasicaPct: 49.23,
-    incrementoAnualPct: 1.43,
+    rangeMin: 1.51,
+    rangeMax: 1.75,
+    basicQuantityPct: 49.23,
+    annualIncrementPct: 1.43,
   },
   {
-    rangoMin: 1.76,
-    rangoMax: 2.0,
-    cuantiaBasicaPct: 42.67,
-    incrementoAnualPct: 1.615,
+    rangeMin: 1.76,
+    rangeMax: 2.0,
+    basicQuantityPct: 42.67,
+    annualIncrementPct: 1.615,
   },
   {
-    rangoMin: 2.01,
-    rangoMax: 2.25,
-    cuantiaBasicaPct: 37.65,
-    incrementoAnualPct: 1.756,
+    rangeMin: 2.01,
+    rangeMax: 2.25,
+    basicQuantityPct: 37.65,
+    annualIncrementPct: 1.756,
   },
   {
-    rangoMin: 2.26,
-    rangoMax: 2.5,
-    cuantiaBasicaPct: 33.68,
-    incrementoAnualPct: 1.868,
+    rangeMin: 2.26,
+    rangeMax: 2.5,
+    basicQuantityPct: 33.68,
+    annualIncrementPct: 1.868,
   },
   {
-    rangoMin: 2.51,
-    rangoMax: 2.75,
-    cuantiaBasicaPct: 30.48,
-    incrementoAnualPct: 1.958,
+    rangeMin: 2.51,
+    rangeMax: 2.75,
+    basicQuantityPct: 30.48,
+    annualIncrementPct: 1.958,
   },
   {
-    rangoMin: 2.76,
-    rangoMax: 3.0,
-    cuantiaBasicaPct: 27.83,
-    incrementoAnualPct: 2.033,
+    rangeMin: 2.76,
+    rangeMax: 3.0,
+    basicQuantityPct: 27.83,
+    annualIncrementPct: 2.033,
   },
   {
-    rangoMin: 3.01,
-    rangoMax: 3.25,
-    cuantiaBasicaPct: 25.6,
-    incrementoAnualPct: 2.096,
+    rangeMin: 3.01,
+    rangeMax: 3.25,
+    basicQuantityPct: 25.6,
+    annualIncrementPct: 2.096,
   },
   {
-    rangoMin: 3.26,
-    rangoMax: 3.5,
-    cuantiaBasicaPct: 23.7,
-    incrementoAnualPct: 2.149,
+    rangeMin: 3.26,
+    rangeMax: 3.5,
+    basicQuantityPct: 23.7,
+    annualIncrementPct: 2.149,
   },
   {
-    rangoMin: 3.51,
-    rangoMax: 3.75,
-    cuantiaBasicaPct: 22.07,
-    incrementoAnualPct: 2.195,
+    rangeMin: 3.51,
+    rangeMax: 3.75,
+    basicQuantityPct: 22.07,
+    annualIncrementPct: 2.195,
   },
   {
-    rangoMin: 3.76,
-    rangoMax: 4.0,
-    cuantiaBasicaPct: 20.65,
-    incrementoAnualPct: 2.235,
+    rangeMin: 3.76,
+    rangeMax: 4.0,
+    basicQuantityPct: 20.65,
+    annualIncrementPct: 2.235,
   },
   {
-    rangoMin: 4.01,
-    rangoMax: 4.25,
-    cuantiaBasicaPct: 19.39,
-    incrementoAnualPct: 2.271,
+    rangeMin: 4.01,
+    rangeMax: 4.25,
+    basicQuantityPct: 19.39,
+    annualIncrementPct: 2.271,
   },
   {
-    rangoMin: 4.26,
-    rangoMax: 4.5,
-    cuantiaBasicaPct: 18.29,
-    incrementoAnualPct: 2.302,
+    rangeMin: 4.26,
+    rangeMax: 4.5,
+    basicQuantityPct: 18.29,
+    annualIncrementPct: 2.302,
   },
   {
-    rangoMin: 4.51,
-    rangoMax: 4.75,
-    cuantiaBasicaPct: 17.3,
-    incrementoAnualPct: 2.33,
+    rangeMin: 4.51,
+    rangeMax: 4.75,
+    basicQuantityPct: 17.3,
+    annualIncrementPct: 2.33,
   },
   {
-    rangoMin: 4.76,
-    rangoMax: 5.0,
-    cuantiaBasicaPct: 16.41,
-    incrementoAnualPct: 2.355,
+    rangeMin: 4.76,
+    rangeMax: 5.0,
+    basicQuantityPct: 16.41,
+    annualIncrementPct: 2.355,
   },
   {
-    rangoMin: 5.01,
-    rangoMax: 5.25,
-    cuantiaBasicaPct: 15.61,
-    incrementoAnualPct: 2.377,
+    rangeMin: 5.01,
+    rangeMax: 5.25,
+    basicQuantityPct: 15.61,
+    annualIncrementPct: 2.377,
   },
   {
-    rangoMin: 5.26,
-    rangoMax: 5.5,
-    cuantiaBasicaPct: 14.88,
-    incrementoAnualPct: 2.398,
+    rangeMin: 5.26,
+    rangeMax: 5.5,
+    basicQuantityPct: 14.88,
+    annualIncrementPct: 2.398,
   },
   {
-    rangoMin: 5.51,
-    rangoMax: 5.75,
-    cuantiaBasicaPct: 14.22,
-    incrementoAnualPct: 2.416,
+    rangeMin: 5.51,
+    rangeMax: 5.75,
+    basicQuantityPct: 14.22,
+    annualIncrementPct: 2.416,
   },
   {
-    rangoMin: 5.76,
-    rangoMax: 6.0,
-    cuantiaBasicaPct: 13.62,
-    incrementoAnualPct: 2.433,
+    rangeMin: 5.76,
+    rangeMax: 6.0,
+    basicQuantityPct: 13.62,
+    annualIncrementPct: 2.433,
   },
   {
-    rangoMin: 6.01,
-    rangoMax: Infinity,
-    cuantiaBasicaPct: 13.0,
-    incrementoAnualPct: 2.45,
+    rangeMin: 6.01,
+    rangeMax: Infinity,
+    basicQuantityPct: 13.0,
+    annualIncrementPct: 2.45,
   },
 ] as const;
 
 /** Días promedio por mes usados por UMA/IMSS para conversión mensual. */
-export const DIAS_PROMEDIO_MES = 30.4;
+export const AVERAGE_DAYS_PER_MONTH = 30.4;
 
 /** Días por año para cálculo anual de UMA. */
-export const DIAS_ANIO_UMA = 365;
+export const DAYS_PER_YEAR_UMA = 365;
 
 /** Meses por año para cálculo anual de pensión. */
-export const MESES_POR_ANIO = 12;
+export const MONTHS_PER_YEAR = 12;
 
 // ─────────────────────────────────────────────
 // Factores de edad — Cesantía en Edad Avanzada
@@ -208,7 +208,7 @@ export const MESES_POR_ANIO = 12;
  *
  * Fuente: Art. 139 LSS 1973 (DOF 12-mar-1973 y sus reformas).
  */
-export const FACTORES_EDAD_CESANTIA: Readonly<Record<number, number>> = {
+export const CESANTIA_AGE_FACTORS: Readonly<Record<number, number>> = {
   60: 0.75,
   61: 0.8,
   62: 0.85,
@@ -218,26 +218,26 @@ export const FACTORES_EDAD_CESANTIA: Readonly<Record<number, number>> = {
 } as const;
 
 /** Edad mínima para Cesantía en Edad Avanzada (Art. 138 LSS 1973) */
-export const EDAD_MINIMA_CESANTIA = 60;
+export const MINIMUM_CESANTIA_AGE = 60;
 
 /** Edad para Pensión de Vejez (Art. 145 LSS 1973) */
-export const EDAD_VEJEZ = 65;
+export const VEJEZ_AGE = 65;
 
 // ─────────────────────────────────────────────
 // Semanas mínimas de cotización
 // ─────────────────────────────────────────────
 
 /** Semanas mínimas para Vejez (Art. 145 LSS 1973) */
-export const SEMANAS_MINIMAS_VEJEZ = 500;
+export const MINIMUM_WEEKS_VEJEZ = 500;
 
 /** Semanas mínimas para Cesantía en Edad Avanzada (Art. 138 LSS 1973) */
-export const SEMANAS_MINIMAS_CESANTIA = 500;
+export const MINIMUM_WEEKS_CESANTIA = 500;
 
 /** Semanas consideradas para el promedio del SBC (Art. 167 LSS 1973) */
-export const SEMANAS_PROMEDIO_SBC = 250;
+export const SBC_AVERAGE_WEEKS = 250;
 
 /** Semanas que representan un año cotizado (para incrementos anuales) */
-export const SEMANAS_POR_ANIO = 52;
+export const WEEKS_PER_YEAR = 52;
 
 // ─────────────────────────────────────────────
 // Asignaciones familiares y ayuda asistencial
@@ -248,33 +248,33 @@ export const SEMANAS_POR_ANIO = 52;
  * Asignación familiar por cónyuge o concubina/o.
  * Art. 164, fracción I, LSS 1973.
  */
-export const ASIGNACION_CONYUGE_PCT = 0.15;
+export const SPOUSE_ALLOWANCE_PCT = 0.15;
 
 /**
  * Asignación familiar por cada hijo menor (hasta 16 años, o sin límite si incapacitado).
  * Art. 164, fracción II, LSS 1973.
  */
-export const ASIGNACION_HIJO_PCT = 0.10;
+export const CHILD_ALLOWANCE_PCT = 0.10;
 
 /**
  * Asignación familiar por cada ascendiente dependiente económico
  * (cuando no hay cónyuge ni hijos).
  * Art. 164, fracción III, LSS 1973.
  */
-export const ASIGNACION_ASCENDIENTE_PCT = 0.10;
+export const PARENT_ALLOWANCE_PCT = 0.10;
 
 /**
  * Ayuda asistencial cuando no hay beneficiarios con derecho a asignación familiar.
  * Art. 165 LSS 1973.
  */
-export const AYUDA_ASISTENCIAL_SIN_BENEFICIARIOS_PCT = 0.15;
+export const ASSISTANCE_AID_NO_BENEFICIARIES_PCT = 0.15;
 
 /**
  * Ayuda asistencial cuando el pensionado tiene cónyuge pero no hijos.
  * Art. 165 LSS 1973.
  * Nota: Esta ayuda aplica en ausencia de los beneficiarios mencionados en Art. 164.
  */
-export const AYUDA_ASISTENCIAL_CON_CONYUGE_SIN_HIJOS_PCT = 0.10;
+export const ASSISTANCE_AID_SPOUSE_NO_CHILDREN_PCT = 0.10;
 
 // ─────────────────────────────────────────────
 // Límites
@@ -285,7 +285,7 @@ export const AYUDA_ASISTENCIAL_CON_CONYUGE_SIN_HIJOS_PCT = 0.10;
  * Fuente: Art. 28 LSS vigente (reforma DOF 27-ene-2016, derogación de referencias al SMG).
  * La cotización máxima es de 25 UMA diarias.
  */
-export const TOPE_SBC_VECES_UMA = 25;
+export const SBC_CAP_TIMES_UMA = 25;
 
 /**
  * La pensión mínima garantizada equivale al salario mínimo general vigente.
@@ -294,7 +294,7 @@ export const TOPE_SBC_VECES_UMA = 25;
  * NOTA: El IMSS usa el SMG de la zona del trabajador.
  * Para efectos de estimación se usa el SMG de CDMX (más alto).
  */
-export const PMG_EQUIVALE_A_SMG = true;
+export const PMG_EQUALS_SMG = true;
 
 // ─────────────────────────────────────────────
 // Conservación de derechos
@@ -308,8 +308,8 @@ export const PMG_EQUIVALE_A_SMG = true;
  *
  * Este cálculo aplica para determinar vigencia de la pensión.
  */
-export const CONSERVACION_DERECHOS_FRACCION = 0.25;
-export const CONSERVACION_DERECHOS_MAX_SEMANAS = 60; // (según criterio IMSS)
+export const RIGHTS_PRESERVATION_FRACTION = 0.25;
+export const RIGHTS_PRESERVATION_MAX_WEEKS = 60; // (según criterio IMSS)
 
 // ─────────────────────────────────────────────
 // Incremento del 11% (Decreto DOF 2001/2004)
@@ -325,7 +325,7 @@ export const CONSERVACION_DERECHOS_MAX_SEMANAS = 60; // (según criterio IMSS)
  * DOF: 20 de diciembre de 2001. Modificación: DOF 5 de enero de 2004.
  * https://www.diputados.gob.mx/LeyesBiblio/ref/lss/LSS_ref04_05ene04.pdf
  */
-export const INCREMENTO_DECRETO_11 = 0.11;
+export const DECREE_11_INCREMENT = 0.11;
 
 // ─────────────────────────────────────────────
 // Modalidad 40
@@ -337,10 +337,10 @@ export const INCREMENTO_DECRETO_11 = 0.11;
  * Permite al asegurado inscribirse voluntariamente con un SBC mayor al último
  * registrado, para incrementar su promedio de las últimas 250 semanas.
  */
-export const MODALIDAD_40_ARTICULO = 'Art. 218 Reglamento LSS 1973';
+export const MODALIDAD_40_ARTICLE = 'Art. 218 Reglamento LSS 1973';
 
 /** El SBC de Modalidad 40 no puede ser menor al último SBC en el régimen obligatorio. */
-export const MODALIDAD_40_SBC_MINIMO_IGUAL_A_ULTIMO_OBLIGATORIO = true;
+export const MODALIDAD_40_MINIMUM_SBC_EQUALS_LAST_MANDATORY = true;
 
 /** Tope máximo de Modalidad 40: 25 UMA diarias (igual que el régimen obligatorio). */
-export const MODALIDAD_40_TOPE_VECES_UMA = 25;
+export const MODALIDAD_40_CAP_TIMES_UMA = 25;

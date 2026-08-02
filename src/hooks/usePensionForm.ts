@@ -5,164 +5,162 @@
 import { useState, useCallback } from 'react';
 import type {
   PensionInput,
-  DatosPersonales,
-  HistorialLaboral,
-  SalarioBCPromedio,
-  ConfiguracionUMA,
+  PersonalData,
+  WorkHistory,
   Modalidad40,
-  Beneficiarios,
+  Beneficiaries,
 } from '../models';
-import { UMA_ACTUAL, calcularUMADesdeValorDiario, getUMAPorAnio } from '../constants/uma';
-import { calcularEdad, calcularFechaRetiro } from '../utils/date';
-import { diarioAMensual, mensualADiario } from '../utils/format';
+import { UMA_ACTUAL, calculateUMAFromDailyValue, getUMAByYear } from '../constants/uma';
+import { calculateAge, calculateRetirementDate } from '../utils/date';
+import { dailyToMonthly, monthlyToDaily } from '../utils/format';
 
-const ESTADO_INICIAL: PensionInput = {
-  datosPersonales: {
-    sexo: 'masculino',
-    fechaNacimiento: new Date(1965, 0, 1),
-    edad: 0,
-    fechaRetiroEstimada: new Date(),
-    edadRetiro: 65,
+const INITIAL_STATE: PensionInput = {
+  personalData: {
+    sex: 'masculino',
+    birthDate: new Date(1965, 0, 1),
+    age: 0,
+    estimatedRetirementDate: new Date(),
+    retirementAge: 65,
   },
-  historialLaboral: {
-    semanasTotales: 0,
-    relacionesLaborales: [],
+  workHistory: {
+    totalWeeks: 0,
+    employmentRelations: [],
   },
-  salarioPromedio: {
-    salarioDiario: 0,
-    salarioMensual: 0,
-    esManual: true,
+  averageSalary: {
+    dailySalary: 0,
+    monthlySalary: 0,
+    isManual: true,
   },
   uma: {
-    umaDiaria: UMA_ACTUAL.umaDiaria,
-    umaMensual: UMA_ACTUAL.umaMensual,
-    umaAnual: UMA_ACTUAL.umaAnual,
-    anio: UMA_ACTUAL.anio,
-    esPersonalizada: false,
+    dailyUMA: UMA_ACTUAL.dailyUMA,
+    monthlyUMA: UMA_ACTUAL.monthlyUMA,
+    annualUMA: UMA_ACTUAL.annualUMA,
+    year: UMA_ACTUAL.year,
+    isCustom: false,
   },
   modalidad40: {
-    activa: false,
+    active: false,
   },
-  beneficiarios: {
-    tieneConyuge: false,
-    tieneHijosMenores: false,
-    numeroHijosMenores: 0,
-    tienePadresDependientes: false,
-    numeroPadresDependientes: 0,
+  beneficiaries: {
+    hasSpouse: false,
+    hasMinorChildren: false,
+    numberOfMinorChildren: 0,
+    hasDependentParents: false,
+    numberOfDependentParents: 0,
   },
 };
 
 export function usePensionForm() {
-  const [input, setInput] = useState<PensionInput>(ESTADO_INICIAL);
+  const [input, setInput] = useState<PensionInput>(INITIAL_STATE);
 
-  const actualizarDatosPersonales = useCallback(
-    (datos: Partial<DatosPersonales>) => {
+  const updatePersonalData = useCallback(
+    (data: Partial<PersonalData>) => {
       setInput((prev) => {
-        const nuevoDatos = { ...prev.datosPersonales, ...datos };
+        const newData = { ...prev.personalData, ...data };
         // Recalcular edad automáticamente si cambia la fecha de nacimiento
-        if (datos.fechaNacimiento) {
-          nuevoDatos.edad = calcularEdad(datos.fechaNacimiento);
+        if (data.birthDate) {
+          newData.age = calculateAge(data.birthDate);
         }
         // Recalcular fecha de retiro si cambia la edad de retiro
-        if (datos.edadRetiro !== undefined && nuevoDatos.fechaNacimiento) {
-          nuevoDatos.fechaRetiroEstimada = calcularFechaRetiro(
-            nuevoDatos.fechaNacimiento,
-            datos.edadRetiro,
+        if (data.retirementAge !== undefined && newData.birthDate) {
+          newData.estimatedRetirementDate = calculateRetirementDate(
+            newData.birthDate,
+            data.retirementAge,
           );
         }
-        return { ...prev, datosPersonales: nuevoDatos };
+        return { ...prev, personalData: newData };
       });
     },
     [],
   );
 
-  const actualizarHistorial = useCallback((historial: Partial<HistorialLaboral>) => {
+  const updateWorkHistory = useCallback((history: Partial<WorkHistory>) => {
     setInput((prev) => ({
       ...prev,
-      historialLaboral: { ...prev.historialLaboral, ...historial },
+      workHistory: { ...prev.workHistory, ...history },
     }));
   }, []);
 
-  const actualizarSalarioDiario = useCallback((salarioDiario: number) => {
+  const updateDailySalary = useCallback((dailySalary: number) => {
     setInput((prev) => ({
       ...prev,
-      salarioPromedio: {
-        ...prev.salarioPromedio,
-        salarioDiario,
-        salarioMensual: diarioAMensual(salarioDiario),
-        esManual: true,
+      averageSalary: {
+        ...prev.averageSalary,
+        dailySalary,
+        monthlySalary: dailyToMonthly(dailySalary),
+        isManual: true,
       },
     }));
   }, []);
 
-  const actualizarSalarioMensual = useCallback((salarioMensual: number) => {
+  const updateMonthlySalary = useCallback((monthlySalary: number) => {
     setInput((prev) => ({
       ...prev,
-      salarioPromedio: {
-        ...prev.salarioPromedio,
-        salarioDiario: mensualADiario(salarioMensual),
-        salarioMensual,
-        esManual: true,
+      averageSalary: {
+        ...prev.averageSalary,
+        dailySalary: monthlyToDaily(monthlySalary),
+        monthlySalary,
+        isManual: true,
       },
     }));
   }, []);
 
-  const seleccionarUMAPorAnio = useCallback((anio: number) => {
-    const registro = getUMAPorAnio(anio);
-    if (registro) {
+  const selectUMAByYear = useCallback((year: number) => {
+    const record = getUMAByYear(year);
+    if (record) {
       setInput((prev) => ({
         ...prev,
         uma: {
-          umaDiaria: registro.umaDiaria,
-          umaMensual: registro.umaMensual,
-          umaAnual: registro.umaAnual,
-          anio: registro.anio,
-          esPersonalizada: false,
+          dailyUMA: record.dailyUMA,
+          monthlyUMA: record.monthlyUMA,
+          annualUMA: record.annualUMA,
+          year: record.year,
+          isCustom: false,
         },
       }));
     }
   }, []);
 
-  const establecerUMAPersonalizada = useCallback((umaDiaria: number) => {
-    const valores = calcularUMADesdeValorDiario(umaDiaria);
+  const setCustomUMA = useCallback((dailyUMA: number) => {
+    const values = calculateUMAFromDailyValue(dailyUMA);
     setInput((prev) => ({
       ...prev,
       uma: {
-        ...valores,
-        anio: new Date().getFullYear(),
-        esPersonalizada: true,
+        ...values,
+        year: new Date().getFullYear(),
+        isCustom: true,
       },
     }));
   }, []);
 
-  const actualizarModalidad40 = useCallback((m40: Partial<Modalidad40>) => {
+  const updateModalidad40 = useCallback((m40: Partial<Modalidad40>) => {
     setInput((prev) => ({
       ...prev,
       modalidad40: { ...prev.modalidad40, ...m40 },
     }));
   }, []);
 
-  const actualizarBeneficiarios = useCallback((beneficiarios: Partial<Beneficiarios>) => {
+  const updateBeneficiaries = useCallback((beneficiaries: Partial<Beneficiaries>) => {
     setInput((prev) => ({
       ...prev,
-      beneficiarios: { ...prev.beneficiarios, ...beneficiarios },
+      beneficiaries: { ...prev.beneficiaries, ...beneficiaries },
     }));
   }, []);
 
   const resetForm = useCallback(() => {
-    setInput(ESTADO_INICIAL);
+    setInput(INITIAL_STATE);
   }, []);
 
   return {
     input,
-    actualizarDatosPersonales,
-    actualizarHistorial,
-    actualizarSalarioDiario,
-    actualizarSalarioMensual,
-    seleccionarUMAPorAnio,
-    establecerUMAPersonalizada,
-    actualizarModalidad40,
-    actualizarBeneficiarios,
+    updatePersonalData,
+    updateWorkHistory,
+    updateDailySalary,
+    updateMonthlySalary,
+    selectUMAByYear,
+    setCustomUMA,
+    updateModalidad40,
+    updateBeneficiaries,
     resetForm,
   };
 }

@@ -5,10 +5,10 @@
  * NOTA: El IMSS puede cambiar el formato del documento. Este parser se basa
  * en los patrones comunes observados en constancias digitales (no escaneadas).
  */
-import type { DatosExtraidos, ParseResult, DocumentType, RelacionLaboral } from '../../../models';
-import { calcularSbcPromedioPonderado, type PeriodoSBC } from '../../../utils/sbcPromedio';
+import type { ExtractedData, ParseResult, DocumentType, EmploymentRelation } from '../../../models';
+import { calculateWeightedAverageSBC, type SBCPeriod } from '../../../utils/sbcPromedio';
 import { round2 } from '../../../utils/format';
-import { SEMANAS_PROMEDIO_SBC } from '../../../constants/ley73';
+import { SBC_AVERAGE_WEEKS } from '../../../constants/ley73';
 
 /** Interfaz común para todos los parsers de documentos. */
 export interface DocumentParser<T> {
@@ -18,7 +18,7 @@ export interface DocumentParser<T> {
 }
 
 /** Parser de la Constancia de Semanas Cotizadas IMSS. */
-export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
+export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
   documentType: 'constancia_semanas_imss',
 
   canHandle(text: string): boolean {
@@ -29,12 +29,12 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
     );
   },
 
-  parse(text: string): ParseResult<DatosExtraidos> {
-    const advertencias: string[] = [];
-    const camposFaltantes: string[] = [];
+  parse(text: string): ParseResult<ExtractedData> {
+    const warnings: string[] = [];
+    const missingFields: string[] = [];
 
-    const datos: DatosExtraidos = {
-      relacionesLaborales: [],
+    const data: ExtractedData = {
+      employmentRelations: [],
     };
 
     // ─── Nombre ───────────────────────────────────────────
@@ -45,65 +45,65 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
     // (p. ej. entre "NSS:" y el número de NSS) en vez de justo después de
     // un rótulo "Nombre:". Por eso se prueban varias estrategias en orden
     // de confiabilidad, en vez de asumir adyacencia estricta.
-    datos.nombre = extraerNombre(text) ?? undefined;
-    if (!datos.nombre) {
-      camposFaltantes.push('Nombre');
+    data.name = extractName(text) ?? undefined;
+    if (!data.name) {
+      missingFields.push('Nombre');
     }
 
     // ─── CURP ───────────────────────────────────────────
     const curpMatch = text.match(/\b([A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d)\b/);
     if (curpMatch?.[1]) {
-      datos.curp = curpMatch[1];
+      data.curp = curpMatch[1];
     } else {
-      camposFaltantes.push('CURP');
+      missingFields.push('CURP');
     }
 
     // ─── NSS ───────────────────────────────────────────
     // El valor no siempre está inmediatamente después de la etiqueta (puede
     // haber otro texto intercalado por el orden de extracción); se busca en
     // una ventana posterior a la etiqueta en vez de exigir adyacencia.
-    const nssValor = buscarValorTrasEtiqueta(text, /(?:nss|n\.s\.s\.|número de seguridad social)/i, /\b(\d{10,11})\b/);
-    if (nssValor) {
-      datos.nss = nssValor;
+    const nssValue = findValueAfterLabel(text, /(?:nss|n\.s\.s\.|número de seguridad social)/i, /\b(\d{10,11})\b/);
+    if (nssValue) {
+      data.nss = nssValue;
     } else {
-      camposFaltantes.push('NSS');
+      missingFields.push('NSS');
     }
 
     // ─── Fecha de nacimiento ───────────────────────────────────────────
-    const fechaNacMatch = text.match(
+    const birthDateMatch = text.match(
       /(?:fecha de nacimiento|nacimiento)[:\s]*(\d{2}[\/\-]\d{2}[\/\-]\d{4}|\d{4}[\/\-]\d{2}[\/\-]\d{2})/i,
     );
-    if (fechaNacMatch?.[1]) {
-      const fechaStr = fechaNacMatch[1];
-      const fecha = new Date(fechaStr + 'T00:00:00');
-      if (!isNaN(fecha.getTime())) {
-        datos.fechaNacimiento = fecha;
+    if (birthDateMatch?.[1]) {
+      const dateStr = birthDateMatch[1];
+      const date = new Date(dateStr + 'T00:00:00');
+      if (!isNaN(date.getTime())) {
+        data.birthDate = date;
       }
-    } else if (datos.curp) {
+    } else if (data.curp) {
       // La Constancia de Semanas Cotizadas no incluye un campo explícito de
       // fecha de nacimiento, pero el CURP la codifica en sus primeros 6
       // dígitos (AAMMDD).
-      const fechaDesdeCurp = fechaNacimientoDesdeCURP(datos.curp);
-      if (fechaDesdeCurp) {
-        datos.fechaNacimiento = fechaDesdeCurp;
-        advertencias.push(
+      const dateFromCurp = birthDateFromCurp(data.curp);
+      if (dateFromCurp) {
+        data.birthDate = dateFromCurp;
+        warnings.push(
           'La fecha de nacimiento se infirió del CURP (este documento no la incluye directamente). Verifícala.',
         );
       } else {
-        camposFaltantes.push('Fecha de nacimiento');
+        missingFields.push('Fecha de nacimiento');
       }
     } else {
-      camposFaltantes.push('Fecha de nacimiento');
+      missingFields.push('Fecha de nacimiento');
     }
 
     // ─── Semanas cotizadas ───────────────────────────────────────────
-    const semanasMatch = text.match(
+    const weeksMatch = text.match(
       /(?:semanas\s+(?:cotizadas|reconocidas|acreditadas))[:\s]*(\d{1,5})/i,
     );
-    if (semanasMatch?.[1]) {
-      datos.semanasTotales = parseInt(semanasMatch[1]);
+    if (weeksMatch?.[1]) {
+      data.totalWeeks = parseInt(weeksMatch[1]);
     } else {
-      camposFaltantes.push('Semanas cotizadas');
+      missingFields.push('Semanas cotizadas');
     }
 
     // ─── Último SBC ───────────────────────────────────────────
@@ -117,14 +117,14 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
     // reciente (los patrones se listan en orden reverso-cronológico).
     const sbcMatch = text.match(/\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/);
     if (sbcMatch?.[1]) {
-      const valor = parseFloat(sbcMatch[1].replace(',', '.'));
-      if (!isNaN(valor) && valor > 0) {
-        datos.ultimoSBC = valor;
+      const value = parseFloat(sbcMatch[1].replace(',', '.'));
+      if (!isNaN(value) && value > 0) {
+        data.lastSBC = value;
       } else {
-        camposFaltantes.push('Último SBC');
+        missingFields.push('Último SBC');
       }
     } else {
-      camposFaltantes.push('Último SBC');
+      missingFields.push('Último SBC');
     }
 
     // ─── SBC promedio (últimas 250 semanas) ───────────────────────────────
@@ -134,43 +134,43 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
     // alternativa sería aproximar con el último SBC de cada patrón — pero
     // eso puede diferir mucho del promedio real, así que se prefiere no
     // inventar un número y en cambio pedir la constancia correcta.
-    const historialResultado = extraerHistorialLaboral(text);
-    datos.relacionesLaborales = historialResultado.relaciones;
-    if (historialResultado.omitioMasReciente) {
-      advertencias.push(
+    const workHistoryResult = extractWorkHistory(text);
+    data.employmentRelations = workHistoryResult.relations;
+    if (workHistoryResult.omittedMostRecent) {
+      warnings.push(
         'No se pudo determinar cuándo terminó tu empleo más reciente (no aparece marcado como "Vigente"), ' +
           'así que no se incluyó en el cálculo del SBC promedio. Verifica el promedio manualmente.',
       );
     }
-    if (historialResultado.usoDatosDetallados) {
-      const promedioResultado = calcularSbcPromedioPonderado(
-        historialResultado.periodos,
+    if (workHistoryResult.usedDetailedData) {
+      const averageResult = calculateWeightedAverageSBC(
+        workHistoryResult.periods,
         new Date(),
-        SEMANAS_PROMEDIO_SBC,
+        SBC_AVERAGE_WEEKS,
       );
-      if (promedioResultado) {
-        datos.promedioSBC = round2(promedioResultado.promedio);
-        advertencias.push(
-          `SBC promedio de las últimas 250 semanas: $${datos.promedioSBC.toFixed(2)} (calculado a partir del historial detallado de modificaciones salariales de tus patrones). Verifica este valor.` +
-            (promedioResultado.completo
+      if (averageResult) {
+        data.averageSBC = round2(averageResult.average);
+        warnings.push(
+          `SBC promedio de las últimas 250 semanas: $${data.averageSBC.toFixed(2)} (calculado a partir del historial detallado de modificaciones salariales de tus patrones). Verifica este valor.` +
+            (averageResult.isComplete
               ? ''
               : ' Tu historial laboral registrado no alcanza a cubrir las 250 semanas completas; el promedio se calculó solo con los días disponibles.') +
-            (historialResultado.huboSolapamiento
+            (workHistoryResult.hadOverlap
               ? ' Detectamos periodos con más de un patrón simultáneo (ver aviso del IMSS sobre periodos traslapados); ' +
                 'en esos días el promedio pondera cada SBC por separado, lo cual puede no coincidir con cómo el IMSS combina cotizaciones simultáneas. ' +
                 'Verifica manualmente si tuviste empleos simultáneos.'
               : ''),
         );
       } else {
-        camposFaltantes.push('SBC promedio (250 semanas)');
-        advertencias.push(
+        missingFields.push('SBC promedio (250 semanas)');
+        warnings.push(
           'El historial detallado de modificaciones salariales de tus patrones no alcanza a cubrir ninguna parte de las últimas 250 semanas; ' +
             'no fue posible calcular el SBC promedio. Complétalo manualmente.',
         );
       }
     } else {
-      camposFaltantes.push('SBC promedio (250 semanas)');
-      advertencias.push(
+      missingFields.push('SBC promedio (250 semanas)');
+      warnings.push(
         'Esta constancia no incluye el historial detallado de modificaciones salariales por patrón (solo el último SBC de cada uno), ' +
           'así que no es posible calcular tu SBC promedio de las últimas 250 semanas de forma confiable. ' +
           'Para obtenerlo automáticamente, descarga la "Constancia de Semanas Cotizadas en el IMSS e Historial de Registros Afiliatorios de la Persona Asegurada" ' +
@@ -181,35 +181,35 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
     }
 
     // ─── Último patrón ───────────────────────────────────────────
-    const patronMatch = text.match(/(?:último patrón|patrón)[:\s]+([^\n\r]{5,80})/i);
-    if (patronMatch?.[1]) {
-      datos.ultimoPatron = patronMatch[1].trim();
+    const employerMatch = text.match(/(?:último patrón|patrón)[:\s]+([^\n\r]{5,80})/i);
+    if (employerMatch?.[1]) {
+      data.lastEmployer = employerMatch[1].trim();
     }
 
     // ─── Sexo ───────────────────────────────────────────
-    if (datos.curp) {
+    if (data.curp) {
       // El 11° carácter de la CURP (índice 10) indica el sexo: H=masculino, M=femenino
-      const sexoChar = datos.curp[10];
-      if (sexoChar === 'H') datos.sexo = 'masculino';
-      else if (sexoChar === 'M') datos.sexo = 'femenino';
+      const sexChar = data.curp[10];
+      if (sexChar === 'H') data.sex = 'masculino';
+      else if (sexChar === 'M') data.sex = 'femenino';
     }
 
-    const camposEncontrados = Object.values(datos).filter(
+    const fieldsFound = Object.values(data).filter(
       (v) => v !== undefined && v !== '' && v !== null && (Array.isArray(v) ? v.length > 0 : true),
     ).length;
 
     // "SBC promedio (250 semanas)" ya tiene su propia advertencia detallada
     // más arriba (con la sugerencia de qué constancia descargar); no repetir
     // el mismo campo en este resumen genérico.
-    const camposFaltantesParaResumen = camposFaltantes.filter((c) => c !== 'SBC promedio (250 semanas)');
-    if (camposFaltantesParaResumen.length > 0) {
-      advertencias.push(
-        `No se pudieron extraer automáticamente: ${camposFaltantesParaResumen.join(', ')}. Por favor completa estos campos manualmente.`,
+    const missingFieldsForSummary = missingFields.filter((c) => c !== 'SBC promedio (250 semanas)');
+    if (missingFieldsForSummary.length > 0) {
+      warnings.push(
+        `No se pudieron extraer automáticamente: ${missingFieldsForSummary.join(', ')}. Por favor completa estos campos manualmente.`,
       );
     }
 
-    if (camposEncontrados < 3) {
-      advertencias.push(
+    if (fieldsFound < 3) {
+      warnings.push(
         'El PDF puede estar escaneado o en formato no compatible con la extracción automática. ' +
           'Por favor completa todos los campos manualmente.',
       );
@@ -217,32 +217,32 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
 
     return {
       ok: true,
-      data: datos,
-      advertencias,
-      camposFaltantes,
+      data,
+      warnings,
+      missingFields,
     };
   },
 };
 
 /**
- * Busca la primera ocurrencia de `etiquetaRegex` y, dentro de una ventana de
- * texto posterior a ella (no necesariamente adyacente), busca `valorRegex`.
+ * Busca la primera ocurrencia de `labelRegex` y, dentro de una ventana de
+ * texto posterior a ella (no necesariamente adyacente), busca `valueRegex`.
  * Necesario porque el orden de extracción de pdfjs-dist sigue el orden de
  * dibujado del PDF, que puede intercalar texto no relacionado entre una
  * etiqueta y su valor.
  */
-function buscarValorTrasEtiqueta(
+function findValueAfterLabel(
   text: string,
-  etiquetaRegex: RegExp,
-  valorRegex: RegExp,
-  ventana = 200,
+  labelRegex: RegExp,
+  valueRegex: RegExp,
+  searchWindow = 200,
 ): string | null {
-  const etiquetaMatch = text.match(etiquetaRegex);
-  if (!etiquetaMatch || etiquetaMatch.index === undefined) return null;
+  const labelMatch = text.match(labelRegex);
+  if (!labelMatch || labelMatch.index === undefined) return null;
 
-  const inicio = etiquetaMatch.index + etiquetaMatch[0].length;
-  const ventanaTexto = text.slice(inicio, inicio + ventana);
-  return ventanaTexto.match(valorRegex)?.[1]?.trim() ?? null;
+  const start = labelMatch.index + labelMatch[0].length;
+  const windowText = text.slice(start, start + searchWindow);
+  return windowText.match(valueRegex)?.[1]?.trim() ?? null;
 }
 
 /**
@@ -252,44 +252,44 @@ function buscarValorTrasEtiqueta(
  * de validadores de CURP): si son mayores al año actual de 2 dígitos, se
  * asume 19XX; si no, 20XX.
  */
-function fechaNacimientoDesdeCURP(curp: string): Date | null {
+function birthDateFromCurp(curp: string): Date | null {
   const match = curp.match(/^[A-Z]{4}(\d{2})(\d{2})(\d{2})/);
   if (!match) return null;
 
-  const anio2d = parseInt(match[1] as string, 10);
-  const mes = parseInt(match[2] as string, 10);
-  const dia = parseInt(match[3] as string, 10);
-  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+  const year2d = parseInt(match[1] as string, 10);
+  const month = parseInt(match[2] as string, 10);
+  const day = parseInt(match[3] as string, 10);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
 
-  const anioActual2d = new Date().getFullYear() % 100;
-  const siglo = anio2d > anioActual2d ? 1900 : 2000;
-  const fecha = new Date(siglo + anio2d, mes - 1, dia);
+  const currentYear2d = new Date().getFullYear() % 100;
+  const century = year2d > currentYear2d ? 1900 : 2000;
+  const date = new Date(century + year2d, month - 1, day);
 
   // new Date hace "rollover" de días inválidos (ej. 30 de febrero); si el
   // mes resultante no coincide, la fecha original no era válida.
-  if (isNaN(fecha.getTime()) || fecha.getMonth() !== mes - 1) return null;
-  return fecha;
+  if (isNaN(date.getTime()) || date.getMonth() !== month - 1) return null;
+  return date;
 }
 
-interface HistorialLaboralResultado {
-  relaciones: RelacionLaboral[];
-  /** Periodos (con su propio SBC) listos para calcularSbcPromedioPonderado. */
-  periodos: PeriodoSBC[];
+interface WorkHistoryParseResult {
+  relations: EmploymentRelation[];
+  /** Periodos (con su propio SBC) listos para calculateWeightedAverageSBC. */
+  periods: SBCPeriod[];
   /** Si el empleo más reciente no se pudo incluir por no saber su fecha de baja. */
-  omitioMasReciente: boolean;
+  omittedMostRecent: boolean;
   /** Si al menos un patrón usó su tabla de movimientos (cálculo preciso) en vez de la aproximación. */
-  usoDatosDetallados: boolean;
+  usedDetailedData: boolean;
   /** Si se detectaron periodos de más de un patrón traslapados en el tiempo. */
-  huboSolapamiento: boolean;
+  hadOverlap: boolean;
 }
 
-interface MovimientoSalarial {
-  tipo: 'REINGRESO' | 'MODIFICACION' | 'BAJA';
-  fecha: Date;
-  salario: number;
+interface SalaryMovement {
+  type: 'REINGRESO' | 'MODIFICACION' | 'BAJA';
+  date: Date;
+  salary: number;
 }
 
-const DIA_MS = 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Agrupa las filas de la tabla "Tipo de movimiento / Fecha de movimiento /
@@ -301,55 +301,55 @@ const DIA_MS = 24 * 60 * 60 * 1000;
  * consistentemente junta (en ese orden — la columna "Fecha de movimiento"
  * va primero en el texto extraído), igual que "Nombre del patrón NOMBRE".
  */
-const MOVIMIENTO_REGEX =
+const MOVEMENT_REGEX =
   /(\d{2})\/(\d{2})\/(\d{4})\s+(REINGRESO|MODIFICACION DE SALARIO|BAJA)\s+\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/gi;
 
 /** Extrae las filas crudas de la tabla de movimientos en todo el documento. */
-function extraerMovimientosRaw(text: string): RegExpMatchArray[] {
-  return [...text.matchAll(MOVIMIENTO_REGEX)];
+function extractRawMovements(text: string): RegExpMatchArray[] {
+  return [...text.matchAll(MOVEMENT_REGEX)];
 }
 
-function agruparMovimientosPorPatron(
-  movimientos: RegExpMatchArray[],
-  patrones: RegExpMatchArray[],
-): MovimientoSalarial[][] {
-  const grupos: MovimientoSalarial[][] = patrones.map(() => []);
+function groupMovementsByEmployer(
+  movements: RegExpMatchArray[],
+  employers: RegExpMatchArray[],
+): SalaryMovement[][] {
+  const groups: SalaryMovement[][] = employers.map(() => []);
 
-  for (const mov of movimientos) {
-    if (mov.index === undefined) continue;
+  for (const movement of movements) {
+    if (movement.index === undefined) continue;
 
-    let empleadorIdx = -1;
-    for (const [i, p] of patrones.entries()) {
-      if (p.index !== undefined && p.index <= mov.index) {
-        empleadorIdx = i;
+    let employerIdx = -1;
+    for (const [i, employer] of employers.entries()) {
+      if (employer.index !== undefined && employer.index <= movement.index) {
+        employerIdx = i;
       } else {
         break;
       }
     }
-    if (empleadorIdx === -1) continue;
+    if (employerIdx === -1) continue;
 
-    const tipoRaw = (mov[4] ?? '').toUpperCase();
-    const tipo: MovimientoSalarial['tipo'] = tipoRaw.startsWith('REINGRESO')
+    const typeRaw = (movement[4] ?? '').toUpperCase();
+    const type: SalaryMovement['type'] = typeRaw.startsWith('REINGRESO')
       ? 'REINGRESO'
-      : tipoRaw.startsWith('BAJA')
+      : typeRaw.startsWith('BAJA')
         ? 'BAJA'
         : 'MODIFICACION';
-    const fecha = new Date(
-      parseInt(mov[3] as string, 10),
-      parseInt(mov[2] as string, 10) - 1,
-      parseInt(mov[1] as string, 10),
+    const date = new Date(
+      parseInt(movement[3] as string, 10),
+      parseInt(movement[2] as string, 10) - 1,
+      parseInt(movement[1] as string, 10),
     );
-    const salario = parseFloat((mov[5] as string).replace(',', '.'));
-    if (isNaN(salario) || salario <= 0) continue;
+    const salary = parseFloat((movement[5] as string).replace(',', '.'));
+    if (isNaN(salary) || salary <= 0) continue;
 
-    grupos[empleadorIdx]?.push({ tipo, fecha, salario });
+    groups[employerIdx]?.push({ type, date, salary });
   }
 
-  for (const grupo of grupos) {
-    grupo.sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
+  for (const group of groups) {
+    group.sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 
-  return grupos;
+  return groups;
 }
 
 /**
@@ -361,42 +361,42 @@ function agruparMovimientosPorPatron(
  * eventos utilizables o si no se puede determinar cuándo termina el último
  * periodo (sin BAJA y sin estar vigente).
  */
-function periodosDesdeMovimientos(movimientos: MovimientoSalarial[], esVigente: boolean, hoy: Date): PeriodoSBC[] {
-  const eventos = movimientos.filter((m) => m.tipo !== 'BAJA');
-  if (eventos.length === 0) return [];
+function periodsFromMovements(movements: SalaryMovement[], isActive: boolean, today: Date): SBCPeriod[] {
+  const events = movements.filter((m) => m.type !== 'BAJA');
+  if (events.length === 0) return [];
 
-  const filaBaja = movimientos.find((m) => m.tipo === 'BAJA');
-  const periodos: PeriodoSBC[] = [];
+  const terminationRow = movements.find((m) => m.type === 'BAJA');
+  const periods: SBCPeriod[] = [];
 
-  for (const [i, actual] of eventos.entries()) {
-    const siguiente = eventos[i + 1];
-    let fin: Date;
-    if (siguiente) {
-      fin = new Date(siguiente.fecha.getTime() - DIA_MS);
-    } else if (filaBaja) {
-      fin = filaBaja.fecha;
-    } else if (esVigente) {
-      fin = hoy;
+  for (const [i, current] of events.entries()) {
+    const next = events[i + 1];
+    let end: Date;
+    if (next) {
+      end = new Date(next.date.getTime() - DAY_MS);
+    } else if (terminationRow) {
+      end = terminationRow.date;
+    } else if (isActive) {
+      end = today;
     } else {
       // Sin evento siguiente, sin fila BAJA y sin estar vigente: no se sabe
       // cuándo terminó este último periodo salarial. Se omite por seguridad
       // en vez de adivinar.
       continue;
     }
-    if (fin.getTime() < actual.fecha.getTime()) continue;
-    periodos.push({ fechaInicio: actual.fecha, fechaFin: fin, sbc: actual.salario });
+    if (end.getTime() < current.date.getTime()) continue;
+    periods.push({ startDate: current.date, endDate: end, sbc: current.salary });
   }
 
-  return periodos;
+  return periods;
 }
 
 /** Detecta si algún par de periodos (de distintos patrones) se traslapa en el tiempo. */
-function detectarSolapamiento(periodos: PeriodoSBC[]): boolean {
-  const ordenados = [...periodos].sort((a, b) => a.fechaInicio.getTime() - b.fechaInicio.getTime());
-  let finMax = -Infinity;
-  for (const p of ordenados) {
-    if (p.fechaInicio.getTime() < finMax) return true;
-    finMax = Math.max(finMax, p.fechaFin.getTime());
+function detectOverlap(periods: SBCPeriod[]): boolean {
+  const sorted = [...periods].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+  let maxEnd = -Infinity;
+  for (const period of sorted) {
+    if (period.startDate.getTime() < maxEnd) return true;
+    maxEnd = Math.max(maxEnd, period.endDate.getTime());
   }
   return false;
 }
@@ -424,108 +424,108 @@ function detectarSolapamiento(periodos: PeriodoSBC[]): boolean {
  * palabra "Vigente"; si no, se omite del historial reconstruido por no
  * poder determinar cuándo terminó.
  */
-function extraerHistorialLaboral(text: string): HistorialLaboralResultado {
+function extractWorkHistory(text: string): WorkHistoryParseResult {
   // "Fecha de alta" puede venir seguido directamente de su fecha, o de la
   // etiqueta "Fecha de baja" (sin valor propio, ver nota de la función) antes
   // de la fecha — que en ambos casos es la de alta.
-  const altas = [...text.matchAll(/fecha de alta(?:\s+fecha de baja)?\s+(\d{2})\/(\d{2})\/(\d{4})/gi)];
-  const patrones = [...text.matchAll(/nombre del patr[oó]n\s+([^\n\r]{2,80})/gi)];
-  const registros = [...text.matchAll(/registro patronal\s+(\S+)/gi)];
+  const hireDates = [...text.matchAll(/fecha de alta(?:\s+fecha de baja)?\s+(\d{2})\/(\d{2})\/(\d{4})/gi)];
+  const employers = [...text.matchAll(/nombre del patr[oó]n\s+([^\n\r]{2,80})/gi)];
+  const registrationNumbers = [...text.matchAll(/registro patronal\s+(\S+)/gi)];
 
-  const movimientosRaw = extraerMovimientosRaw(text);
-  const rangosMovimientos = movimientosRaw
+  const rawMovements = extractRawMovements(text);
+  const movementRanges = rawMovements
     .filter((m): m is RegExpMatchArray & { index: number } => m.index !== undefined)
     .map((m) => [m.index, m.index + m[0].length] as const);
-  const dentroDeMovimiento = (idx: number) => rangosMovimientos.some(([ini, fin]) => idx >= ini && idx < fin);
+  const isInsideMovement = (index: number) => movementRanges.some(([start, end]) => index >= start && index < end);
 
   // Los montos "$" de la tabla de movimientos (REINGRESO/MODIFICACIÓN/BAJA)
   // no cuentan como el SBC de encabezado de cada patrón.
-  const sbcs = [...text.matchAll(/\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/g)].filter(
-    (m) => m.index === undefined || !dentroDeMovimiento(m.index),
+  const sbcAmounts = [...text.matchAll(/\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/g)].filter(
+    (m) => m.index === undefined || !isInsideMovement(m.index),
   );
 
-  const n = altas.length;
-  if (n === 0 || sbcs.length !== n || patrones.length !== n) {
+  const count = hireDates.length;
+  if (count === 0 || sbcAmounts.length !== count || employers.length !== count) {
     // Las listas no cuadran: el documento no sigue la estructura esperada
     // (o hay más/menos patrones de los detectados). Evitar adivinar.
-    return { relaciones: [], periodos: [], omitioMasReciente: false, usoDatosDetallados: false, huboSolapamiento: false };
+    return { relations: [], periods: [], omittedMostRecent: false, usedDetailedData: false, hadOverlap: false };
   }
 
-  const movimientosPorPatron = agruparMovimientosPorPatron(movimientosRaw, patrones);
-  const esVigenteGlobal = /\bvigente\b/i.test(text);
-  const hoy = new Date();
-  const fechaAltaDe = (m: RegExpMatchArray) =>
+  const movementsByEmployer = groupMovementsByEmployer(rawMovements, employers);
+  const isCurrentlyActiveGlobal = /\bvigente\b/i.test(text);
+  const today = new Date();
+  const hireDateOf = (m: RegExpMatchArray) =>
     new Date(parseInt(m[3] as string, 10), parseInt(m[2] as string, 10) - 1, parseInt(m[1] as string, 10));
 
-  const relaciones: RelacionLaboral[] = [];
-  const periodos: PeriodoSBC[] = [];
-  let omitioMasReciente = false;
-  let usoDatosDetallados = false;
+  const relations: EmploymentRelation[] = [];
+  const periods: SBCPeriod[] = [];
+  let omittedMostRecent = false;
+  let usedDetailedData = false;
 
-  for (let i = 0; i < n; i++) {
-    const altaMatch = altas[i];
-    const sbcMatch = sbcs[i];
-    const patronMatch = patrones[i];
-    if (!altaMatch || !sbcMatch || !patronMatch) continue;
+  for (let i = 0; i < count; i++) {
+    const hireMatch = hireDates[i];
+    const sbcMatch = sbcAmounts[i];
+    const employerMatch = employers[i];
+    if (!hireMatch || !sbcMatch || !employerMatch) continue;
 
-    const fechaAlta = fechaAltaDe(altaMatch);
-    const esVigente = i === 0 && esVigenteGlobal;
+    const hireDate = hireDateOf(hireMatch);
+    const isActive = i === 0 && isCurrentlyActiveGlobal;
     const sbcHeader = parseFloat((sbcMatch[1] as string).replace(',', '.'));
 
-    const periodosDetallados = periodosDesdeMovimientos(movimientosPorPatron[i] ?? [], esVigente, hoy);
+    const detailedPeriods = periodsFromMovements(movementsByEmployer[i] ?? [], isActive, today);
 
-    let periodosEmpleador: PeriodoSBC[];
-    let fechaBaja: Date | undefined;
+    let employerPeriods: SBCPeriod[];
+    let terminationDate: Date | undefined;
 
-    if (periodosDetallados.length > 0) {
-      usoDatosDetallados = true;
-      periodosEmpleador = periodosDetallados;
-      fechaBaja = periodosDetallados[periodosDetallados.length - 1]?.fechaFin;
+    if (detailedPeriods.length > 0) {
+      usedDetailedData = true;
+      employerPeriods = detailedPeriods;
+      terminationDate = detailedPeriods[detailedPeriods.length - 1]?.endDate;
     } else {
-      if (esVigente) {
-        fechaBaja = hoy;
+      if (isActive) {
+        terminationDate = today;
       } else if (i === 0) {
-        omitioMasReciente = true;
+        omittedMostRecent = true;
         continue;
       } else {
-        const altaAnterior = altas[i - 1];
-        if (!altaAnterior) continue;
-        fechaBaja = new Date(fechaAltaDe(altaAnterior).getTime() - DIA_MS);
+        const previousHire = hireDates[i - 1];
+        if (!previousHire) continue;
+        terminationDate = new Date(hireDateOf(previousHire).getTime() - DAY_MS);
       }
       if (isNaN(sbcHeader) || sbcHeader <= 0) continue;
-      periodosEmpleador = [{ fechaInicio: fechaAlta, fechaFin: fechaBaja, sbc: sbcHeader }];
+      employerPeriods = [{ startDate: hireDate, endDate: terminationDate, sbc: sbcHeader }];
     }
 
-    periodos.push(...periodosEmpleador);
+    periods.push(...employerPeriods);
 
-    const registroMatch = registros[i];
-    relaciones.push({
-      nombrePatron: patronMatch[1]?.trim() ?? '',
-      registroPatronal: registroMatch?.[1] ?? '',
-      fechaAlta,
-      fechaBaja,
-      salarioBaseCotizacion: !isNaN(sbcHeader) && sbcHeader > 0 ? sbcHeader : periodosEmpleador[periodosEmpleador.length - 1]!.sbc,
-      tipoMovimiento: '',
-      diasCotizados: fechaBaja ? Math.max(0, Math.round((fechaBaja.getTime() - fechaAlta.getTime()) / DIA_MS)) : 0,
+    const registrationMatch = registrationNumbers[i];
+    relations.push({
+      employerName: employerMatch[1]?.trim() ?? '',
+      employerRegistrationNumber: registrationMatch?.[1] ?? '',
+      startDate: hireDate,
+      endDate: terminationDate,
+      contributionBaseSalary: !isNaN(sbcHeader) && sbcHeader > 0 ? sbcHeader : employerPeriods[employerPeriods.length - 1]!.sbc,
+      movementType: '',
+      contributedDays: terminationDate ? Math.max(0, Math.round((terminationDate.getTime() - hireDate.getTime()) / DAY_MS)) : 0,
     });
   }
 
   return {
-    relaciones,
-    periodos,
-    omitioMasReciente,
-    usoDatosDetallados,
-    huboSolapamiento: detectarSolapamiento(periodos),
+    relations,
+    periods,
+    omittedMostRecent,
+    usedDetailedData,
+    hadOverlap: detectOverlap(periods),
   };
 }
 
 /** Normaliza un candidato a nombre y descarta los que claramente no lo son. */
-function limpiarCandidatoNombre(candidato: string | undefined): string | null {
-  if (!candidato) return null;
-  const limpio = candidato.split('\n')[0]?.trim().replace(/\s+/g, ' ') ?? '';
-  if (limpio.length < 5 || limpio.length > 80) return null;
-  if (/patr[oó]n|registro|entidad|federativa/i.test(limpio)) return null;
-  return limpio.toUpperCase();
+function cleanNameCandidate(candidate: string | undefined): string | null {
+  if (!candidate) return null;
+  const cleaned = candidate.split('\n')[0]?.trim().replace(/\s+/g, ' ') ?? '';
+  if (cleaned.length < 5 || cleaned.length > 80) return null;
+  if (/patr[oó]n|registro|entidad|federativa/i.test(cleaned)) return null;
+  return cleaned.toUpperCase();
 }
 
 /**
@@ -533,39 +533,39 @@ function limpiarCandidatoNombre(candidato: string | undefined): string | null {
  * confiabilidad, ya que el orden de texto extraído no es fiable como
  * indicador de adyacencia visual (ver nota en el llamador).
  */
-function extraerNombre(text: string): string | null {
+function extractName(text: string): string | null {
   // 1. Campos estructurados de la "cadena original" del sello digital
   //    (Apellido Paterno / Apellido Materno / Nombre del Asegurado).
   //    Es la fuente más confiable cuando está presente.
   // NOTA: la clase de caracteres incluye espacio — "Nombre del Asegurado"
   // puede traer más de una palabra (ej. "ALAN FERNANDO"), y sin espacio la
   // captura se cortaba en la primera.
-  const apPaterno = text.match(/apellido\s*paterno\s*:\s*([a-záéíóúñ ]+?)(?=\s*[|\n]|$)/i)?.[1];
-  const apMaterno = text.match(/apellido\s*materno\s*:\s*([a-záéíóúñ ]+?)(?=\s*[|\n]|$)/i)?.[1];
-  const nombreAsegurado = text.match(/nombre\s*del\s*asegurado\s*:\s*([a-záéíóúñ ]+?)(?=\s*[|\n]|$)/i)?.[1];
-  if (nombreAsegurado || apPaterno || apMaterno) {
-    const completo = [nombreAsegurado, apPaterno, apMaterno].filter(Boolean).join(' ');
-    const limpio = limpiarCandidatoNombre(completo);
-    if (limpio) return limpio;
+  const paternalSurname = text.match(/apellido\s*paterno\s*:\s*([a-záéíóúñ ]+?)(?=\s*[|\n]|$)/i)?.[1];
+  const maternalSurname = text.match(/apellido\s*materno\s*:\s*([a-záéíóúñ ]+?)(?=\s*[|\n]|$)/i)?.[1];
+  const insuredName = text.match(/nombre\s*del\s*asegurado\s*:\s*([a-záéíóúñ ]+?)(?=\s*[|\n]|$)/i)?.[1];
+  if (insuredName || paternalSurname || maternalSurname) {
+    const full = [insuredName, paternalSurname, maternalSurname].filter(Boolean).join(' ');
+    const cleaned = cleanNameCandidate(full);
+    if (cleaned) return cleaned;
   }
 
   // 2. El nombre puede aparecer intercalado entre la etiqueta "NSS:" y su
   //    valor numérico (ver nota en el llamador sobre el orden de extracción).
-  const entreNssYValor = text.match(/nss[:\s]*\n?\s*([a-záéíóúñü ]{5,60})\n?\s*\d{10,11}/i)?.[1];
-  const candidatoNss = limpiarCandidatoNombre(entreNssYValor);
-  if (candidatoNss) return candidatoNss;
+  const betweenNssAndValue = text.match(/nss[:\s]*\n?\s*([a-záéíóúñü ]{5,60})\n?\s*\d{10,11}/i)?.[1];
+  const nssCandidate = cleanNameCandidate(betweenNssAndValue);
+  if (nssCandidate) return nssCandidate;
 
   // 3. Saludo "Estimado(a), NOMBRE" (formato de constancia de semanas).
-  const saludo = text.match(/estimado\(a\)[,:]?\s*([a-záéíóúñü ]{5,60})/i)?.[1];
-  const candidatoSaludo = limpiarCandidatoNombre(saludo);
-  if (candidatoSaludo) return candidatoSaludo;
+  const greeting = text.match(/estimado\(a\)[,:]?\s*([a-záéíóúñü ]{5,60})/i)?.[1];
+  const greetingCandidate = cleanNameCandidate(greeting);
+  if (greetingCandidate) return greetingCandidate;
 
   // 4. Etiqueta explícita "Nombre:" / "Trabajador:" (otros tipos de
   //    documento). Se excluye "Nombre del patrón" para no confundir el
   //    nombre del asegurado con el de un empleador.
-  const etiqueta = text.match(/\b(?:nombre|trabajador)\b(?!\s*del\s*patr)[:\s]+([a-záéíóúñü ]{5,60})/i)?.[1];
-  const candidatoEtiqueta = limpiarCandidatoNombre(etiqueta);
-  if (candidatoEtiqueta) return candidatoEtiqueta;
+  const label = text.match(/\b(?:nombre|trabajador)\b(?!\s*del\s*patr)[:\s]+([a-záéíóúñü ]{5,60})/i)?.[1];
+  const labelCandidate = cleanNameCandidate(label);
+  if (labelCandidate) return labelCandidate;
 
   return null;
 }

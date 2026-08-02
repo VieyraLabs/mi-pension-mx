@@ -8,14 +8,14 @@
  * streams (metadatos). La contraparte web (PdfTextExtractor.web.ts) usa
  * pdfjs-dist y sí decodifica streams comprimidos correctamente.
  */
-export async function extraerTextoPDF(base64: string): Promise<string> {
+export async function extractPdfText(base64: string): Promise<string> {
   try {
-    const binario = atob(base64);
+    const binary = atob(base64);
 
-    const textoVisible = binario.match(/[\x20-\x7E\xC0-\xFF]{4,}/g);
-    if (!textoVisible) return '';
+    const visibleText = binary.match(/[\x20-\x7E\xC0-\xFF]{4,}/g);
+    if (!visibleText) return '';
 
-    return textoVisible
+    return visibleText
       .filter(
         (s) =>
           /[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]{2,}/.test(s) &&

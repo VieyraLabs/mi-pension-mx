@@ -3,25 +3,25 @@
  */
 
 /** Calcula la edad en años completos a partir de la fecha de nacimiento. */
-export function calcularEdad(fechaNacimiento: Date, referencia?: Date): number {
-  const ref = referencia ?? new Date();
-  let edad = ref.getFullYear() - fechaNacimiento.getFullYear();
-  const mes = ref.getMonth() - fechaNacimiento.getMonth();
-  if (mes < 0 || (mes === 0 && ref.getDate() < fechaNacimiento.getDate())) {
-    edad--;
+export function calculateAge(birthDate: Date, reference?: Date): number {
+  const ref = reference ?? new Date();
+  let age = ref.getFullYear() - birthDate.getFullYear();
+  const month = ref.getMonth() - birthDate.getMonth();
+  if (month < 0 || (month === 0 && ref.getDate() < birthDate.getDate())) {
+    age--;
   }
-  return edad;
+  return age;
 }
 
 /** Calcula la fecha estimada de retiro dado el año de nacimiento y la edad de retiro. */
-export function calcularFechaRetiro(fechaNacimiento: Date, edadRetiro: number): Date {
-  const fecha = new Date(fechaNacimiento);
-  fecha.setFullYear(fecha.getFullYear() + edadRetiro);
-  return fecha;
+export function calculateRetirementDate(birthDate: Date, retirementAge: number): Date {
+  const date = new Date(birthDate);
+  date.setFullYear(date.getFullYear() + retirementAge);
+  return date;
 }
 
 /** Obtiene el año actual. */
-export function getAnioActual(): number {
+export function getCurrentYear(): number {
   return new Date().getFullYear();
 }
 

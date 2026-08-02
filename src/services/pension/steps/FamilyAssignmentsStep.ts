@@ -6,78 +6,78 @@
  */
 import type { CalculationContext, CalculationStep } from '../types';
 import {
-  ASIGNACION_CONYUGE_PCT,
-  ASIGNACION_HIJO_PCT,
-  ASIGNACION_ASCENDIENTE_PCT,
+  SPOUSE_ALLOWANCE_PCT,
+  CHILD_ALLOWANCE_PCT,
+  PARENT_ALLOWANCE_PCT,
 } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
 export const FamilyAssignmentsStep: CalculationStep = (ctx): CalculationContext => {
-  const { input, cuantiaConFactor } = ctx;
-  const { beneficiarios } = input;
-  const pasos = [...ctx.pasos];
-  const detalles: string[] = [];
+  const { input, quantityWithFactor } = ctx;
+  const { beneficiaries } = input;
+  const steps = [...ctx.steps];
+  const details: string[] = [];
 
-  let asignacionesFamiliares = 0;
+  let familyAllowances = 0;
 
   // Asignación por cónyuge / concubina (Art. 164, fr. I)
-  if (beneficiarios.tieneConyuge) {
-    const monto = round2(cuantiaConFactor * ASIGNACION_CONYUGE_PCT);
-    asignacionesFamiliares += monto;
-    detalles.push(`Cónyuge/concubina: +${(ASIGNACION_CONYUGE_PCT * 100).toFixed(0)}% = +$${monto.toFixed(2)}`);
+  if (beneficiaries.hasSpouse) {
+    const amount = round2(quantityWithFactor * SPOUSE_ALLOWANCE_PCT);
+    familyAllowances += amount;
+    details.push(`Cónyuge/concubina: +${(SPOUSE_ALLOWANCE_PCT * 100).toFixed(0)}% = +$${amount.toFixed(2)}`);
   }
 
   // Asignación por hijos menores (Art. 164, fr. II)
-  if (beneficiarios.tieneHijosMenores && beneficiarios.numeroHijosMenores > 0) {
-    const montoHijos = round2(
-      cuantiaConFactor * ASIGNACION_HIJO_PCT * beneficiarios.numeroHijosMenores,
+  if (beneficiaries.hasMinorChildren && beneficiaries.numberOfMinorChildren > 0) {
+    const childrenAmount = round2(
+      quantityWithFactor * CHILD_ALLOWANCE_PCT * beneficiaries.numberOfMinorChildren,
     );
-    asignacionesFamiliares += montoHijos;
-    detalles.push(
-      `${beneficiarios.numeroHijosMenores} hijo(s) menor(es): ` +
-        `${beneficiarios.numeroHijosMenores} × +${(ASIGNACION_HIJO_PCT * 100).toFixed(0)}% = +$${montoHijos.toFixed(2)}`,
+    familyAllowances += childrenAmount;
+    details.push(
+      `${beneficiaries.numberOfMinorChildren} hijo(s) menor(es): ` +
+        `${beneficiaries.numberOfMinorChildren} × +${(CHILD_ALLOWANCE_PCT * 100).toFixed(0)}% = +$${childrenAmount.toFixed(2)}`,
     );
   }
 
   // Asignación por ascendientes (Art. 164, fr. III)
   // Solo aplica cuando no hay cónyuge ni hijos
   if (
-    !beneficiarios.tieneConyuge &&
-    !beneficiarios.tieneHijosMenores &&
-    beneficiarios.tienePadresDependientes &&
-    beneficiarios.numeroPadresDependientes > 0
+    !beneficiaries.hasSpouse &&
+    !beneficiaries.hasMinorChildren &&
+    beneficiaries.hasDependentParents &&
+    beneficiaries.numberOfDependentParents > 0
   ) {
-    const montoAscendientes = round2(
-      cuantiaConFactor * ASIGNACION_ASCENDIENTE_PCT * beneficiarios.numeroPadresDependientes,
+    const parentsAmount = round2(
+      quantityWithFactor * PARENT_ALLOWANCE_PCT * beneficiaries.numberOfDependentParents,
     );
-    asignacionesFamiliares += montoAscendientes;
-    detalles.push(
-      `${beneficiarios.numeroPadresDependientes} ascendiente(s) dependiente(s): ` +
-        `${beneficiarios.numeroPadresDependientes} × +${(ASIGNACION_ASCENDIENTE_PCT * 100).toFixed(0)}% = +$${montoAscendientes.toFixed(2)}`,
+    familyAllowances += parentsAmount;
+    details.push(
+      `${beneficiaries.numberOfDependentParents} ascendiente(s) dependiente(s): ` +
+        `${beneficiaries.numberOfDependentParents} × +${(PARENT_ALLOWANCE_PCT * 100).toFixed(0)}% = +$${parentsAmount.toFixed(2)}`,
     );
   }
 
-  asignacionesFamiliares = round2(asignacionesFamiliares);
+  familyAllowances = round2(familyAllowances);
 
-  pasos.push({
+  steps.push({
     id: 'asignaciones_familiares',
-    titulo: '7. Asignaciones Familiares',
-    descripcion:
-      detalles.length > 0
-        ? detalles.join('; ') + ` | Total asignaciones: +$${asignacionesFamiliares.toFixed(2)}/mes`
+    title: '7. Asignaciones Familiares',
+    description:
+      details.length > 0
+        ? details.join('; ') + ` | Total asignaciones: +$${familyAllowances.toFixed(2)}/mes`
         : 'Sin asignaciones familiares (sin beneficiarios registrados)',
-    valor: asignacionesFamiliares,
+    value: familyAllowances,
     formula:
-      detalles.length > 0
+      details.length > 0
         ? 'Cuantía × (15% cónyuge + 10% × hijos + 10% × ascendientes)'
         : '$0',
-    baseLegal: 'Arts. 163–164 LSS 1973',
-    esEstimacion: false,
+    legalBasis: 'Arts. 163–164 LSS 1973',
+    isEstimate: false,
   });
 
   return {
     ...ctx,
-    asignacionesFamiliares,
-    pasos,
+    familyAllowances,
+    steps,
   };
 };

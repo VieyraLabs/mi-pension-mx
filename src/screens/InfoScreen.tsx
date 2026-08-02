@@ -34,28 +34,28 @@ export default function InfoScreen() {
 
       <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
         <Card.Content>
-          {INFO_LEY73.map((seccion) => (
+          {INFO_LEY73.map((section) => (
             <List.Accordion
-              key={seccion.id}
-              title={seccion.titulo}
-              expanded={expanded === seccion.id}
-              onPress={() => setExpanded(expanded === seccion.id ? null : seccion.id)}
+              key={section.id}
+              title={section.title}
+              expanded={expanded === section.id}
+              onPress={() => setExpanded(expanded === section.id ? null : section.id)}
               titleStyle={{ color: theme.colors.onSurface, fontWeight: 'bold', fontSize: 14 }}
               style={{ backgroundColor: 'transparent' }}
             >
               <Divider />
-              {seccion.contenido.map((parrafo, i) => (
+              {section.content.map((paragraph, i) => (
                 <Text
                   key={i}
                   variant="bodySmall"
                   style={{ color: theme.colors.onSurface, lineHeight: 20, marginVertical: 6, paddingHorizontal: 16 }}
                 >
-                  {parrafo}
+                  {paragraph}
                 </Text>
               ))}
-              {seccion.fuente && (
+              {section.source && (
                 <Text variant="labelSmall" style={{ color: theme.colors.primary, marginTop: 8, paddingHorizontal: 16, fontStyle: 'italic' }}>
-                  Fuente: {seccion.fuente}
+                  Fuente: {section.source}
                 </Text>
               )}
               <Divider style={{ marginTop: 8 }} />

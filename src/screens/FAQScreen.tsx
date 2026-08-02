@@ -31,25 +31,25 @@ export default function FAQScreen() {
           {FAQ_ITEMS.map((item) => (
             <List.Accordion
               key={item.id}
-              title={item.titulo}
+              title={item.title}
               expanded={expanded === item.id}
               onPress={() => setExpanded(expanded === item.id ? null : item.id)}
               titleStyle={{ color: theme.colors.onSurface, fontWeight: 'bold', fontSize: 14 }}
               style={{ backgroundColor: 'transparent' }}
             >
               <Divider />
-              {item.contenido.map((parrafo, i) => (
+              {item.content.map((paragraph, i) => (
                 <Text
                   key={i}
                   variant="bodySmall"
                   style={{ color: theme.colors.onSurface, lineHeight: 20, marginVertical: 6, paddingHorizontal: 16 }}
                 >
-                  {parrafo}
+                  {paragraph}
                 </Text>
               ))}
-              {item.fuente && (
+              {item.source && (
                 <Text variant="labelSmall" style={{ color: theme.colors.primary, marginTop: 8, paddingHorizontal: 16, fontStyle: 'italic' }}>
-                  Fuente: {item.fuente}
+                  Fuente: {item.source}
                 </Text>
               )}
               <Divider style={{ marginTop: 8 }} />

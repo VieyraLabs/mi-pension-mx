@@ -18,7 +18,7 @@ import InfoScreen from '../screens/InfoScreen';
 import FAQScreen from '../screens/FAQScreen';
 import PdfImportScreen from '../screens/PdfImportScreen';
 import ValidationScreen from '../screens/ValidationScreen';
-import type { DatosImportadosSimulacion } from '../models';
+import type { ImportedSimulationData } from '../models';
 
 // ─────────────────────────────────────────────
 // Tipos de rutas
@@ -26,10 +26,10 @@ import type { DatosImportadosSimulacion } from '../models';
 
 export type RootStackParamList = {
   MainTabs: undefined;
-  NewSimulation: { datosImportados?: DatosImportadosSimulacion } | undefined;
-  Result: { simulacionId?: string };
+  NewSimulation: { importedData?: ImportedSimulationData } | undefined;
+  Result: { simulationId?: string };
   PdfImport: undefined;
-  Validation: { textoExtraido: string };
+  Validation: { extractedText: string };
   FAQ: undefined;
 };
 

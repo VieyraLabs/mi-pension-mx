@@ -6,67 +6,67 @@
  */
 import type { CalculationContext, CalculationStep } from '../types';
 import {
-  FACTORES_EDAD_CESANTIA,
-  EDAD_VEJEZ,
-  EDAD_MINIMA_CESANTIA,
+  CESANTIA_AGE_FACTORS,
+  VEJEZ_AGE,
+  MINIMUM_CESANTIA_AGE,
 } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
 export const AgeFactorStep: CalculationStep = (ctx): CalculationContext => {
-  const { input, subtotalAntesFactor } = ctx;
-  const edadRetiro = input.datosPersonales.edadRetiro;
-  const pasos = [...ctx.pasos];
-  const advertencias = [...ctx.advertencias];
+  const { input, subtotalBeforeFactor } = ctx;
+  const retirementAge = input.personalData.retirementAge;
+  const steps = [...ctx.steps];
+  const warnings = [...ctx.warnings];
 
   // Determinar tipo de pensión y factor de edad
-  const tipoPension = edadRetiro >= EDAD_VEJEZ ? 'vejez' : 'cesantia_edad_avanzada';
+  const pensionType = retirementAge >= VEJEZ_AGE ? 'vejez' : 'cesantia_edad_avanzada';
 
   // El factor de edad solo aplica para Cesantía (60–64 años)
   // Para Vejez (65+) el factor es 1.0
-  let factorEdad = 1.0;
-  if (tipoPension === 'cesantia_edad_avanzada') {
+  let ageFactor = 1.0;
+  if (pensionType === 'cesantia_edad_avanzada') {
     // Clamp a los rangos válidos
-    const edadClamp = Math.max(EDAD_MINIMA_CESANTIA, Math.min(edadRetiro, EDAD_VEJEZ));
-    factorEdad = FACTORES_EDAD_CESANTIA[edadClamp] ?? 0.75;
+    const clampedAge = Math.max(MINIMUM_CESANTIA_AGE, Math.min(retirementAge, VEJEZ_AGE));
+    ageFactor = CESANTIA_AGE_FACTORS[clampedAge] ?? 0.75;
   }
 
-  const cuantiaConFactor = round2(subtotalAntesFactor * factorEdad);
+  const quantityWithFactor = round2(subtotalBeforeFactor * ageFactor);
 
-  if (tipoPension === 'cesantia_edad_avanzada') {
-    advertencias.push(
-      `Pensión de Cesantía en Edad Avanzada a los ${edadRetiro} años: ` +
-        `se aplica factor de ${(factorEdad * 100).toFixed(0)}% sobre la cuantía. ` +
+  if (pensionType === 'cesantia_edad_avanzada') {
+    warnings.push(
+      `Pensión de Cesantía en Edad Avanzada a los ${retirementAge} años: ` +
+        `se aplica factor de ${(ageFactor * 100).toFixed(0)}% sobre la cuantía. ` +
         `(Art. 139 LSS 1973)`,
     );
   }
 
-  pasos.push({
+  steps.push({
     id: 'factor_edad',
-    titulo: `6. Factor por Edad de Retiro (${tipoPension === 'vejez' ? 'Vejez' : 'Cesantía en Edad Avanzada'})`,
-    descripcion:
-      tipoPension === 'vejez'
-        ? `Pensión de Vejez a los ${edadRetiro} años: factor 100% (sin reducción). ` +
-          `Cuantía: $${cuantiaConFactor.toFixed(2)}/mes`
-        : `Cesantía en Edad Avanzada a los ${edadRetiro} años: factor ${(factorEdad * 100).toFixed(0)}%. ` +
-          `$${subtotalAntesFactor.toFixed(2)} × ${(factorEdad * 100).toFixed(0)}% = $${cuantiaConFactor.toFixed(2)}/mes`,
-    valor: cuantiaConFactor,
+    title: `6. Factor por Edad de Retiro (${pensionType === 'vejez' ? 'Vejez' : 'Cesantía en Edad Avanzada'})`,
+    description:
+      pensionType === 'vejez'
+        ? `Pensión de Vejez a los ${retirementAge} años: factor 100% (sin reducción). ` +
+          `Cuantía: $${quantityWithFactor.toFixed(2)}/mes`
+        : `Cesantía en Edad Avanzada a los ${retirementAge} años: factor ${(ageFactor * 100).toFixed(0)}%. ` +
+          `$${subtotalBeforeFactor.toFixed(2)} × ${(ageFactor * 100).toFixed(0)}% = $${quantityWithFactor.toFixed(2)}/mes`,
+    value: quantityWithFactor,
     formula:
-      tipoPension === 'vejez'
+      pensionType === 'vejez'
         ? 'Cuantía × 100% (sin reducción)'
-        : `Cuantía × ${(factorEdad * 100).toFixed(0)}%`,
-    baseLegal:
-      tipoPension === 'vejez'
+        : `Cuantía × ${(ageFactor * 100).toFixed(0)}%`,
+    legalBasis:
+      pensionType === 'vejez'
         ? 'Art. 145 LSS 1973 — Pensión de Vejez (65 años)'
         : `Art. 139 LSS 1973 — Factor de reducción Cesantía en Edad Avanzada`,
-    esEstimacion: false,
+    isEstimate: false,
   });
 
   return {
     ...ctx,
-    tipoPension,
-    factorEdad,
-    cuantiaConFactor,
-    pasos,
-    advertencias,
+    pensionType,
+    ageFactor,
+    quantityWithFactor,
+    steps,
+    warnings,
   };
 };

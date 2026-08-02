@@ -9,7 +9,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { ConstanciaIMSSParser } from '../services/pdf/parsers/PersonalDataParser';
-import { mostrarAlerta } from '../utils/alert';
+import { showAlert } from '../utils/alert';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Validation'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -18,52 +18,52 @@ export default function ValidationScreen() {
   const theme = useTheme();
   const navigation = useNavigation<Nav>();
   const route = useRoute<Props['route']>();
-  const { textoExtraido } = route.params;
+  const { extractedText } = route.params;
 
-  const [datos, setDatos] = useState({
-    nombre: '',
+  const [data, setData] = useState({
+    name: '',
     curp: '',
     nss: '',
-    semanasTotales: '',
-    promedioSBC: '',
-    ultimoSBC: '',
-    fechaNacimiento: '',
-    sexo: undefined as 'masculino' | 'femenino' | undefined,
+    totalWeeks: '',
+    averageSBC: '',
+    lastSBC: '',
+    birthDate: '',
+    sex: undefined as 'masculino' | 'femenino' | undefined,
   });
-  const [advertencias, setAdvertencias] = useState<string[]>([]);
-  const [camposFaltantes, setCamposFaltantes] = useState<string[]>([]);
-  const [mostrarTextoExtraido, setMostrarTextoExtraido] = useState(false);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [showExtractedText, setShowExtractedText] = useState(false);
 
   useEffect(() => {
-    const resultado = ConstanciaIMSSParser.parse(textoExtraido);
-    if (resultado.ok && resultado.data) {
-      const d = resultado.data;
-      setDatos({
-        nombre: d.nombre ?? '',
+    const result = ConstanciaIMSSParser.parse(extractedText);
+    if (result.ok && result.data) {
+      const d = result.data;
+      setData({
+        name: d.name ?? '',
         curp: d.curp ?? '',
         nss: d.nss ?? '',
-        semanasTotales: d.semanasTotales ? String(d.semanasTotales) : '',
-        promedioSBC: d.promedioSBC ? String(d.promedioSBC) : '',
-        ultimoSBC: d.ultimoSBC ? String(d.ultimoSBC) : '',
-        fechaNacimiento: d.fechaNacimiento ? d.fechaNacimiento.toISOString().split('T')[0] ?? '' : '',
-        sexo: d.sexo,
+        totalWeeks: d.totalWeeks ? String(d.totalWeeks) : '',
+        averageSBC: d.averageSBC ? String(d.averageSBC) : '',
+        lastSBC: d.lastSBC ? String(d.lastSBC) : '',
+        birthDate: d.birthDate ? d.birthDate.toISOString().split('T')[0] ?? '' : '',
+        sex: d.sex,
       });
-      setAdvertencias(resultado.advertencias);
-      setCamposFaltantes(resultado.camposFaltantes);
+      setWarnings(result.warnings);
+      setMissingFields(result.missingFields);
     }
-  }, [textoExtraido]);
+  }, [extractedText]);
 
-  const usarDatos = () => {
-    if (!datos.semanasTotales || parseInt(datos.semanasTotales) <= 0) {
-      mostrarAlerta('Error', 'Por favor ingresa el número de semanas cotizadas.');
+  const confirmData = () => {
+    if (!data.totalWeeks || parseInt(data.totalWeeks) <= 0) {
+      showAlert('Error', 'Por favor ingresa el número de semanas cotizadas.');
       return;
     }
 
-    const semanasTotales = parseInt(datos.semanasTotales);
-    const promedioSBC = datos.promedioSBC ? parseFloat(datos.promedioSBC) : undefined;
-    const ultimoSBC = datos.ultimoSBC ? parseFloat(datos.ultimoSBC) : undefined;
+    const totalWeeks = parseInt(data.totalWeeks);
+    const averageSBC = data.averageSBC ? parseFloat(data.averageSBC) : undefined;
+    const lastSBC = data.lastSBC ? parseFloat(data.lastSBC) : undefined;
 
-    mostrarAlerta(
+    showAlert(
       'Datos listos',
       'Tu formulario de nueva simulación se precargará con estos datos. Revisa cada paso antes de calcular tu pensión.',
       [
@@ -71,13 +71,13 @@ export default function ValidationScreen() {
           text: 'Continuar',
           onPress: () =>
             navigation.navigate('NewSimulation', {
-              datosImportados: {
-                nombre: datos.nombre || undefined,
-                sexo: datos.sexo,
-                fechaNacimiento: datos.fechaNacimiento || undefined,
-                semanasTotales: !isNaN(semanasTotales) ? semanasTotales : undefined,
-                promedioSBC: promedioSBC && !isNaN(promedioSBC) ? promedioSBC : undefined,
-                ultimoSBC: ultimoSBC && !isNaN(ultimoSBC) ? ultimoSBC : undefined,
+              importedData: {
+                name: data.name || undefined,
+                sex: data.sex,
+                birthDate: data.birthDate || undefined,
+                totalWeeks: !isNaN(totalWeeks) ? totalWeeks : undefined,
+                averageSBC: averageSBC && !isNaN(averageSBC) ? averageSBC : undefined,
+                lastSBC: lastSBC && !isNaN(lastSBC) ? lastSBC : undefined,
               },
             }),
         },
@@ -91,13 +91,13 @@ export default function ValidationScreen() {
       contentContainerStyle={styles.content}
     >
       {/* Advertencias */}
-      {advertencias.length > 0 && (
+      {warnings.length > 0 && (
         <Card style={[styles.card, { backgroundColor: '#FFF8E1' }]} elevation={0}>
           <Card.Title title="Notas de extracción" titleVariant="titleSmall" />
           <Card.Content>
-            {advertencias.map((adv, i) => (
+            {warnings.map((warning, i) => (
               <Text key={i} variant="bodySmall" style={{ color: '#795548', lineHeight: 18, marginBottom: 4 }}>
-                • {adv}
+                • {warning}
               </Text>
             ))}
           </Card.Content>
@@ -105,15 +105,15 @@ export default function ValidationScreen() {
       )}
 
       {/* Campos faltantes */}
-      {camposFaltantes.length > 0 && (
+      {missingFields.length > 0 && (
         <Card style={[styles.card, { backgroundColor: '#FFEBEE' }]} elevation={0}>
           <Card.Content>
             <Text variant="labelSmall" style={{ color: '#C62828', marginBottom: 8 }}>
               ⚠️ Campos no encontrados en el PDF (completa manualmente):
             </Text>
             <View style={styles.chips}>
-              {camposFaltantes.map((campo) => (
-                <Chip key={campo} compact style={{ backgroundColor: '#FFCDD2' }}>{campo}</Chip>
+              {missingFields.map((field) => (
+                <Chip key={field} compact style={{ backgroundColor: '#FFCDD2' }}>{field}</Chip>
               ))}
             </View>
           </Card.Content>
@@ -125,10 +125,10 @@ export default function ValidationScreen() {
         <Card.Title title="Datos personales extraídos" titleVariant="titleMedium" />
         <Divider />
         <Card.Content style={{ paddingTop: 12 }}>
-          <TextInput label="Nombre completo" value={datos.nombre} onChangeText={(v) => setDatos({ ...datos, nombre: v })} mode="outlined" style={styles.input} />
-          <TextInput label="CURP" value={datos.curp} onChangeText={(v) => setDatos({ ...datos, curp: v })} mode="outlined" style={styles.input} autoCapitalize="characters" />
-          <TextInput label="NSS (Número de Seguridad Social)" value={datos.nss} onChangeText={(v) => setDatos({ ...datos, nss: v })} mode="outlined" style={styles.input} keyboardType="numeric" />
-          <TextInput label="Fecha de nacimiento (AAAA-MM-DD)" value={datos.fechaNacimiento} onChangeText={(v) => setDatos({ ...datos, fechaNacimiento: v })} mode="outlined" style={styles.input} />
+          <TextInput label="Nombre completo" value={data.name} onChangeText={(v) => setData({ ...data, name: v })} mode="outlined" style={styles.input} />
+          <TextInput label="CURP" value={data.curp} onChangeText={(v) => setData({ ...data, curp: v })} mode="outlined" style={styles.input} autoCapitalize="characters" />
+          <TextInput label="NSS (Número de Seguridad Social)" value={data.nss} onChangeText={(v) => setData({ ...data, nss: v })} mode="outlined" style={styles.input} keyboardType="numeric" />
+          <TextInput label="Fecha de nacimiento (AAAA-MM-DD)" value={data.birthDate} onChangeText={(v) => setData({ ...data, birthDate: v })} mode="outlined" style={styles.input} />
         </Card.Content>
       </Card>
 
@@ -139,21 +139,21 @@ export default function ValidationScreen() {
         <Card.Content style={{ paddingTop: 12 }}>
           <TextInput
             label="Total de semanas cotizadas *"
-            value={datos.semanasTotales}
-            onChangeText={(v) => setDatos({ ...datos, semanasTotales: v })}
+            value={data.totalWeeks}
+            onChangeText={(v) => setData({ ...data, totalWeeks: v })}
             mode="outlined"
             keyboardType="numeric"
             style={styles.input}
           />
           <TextInput
             label="SBC promedio de las últimas 250 semanas (diario, MXN)"
-            value={datos.promedioSBC}
-            onChangeText={(v) => setDatos({ ...datos, promedioSBC: v })}
+            value={data.averageSBC}
+            onChangeText={(v) => setData({ ...data, averageSBC: v })}
             mode="outlined"
             keyboardType="decimal-pad"
             style={styles.input}
           />
-          {datos.promedioSBC !== '' ? (
+          {data.averageSBC !== '' ? (
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: -8, marginBottom: 12 }}>
               ✓ Calculado a partir del historial detallado de modificaciones salariales de tus patrones. Verifícalo.
             </Text>
@@ -166,8 +166,8 @@ export default function ValidationScreen() {
           )}
           <TextInput
             label="Último SBC registrado (solo referencia, no es el promedio)"
-            value={datos.ultimoSBC}
-            onChangeText={(v) => setDatos({ ...datos, ultimoSBC: v })}
+            value={data.lastSBC}
+            onChangeText={(v) => setData({ ...data, lastSBC: v })}
             mode="outlined"
             keyboardType="decimal-pad"
             style={styles.input}
@@ -179,7 +179,7 @@ export default function ValidationScreen() {
         ✏️ Revisa y corrige los datos extraídos. Los datos marcados con * son requeridos para el cálculo de la pensión.
       </Text>
 
-      <Button mode="contained" onPress={usarDatos} icon="check" style={styles.btn}>
+      <Button mode="contained" onPress={confirmData} icon="check" style={styles.btn}>
         Confirmar y continuar
       </Button>
       <Button mode="outlined" onPress={() => navigation.goBack()} style={styles.btn}>
@@ -190,16 +190,16 @@ export default function ValidationScreen() {
           fallas de extracción. Selecciona y copia el texto para reportarlo. */}
       <Button
         mode="text"
-        onPress={() => setMostrarTextoExtraido((v) => !v)}
+        onPress={() => setShowExtractedText((v) => !v)}
         style={styles.btn}
       >
-        {mostrarTextoExtraido ? 'Ocultar texto extraído (debug)' : 'Ver texto extraído (debug)'}
+        {showExtractedText ? 'Ocultar texto extraído (debug)' : 'Ver texto extraído (debug)'}
       </Button>
-      {mostrarTextoExtraido && (
+      {showExtractedText && (
         <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
           <Card.Content>
             <Text selectable variant="bodySmall" style={{ color: theme.colors.onSurface, fontFamily: 'monospace' }}>
-              {textoExtraido || '(vacío)'}
+              {extractedText || '(vacío)'}
             </Text>
           </Card.Content>
         </Card>

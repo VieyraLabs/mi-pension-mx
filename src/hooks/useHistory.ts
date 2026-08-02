@@ -2,51 +2,51 @@
  * Hook para gestionar el historial de simulaciones guardadas.
  */
 import { useState, useEffect, useCallback } from 'react';
-import type { SimulacionGuardada, PensionResult } from '../models';
+import type { SavedSimulation, PensionResult } from '../models';
 import {
-  obtenerSimulaciones,
-  guardarSimulacion,
-  eliminarSimulacion,
-  limpiarHistorial,
+  getSimulations,
+  saveSimulation,
+  deleteSimulation,
+  clearHistory,
 } from '../storage/simulationStorage';
 
 export function useHistory() {
-  const [simulaciones, setSimulaciones] = useState<SimulacionGuardada[]>([]);
-  const [cargando, setCargando] = useState(true);
+  const [simulations, setSimulations] = useState<SavedSimulation[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    const data = await obtenerSimulaciones();
-    setSimulaciones(data);
-    setCargando(false);
+  const load = useCallback(async () => {
+    setLoading(true);
+    const data = await getSimulations();
+    setSimulations(data);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
-    cargar();
-  }, [cargar]);
+    load();
+  }, [load]);
 
-  const guardar = useCallback(async (resultado: PensionResult, nombre?: string) => {
-    const nueva = await guardarSimulacion(resultado, nombre);
-    setSimulaciones((prev) => [nueva, ...prev].slice(0, 20));
-    return nueva;
+  const save = useCallback(async (result: PensionResult, name?: string) => {
+    const newSimulation = await saveSimulation(result, name);
+    setSimulations((prev) => [newSimulation, ...prev].slice(0, 20));
+    return newSimulation;
   }, []);
 
-  const eliminar = useCallback(async (id: string) => {
-    await eliminarSimulacion(id);
-    setSimulaciones((prev) => prev.filter((s) => s.id !== id));
+  const remove = useCallback(async (id: string) => {
+    await deleteSimulation(id);
+    setSimulations((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
-  const limpiar = useCallback(async () => {
-    await limpiarHistorial();
-    setSimulaciones([]);
+  const clear = useCallback(async () => {
+    await clearHistory();
+    setSimulations([]);
   }, []);
 
   return {
-    simulaciones,
-    cargando,
-    cargar,
-    guardar,
-    eliminar,
-    limpiar,
+    simulations,
+    loading,
+    load,
+    save,
+    remove,
+    clear,
   };
 }

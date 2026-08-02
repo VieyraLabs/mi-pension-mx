@@ -3,55 +3,50 @@
  */
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, Button, TextInput, Divider, useTheme, HelperText } from 'react-native-paper';
-import { calcularEscenarioSimple } from '../services/pension/PensionCalculator';
-import { formatCurrency, formatPercent } from '../utils/format';
+import { Text, Card, Button, Divider, useTheme, HelperText } from 'react-native-paper';
+import { calculateSimpleScenario } from '../services/pension/PensionCalculator';
+import { formatCurrency } from '../utils/format';
 import { UMA_ACTUAL } from '../constants/uma';
+import { ScenarioInputs, type Scenario } from '../components/ScenarioInputs';
+import { CompRow } from '../components/CompRow';
 
-interface Escenario {
-  edadRetiro: string;
-  salarioDiario: string;
-  semanasCotizadas: string;
-  umaDiaria: string;
-}
-
-const DEFAULT_ESC: Escenario = {
-  edadRetiro: '65',
-  salarioDiario: '300',
-  semanasCotizadas: '800',
-  umaDiaria: String(UMA_ACTUAL.umaDiaria),
+const DEFAULT_SCENARIO: Scenario = {
+  retirementAge: '65',
+  dailySalary: '300',
+  totalWeeks: '800',
+  dailyUMA: String(UMA_ACTUAL.dailyUMA),
 };
 
 export default function SimulatorScreen() {
   const theme = useTheme();
-  const [escA, setEscA] = useState<Escenario>({ ...DEFAULT_ESC });
-  const [escB, setEscB] = useState<Escenario>({ ...DEFAULT_ESC, edadRetiro: '65', semanasCotizadas: '1000' });
+  const [scenarioA, setScenarioA] = useState<Scenario>({ ...DEFAULT_SCENARIO });
+  const [scenarioB, setScenarioB] = useState<Scenario>({ ...DEFAULT_SCENARIO, retirementAge: '65', totalWeeks: '1000' });
   const [resultA, setResultA] = useState<number | null>(null);
   const [resultB, setResultB] = useState<number | null>(null);
-  const [comparado, setComparado] = useState(false);
+  const [compared, setCompared] = useState(false);
 
-  const calcular = () => {
-    const a = calcularEscenarioSimple({
-      edadRetiro: parseInt(escA.edadRetiro) || 65,
-      salarioDiario: parseFloat(escA.salarioDiario) || 0,
-      semanasCotizadas: parseInt(escA.semanasCotizadas) || 0,
-      umaDiaria: parseFloat(escA.umaDiaria) || UMA_ACTUAL.umaDiaria,
+  const calculate = () => {
+    const a = calculateSimpleScenario({
+      edadRetiro: parseInt(scenarioA.retirementAge) || 65,
+      salarioDiario: parseFloat(scenarioA.dailySalary) || 0,
+      semanasCotizadas: parseInt(scenarioA.totalWeeks) || 0,
+      umaDiaria: parseFloat(scenarioA.dailyUMA) || UMA_ACTUAL.dailyUMA,
     });
-    const b = calcularEscenarioSimple({
-      edadRetiro: parseInt(escB.edadRetiro) || 65,
-      salarioDiario: parseFloat(escB.salarioDiario) || 0,
-      semanasCotizadas: parseInt(escB.semanasCotizadas) || 0,
-      umaDiaria: parseFloat(escB.umaDiaria) || UMA_ACTUAL.umaDiaria,
+    const b = calculateSimpleScenario({
+      edadRetiro: parseInt(scenarioB.retirementAge) || 65,
+      salarioDiario: parseFloat(scenarioB.dailySalary) || 0,
+      semanasCotizadas: parseInt(scenarioB.totalWeeks) || 0,
+      umaDiaria: parseFloat(scenarioB.dailyUMA) || UMA_ACTUAL.dailyUMA,
     });
     setResultA(a);
     setResultB(b);
-    setComparado(true);
+    setCompared(true);
   };
 
-  const difMensual = (resultA ?? 0) - (resultB ?? 0);
-  const difAnual = difMensual * 12;
-  const pctIncremento = resultB && resultB > 0 && resultA ? ((resultA - resultB) / resultB) * 100 : 0;
-  const mayor = (resultA ?? 0) >= (resultB ?? 0) ? 'A' : 'B';
+  const monthlyDifference = (resultA ?? 0) - (resultB ?? 0);
+  const annualDifference = monthlyDifference * 12;
+  const percentIncrease = resultB && resultB > 0 && resultA ? ((resultA - resultB) / resultB) * 100 : 0;
+  const better = (resultA ?? 0) >= (resultB ?? 0) ? 'A' : 'B';
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={styles.content}>
@@ -67,7 +62,7 @@ export default function SimulatorScreen() {
         <Card style={[styles.scenarioCard, { backgroundColor: theme.colors.surface }]} elevation={2}>
           <Card.Title title="Escenario A" titleStyle={{ color: theme.colors.primary, fontWeight: 'bold' }} />
           <Card.Content>
-            <EscenarioInputs esc={escA} setEsc={setEscA} theme={theme} />
+            <ScenarioInputs scenario={scenarioA} onChange={setScenarioA} />
           </Card.Content>
         </Card>
 
@@ -75,16 +70,16 @@ export default function SimulatorScreen() {
         <Card style={[styles.scenarioCard, { backgroundColor: theme.colors.surface }]} elevation={2}>
           <Card.Title title="Escenario B" titleStyle={{ color: '#FF6F00', fontWeight: 'bold' }} />
           <Card.Content>
-            <EscenarioInputs esc={escB} setEsc={setEscB} theme={theme} />
+            <ScenarioInputs scenario={scenarioB} onChange={setScenarioB} />
           </Card.Content>
         </Card>
       </View>
 
-      <Button mode="contained" onPress={calcular} style={styles.calcBtn} icon="calculator">
+      <Button mode="contained" onPress={calculate} style={styles.calcBtn} icon="calculator">
         Comparar escenarios
       </Button>
 
-      {comparado && resultA !== null && resultB !== null && (
+      {compared && resultA !== null && resultB !== null && (
         <>
           {/* Resultados */}
           <View style={styles.resultsRow}>
@@ -111,14 +106,14 @@ export default function SimulatorScreen() {
 
           {/* Comparación */}
           <Card style={[styles.compCard, { backgroundColor: theme.colors.surface }]} elevation={3}>
-            <Card.Title title={`Escenario ${mayor} es mejor`} titleVariant="titleMedium" />
+            <Card.Title title={`Escenario ${better} es mejor`} titleVariant="titleMedium" />
             <Divider />
             <Card.Content style={{ paddingTop: 12 }}>
-              <CompRow label="Diferencia mensual" value={formatCurrency(Math.abs(difMensual))} theme={theme} />
-              <CompRow label="Diferencia anual" value={formatCurrency(Math.abs(difAnual))} theme={theme} />
+              <CompRow label="Diferencia mensual" value={formatCurrency(Math.abs(monthlyDifference))} theme={theme} />
+              <CompRow label="Diferencia anual" value={formatCurrency(Math.abs(annualDifference))} theme={theme} />
               <CompRow
                 label="% de incremento"
-                value={`${pctIncremento >= 0 ? '+' : ''}${pctIncremento.toFixed(2)}%`}
+                value={`${percentIncrease >= 0 ? '+' : ''}${percentIncrease.toFixed(2)}%`}
                 theme={theme}
               />
             </Card.Content>
@@ -137,33 +132,12 @@ export default function SimulatorScreen() {
   );
 }
 
-function EscenarioInputs({ esc, setEsc, theme }: { esc: Escenario; setEsc: (e: Escenario) => void; theme: any }) {
-  return (
-    <>
-      <TextInput label="Edad retiro" value={esc.edadRetiro} onChangeText={(v) => setEsc({ ...esc, edadRetiro: v })} mode="outlined" keyboardType="numeric" style={styles.input} dense />
-      <TextInput label="Salario diario ($)" value={esc.salarioDiario} onChangeText={(v) => setEsc({ ...esc, salarioDiario: v })} mode="outlined" keyboardType="decimal-pad" style={styles.input} dense />
-      <TextInput label="Semanas cotizadas" value={esc.semanasCotizadas} onChangeText={(v) => setEsc({ ...esc, semanasCotizadas: v })} mode="outlined" keyboardType="numeric" style={styles.input} dense />
-      <TextInput label="UMA diaria ($)" value={esc.umaDiaria} onChangeText={(v) => setEsc({ ...esc, umaDiaria: v })} mode="outlined" keyboardType="decimal-pad" style={styles.input} dense />
-    </>
-  );
-}
-
-function CompRow({ label, value, theme }: { label: string; value: string; theme: any }) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{label}</Text>
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   sectionTitle: { fontWeight: 'bold', marginBottom: 4 },
   scenariosRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   scenarioCard: { flex: 1, borderRadius: 12 },
-  input: { marginBottom: 8 },
   calcBtn: { marginBottom: 16, borderRadius: 8 },
   resultsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   resultCard: { flex: 1, borderRadius: 12 },

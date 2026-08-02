@@ -7,11 +7,11 @@
 // Enums
 // ─────────────────────────────────────────────
 
-export type Sexo = 'masculino' | 'femenino';
+export type Sex = 'masculino' | 'femenino';
 
-export type TipoRetiro = 'vejez' | 'cesantia';
+export type RetirementType = 'vejez' | 'cesantia';
 
-export type TipoPension = 'vejez' | 'cesantia_edad_avanzada';
+export type PensionType = 'vejez' | 'cesantia_edad_avanzada';
 
 export type DocumentType =
   | 'constancia_semanas_imss'
@@ -25,69 +25,69 @@ export type DocumentType =
 // Datos personales
 // ─────────────────────────────────────────────
 
-export interface DatosPersonales {
-  nombre?: string;
-  sexo: Sexo;
-  fechaNacimiento: Date;
-  edad: number;
-  fechaRetiroEstimada: Date;
-  edadRetiro: number;
+export interface PersonalData {
+  name?: string;
+  sex: Sex;
+  birthDate: Date;
+  age: number;
+  estimatedRetirementDate: Date;
+  retirementAge: number;
 }
 
 // ─────────────────────────────────────────────
 // Historial laboral
 // ─────────────────────────────────────────────
 
-export interface RelacionLaboral {
-  nombrePatron: string;
-  registroPatronal: string;
-  fechaAlta: Date;
-  fechaBaja?: Date;
-  salarioBaseCotizacion: number;
-  tipoMovimiento: string;
-  diasCotizados: number;
+export interface EmploymentRelation {
+  employerName: string;
+  employerRegistrationNumber: string;
+  startDate: Date;
+  endDate?: Date;
+  contributionBaseSalary: number;
+  movementType: string;
+  contributedDays: number;
 }
 
-export interface HistorialLaboral {
-  semanasTotales: number;
-  semanasReconocidas?: number;
-  semanasDescontadas?: number;
-  fechaAlta?: Date;
-  fechaBaja?: Date;
-  ultimoPatron?: string;
-  relacionesLaborales: RelacionLaboral[];
+export interface WorkHistory {
+  totalWeeks: number;
+  recognizedWeeks?: number;
+  deductedWeeks?: number;
+  startDate?: Date;
+  endDate?: Date;
+  lastEmployer?: string;
+  employmentRelations: EmploymentRelation[];
 }
 
 // ─────────────────────────────────────────────
 // Salario Base de Cotización
 // ─────────────────────────────────────────────
 
-export interface SalarioBCPromedio {
+export interface AverageContributionSalary {
   /** Salario diario promedio de las últimas 250 semanas */
-  salarioDiario: number;
+  dailySalary: number;
   /** Salario mensual equivalente */
-  salarioMensual: number;
+  monthlySalary: number;
   /** Fuente del dato */
-  esManual: boolean;
+  isManual: boolean;
 }
 
 // ─────────────────────────────────────────────
 // UMA
 // ─────────────────────────────────────────────
 
-export interface ConfiguracionUMA {
+export interface UMAConfiguration {
   /** UMA diaria en pesos MXN */
-  umaDiaria: number;
+  dailyUMA: number;
   /** UMA mensual (umaDiaria * 30.4) */
-  umaMensual: number;
+  monthlyUMA: number;
   /** UMA anual (umaDiaria * 365) */
-  umaAnual: number;
+  annualUMA: number;
   /** Salario Mínimo General diario aplicable como referencia (ZSMG/CDMX) */
   smgCdmx?: number;
   /** Año de la UMA seleccionada */
-  anio: number;
+  year: number;
   /** Si fue capturada manualmente por el usuario */
-  esPersonalizada: boolean;
+  isCustom: boolean;
 }
 
 // ─────────────────────────────────────────────
@@ -95,23 +95,23 @@ export interface ConfiguracionUMA {
 // ─────────────────────────────────────────────
 
 export interface Modalidad40 {
-  activa: boolean;
-  salarioCotizacion?: number;
-  fechaInicio?: Date;
-  mesesEsperados?: number;
-  incrementoSalarialAnual?: number;
+  active: boolean;
+  contributionSalary?: number;
+  startDate?: Date;
+  expectedMonths?: number;
+  annualSalaryIncrease?: number;
 }
 
 // ─────────────────────────────────────────────
 // Beneficiarios
 // ─────────────────────────────────────────────
 
-export interface Beneficiarios {
-  tieneConyuge: boolean;
-  tieneHijosMenores: boolean;
-  numeroHijosMenores: number;
-  tienePadresDependientes: boolean;
-  numeroPadresDependientes: number;
+export interface Beneficiaries {
+  hasSpouse: boolean;
+  hasMinorChildren: boolean;
+  numberOfMinorChildren: number;
+  hasDependentParents: boolean;
+  numberOfDependentParents: number;
 }
 
 // ─────────────────────────────────────────────
@@ -119,35 +119,35 @@ export interface Beneficiarios {
 // ─────────────────────────────────────────────
 
 export interface PensionInput {
-  datosPersonales: DatosPersonales;
-  historialLaboral: HistorialLaboral;
-  salarioPromedio: SalarioBCPromedio;
-  uma: ConfiguracionUMA;
+  personalData: PersonalData;
+  workHistory: WorkHistory;
+  averageSalary: AverageContributionSalary;
+  uma: UMAConfiguration;
   modalidad40: Modalidad40;
-  beneficiarios: Beneficiarios;
+  beneficiaries: Beneficiaries;
 }
 
 // ─────────────────────────────────────────────
 // Pasos del cálculo (para el desglose)
 // ─────────────────────────────────────────────
 
-export interface PasoCalculo {
+export interface CalculationStepResult {
   /** Identificador del paso */
   id: string;
   /** Título descriptivo */
-  titulo: string;
+  title: string;
   /** Descripción del cálculo realizado */
-  descripcion: string;
+  description: string;
   /** Valor resultante del paso (en pesos) */
-  valor: number;
+  value: number;
   /** Fórmula aplicada (texto) */
   formula?: string;
   /** Base legal (artículo, tabla) */
-  baseLegal?: string;
+  legalBasis?: string;
   /** Si este paso involucra un supuesto/estimación */
-  esEstimacion: boolean;
+  isEstimate: boolean;
   /** Descripción del supuesto cuando aplica */
-  supuesto?: string;
+  assumption?: string;
 }
 
 // ─────────────────────────────────────────────
@@ -156,50 +156,50 @@ export interface PasoCalculo {
 
 export interface PensionResult {
   /** Tipo de pensión calculada */
-  tipoPension: TipoPension;
+  pensionType: PensionType;
   /** Pensión mensual estimada (en pesos) */
-  pensionMensual: number;
+  monthlyPension: number;
   /** Pensión anual */
-  pensionAnual: number;
+  annualPension: number;
   /** Monto diario */
-  montoDiario: number;
+  dailyAmount: number;
   /** Cuantía básica calculada */
-  cuantiaBasica: number;
+  basicAmount: number;
   /** Incrementos anuales totales */
-  incrementosAnuales: number;
+  annualIncrements: number;
   /** Incremento del 11% (Decreto DOF 2001/2004) sobre cuantía básica + incrementos */
-  incrementoDecreto11: number;
+  decree11Increment: number;
   /** Factor de edad aplicado (0.75 a 1.0) */
-  factorEdad: number;
+  ageFactor: number;
   /** Asignaciones familiares sumadas */
-  asignacionesFamiliares: number;
+  familyAllowances: number;
   /** Ayuda asistencial */
-  ayudaAsistencial: number;
+  assistanceAid: number;
   /** Si se aplicó el tope de 25 UMA */
-  aplicoTope: boolean;
+  capApplied: boolean;
   /** Si se aplicó la pensión mínima garantizada */
-  aplicoPMG: boolean;
+  pmgApplied: boolean;
   /** Desglose paso a paso */
-  pasos: PasoCalculo[];
+  steps: CalculationStepResult[];
   /** Advertencias legales o de estimación */
-  advertencias: string[];
+  warnings: string[];
   /** El resultado es una estimación */
-  esEstimacion: boolean;
+  isEstimate: boolean;
   /** Input utilizado para el cálculo */
   input: PensionInput;
   /** Fecha del cálculo */
-  fechaCalculo: string; // ISO string
+  calculationDate: string; // ISO string
 }
 
 // ─────────────────────────────────────────────
 // Simulación guardada en historial
 // ─────────────────────────────────────────────
 
-export interface SimulacionGuardada {
+export interface SavedSimulation {
   id: string;
-  nombre: string;
-  fechaCreacion: string; // ISO string
-  resultado: PensionResult;
+  name: string;
+  creationDate: string; // ISO string
+  result: PensionResult;
 }
 
 // ─────────────────────────────────────────────
@@ -207,89 +207,89 @@ export interface SimulacionGuardada {
 // ─────────────────────────────────────────────
 
 /** Datos ya revisados/corregidos por el usuario en ValidationScreen, para precargar NewSimulationScreen. */
-export interface DatosImportadosSimulacion {
-  nombre?: string;
-  sexo?: Sexo;
+export interface ImportedSimulationData {
+  name?: string;
+  sex?: Sex;
   /** Fecha en formato AAAA-MM-DD */
-  fechaNacimiento?: string;
-  semanasTotales?: number;
+  birthDate?: string;
+  totalWeeks?: number;
   /** SBC promedio estimado de las últimas 250 semanas (aproximado; ver advertencias del parser). */
-  promedioSBC?: number;
+  averageSBC?: number;
   /** Último SBC registrado con el patrón más reciente — solo informativo, no es el promedio. */
-  ultimoSBC?: number;
+  lastSBC?: number;
 }
 
 // ─────────────────────────────────────────────
 // Comparación de escenarios (Simulador)
 // ─────────────────────────────────────────────
 
-export interface EscenarioSimulador {
+export interface SimulatorScenario {
   id: 'A' | 'B';
-  edadRetiro: number;
-  salarioDiario: number;
-  semanasCotizadas: number;
-  umaDiaria: number;
+  retirementAge: number;
+  dailySalary: number;
+  contributedWeeks: number;
+  dailyUMA: number;
   modalidad40?: Partial<Modalidad40>;
-  resultado?: PensionResult;
+  result?: PensionResult;
 }
 
-export interface ComparacionEscenarios {
-  escenarioA: EscenarioSimulador;
-  escenarioB: EscenarioSimulador;
-  diferenciaMensual: number;
-  diferenciaAnual: number;
-  porcentajeIncremento: number;
+export interface ScenarioComparison {
+  scenarioA: SimulatorScenario;
+  scenarioB: SimulatorScenario;
+  monthlyDifference: number;
+  annualDifference: number;
+  percentageIncrease: number;
 }
 
 // ─────────────────────────────────────────────
 // PDF / Importación de constancia IMSS
 // ─────────────────────────────────────────────
 
-export interface DatosExtraidos {
-  nombre?: string;
+export interface ExtractedData {
+  name?: string;
   curp?: string;
   nss?: string;
-  fechaNacimiento?: Date;
-  sexo?: Sexo;
-  semanasTotales?: number;
-  semanasReconocidas?: number;
-  semanasDescontadas?: number;
-  fechaAlta?: Date;
-  fechaBaja?: Date;
-  ultimoPatron?: string;
-  estadoAsegurado?: string;
-  tipoAseguramiento?: string;
-  ultimoSBC?: number;
-  relacionesLaborales: RelacionLaboral[];
-  promedioSBC?: number;
+  birthDate?: Date;
+  sex?: Sex;
+  totalWeeks?: number;
+  recognizedWeeks?: number;
+  deductedWeeks?: number;
+  startDate?: Date;
+  endDate?: Date;
+  lastEmployer?: string;
+  insuredStatus?: string;
+  insuranceType?: string;
+  lastSBC?: number;
+  employmentRelations: EmploymentRelation[];
+  averageSBC?: number;
 }
 
 export interface ParseResult<T> {
   ok: boolean;
   data?: T;
   error?: string;
-  advertencias: string[];
-  camposFaltantes: string[];
+  warnings: string[];
+  missingFields: string[];
 }
 
-export interface DocumentoImportado {
-  tipoDocumento: DocumentType;
-  textoExtraido: string;
-  datosExtraidos: DatosExtraidos;
-  confianza: number; // 0 a 1
-  requiereRevision: boolean;
+export interface ImportedDocument {
+  documentType: DocumentType;
+  extractedText: string;
+  extractedData: ExtractedData;
+  confidence: number; // 0 a 1
+  requiresReview: boolean;
 }
 
 // ─────────────────────────────────────────────
 // Constantes UMA por año (tabla de referencia)
 // ─────────────────────────────────────────────
 
-export interface RegistroUMA {
-  anio: number;
-  umaDiaria: number;
-  umaMensual: number;
-  umaAnual: number;
+export interface UMARecord {
+  year: number;
+  dailyUMA: number;
+  monthlyUMA: number;
+  annualUMA: number;
   smgCdmx: number; // Salario Mínimo General Ciudad de México
-  esEstimacion: boolean;
-  fuente: string;
+  isEstimate: boolean;
+  source: string;
 }

@@ -10,26 +10,26 @@ import { formatCurrency, formatPercent, formatDateLong } from '../../utils/forma
 /**
  * Genera el contenido HTML del reporte de pensión.
  */
-function generarHTML(resultado: PensionResult): string {
-  const { input } = resultado;
-  const fechaCalculo = new Date(resultado.fechaCalculo);
+function generateHtml(result: PensionResult): string {
+  const { input } = result;
+  const calculationDate = new Date(result.calculationDate);
 
-  const pasosHTML = resultado.pasos
+  const stepsHtml = result.steps
     .map(
-      (paso) => `
+      (step) => `
     <tr>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold;">${paso.titulo}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 11px; color: #555;">${paso.descripcion}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold; color: #1565C0; text-align: right;">${formatCurrency(paso.valor)}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold;">${step.title}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 11px; color: #555;">${step.description}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold; color: #1565C0; text-align: right;">${formatCurrency(step.value)}</td>
     </tr>
-    ${paso.baseLegal ? `<tr><td colspan="3" style="padding: 2px 8px 8px; font-size: 10px; color: #888; font-style: italic;">📋 ${paso.baseLegal}</td></tr>` : ''}
-    ${paso.esEstimacion ? `<tr><td colspan="3" style="padding: 2px 8px 8px; font-size: 10px; color: #FF6F00;">⚠️ ESTIMACIÓN</td></tr>` : ''}
+    ${step.legalBasis ? `<tr><td colspan="3" style="padding: 2px 8px 8px; font-size: 10px; color: #888; font-style: italic;">📋 ${step.legalBasis}</td></tr>` : ''}
+    ${step.isEstimate ? `<tr><td colspan="3" style="padding: 2px 8px 8px; font-size: 10px; color: #FF6F00;">⚠️ ESTIMACIÓN</td></tr>` : ''}
   `,
     )
     .join('');
 
-  const advertenciasHTML = resultado.advertencias
-    .map((adv) => `<li style="margin-bottom: 8px; font-size: 11px; line-height: 1.5;">${adv}</li>`)
+  const warningsHtml = result.warnings
+    .map((warning) => `<li style="margin-bottom: 8px; font-size: 11px; line-height: 1.5;">${warning}</li>`)
     .join('');
 
   return `
@@ -58,7 +58,7 @@ function generarHTML(resultado: PensionResult): string {
 </head>
 <body>
   <h1>🧮 Calculadora de Pensión IMSS Ley 73</h1>
-  <p style="font-size: 12px; color: #666;">Generado el ${formatDateLong(fechaCalculo)} | Mi Pensión MX</p>
+  <p style="font-size: 12px; color: #666;">Generado el ${formatDateLong(calculationDate)} | Mi Pensión MX</p>
 
   <div class="estimacion-banner">
     ⚠️ <strong>AVISO LEGAL:</strong> Este reporte contiene ESTIMACIONES con fines informativos únicamente.
@@ -69,37 +69,37 @@ function generarHTML(resultado: PensionResult): string {
   <h2>Datos del asegurado</h2>
   <table>
     <tr><th>Campo</th><th>Valor</th></tr>
-    ${input.datosPersonales.nombre ? `<tr><td>Nombre</td><td>${input.datosPersonales.nombre}</td></tr>` : ''}
-    <tr><td>Sexo</td><td>${input.datosPersonales.sexo === 'masculino' ? 'Masculino' : 'Femenino'}</td></tr>
-    <tr><td>Edad de retiro</td><td>${input.datosPersonales.edadRetiro} años</td></tr>
-    <tr><td>Tipo de pensión</td><td>${resultado.tipoPension === 'vejez' ? 'Vejez (Art. 145 LSS 1973)' : 'Cesantía en Edad Avanzada (Art. 138 LSS 1973)'}</td></tr>
-    <tr><td>Semanas cotizadas</td><td>${input.historialLaboral.semanasTotales}</td></tr>
-    <tr><td>Salario diario promedio (SBC)</td><td>${formatCurrency(input.salarioPromedio.salarioDiario)}</td></tr>
-    <tr><td>UMA utilizada</td><td>${formatCurrency(input.uma.umaDiaria)}/día (${input.uma.anio}${input.uma.esPersonalizada ? ', personalizada' : ''})</td></tr>
-    ${input.modalidad40.activa ? `<tr><td>Modalidad 40</td><td>Activa — $${input.modalidad40.salarioCotizacion}/día</td></tr>` : ''}
+    ${input.personalData.name ? `<tr><td>Nombre</td><td>${input.personalData.name}</td></tr>` : ''}
+    <tr><td>Sexo</td><td>${input.personalData.sex === 'masculino' ? 'Masculino' : 'Femenino'}</td></tr>
+    <tr><td>Edad de retiro</td><td>${input.personalData.retirementAge} años</td></tr>
+    <tr><td>Tipo de pensión</td><td>${result.pensionType === 'vejez' ? 'Vejez (Art. 145 LSS 1973)' : 'Cesantía en Edad Avanzada (Art. 138 LSS 1973)'}</td></tr>
+    <tr><td>Semanas cotizadas</td><td>${input.workHistory.totalWeeks}</td></tr>
+    <tr><td>Salario diario promedio (SBC)</td><td>${formatCurrency(input.averageSalary.dailySalary)}</td></tr>
+    <tr><td>UMA utilizada</td><td>${formatCurrency(input.uma.dailyUMA)}/día (${input.uma.year}${input.uma.isCustom ? ', personalizada' : ''})</td></tr>
+    ${input.modalidad40.active ? `<tr><td>Modalidad 40</td><td>Activa — $${input.modalidad40.contributionSalary}/día</td></tr>` : ''}
   </table>
 
   <!-- Resultado principal -->
   <div class="resultado-principal">
     <div class="label">Pensión mensual estimada</div>
-    <div class="monto">${formatCurrency(resultado.pensionMensual)}</div>
+    <div class="monto">${formatCurrency(result.monthlyPension)}</div>
     <div class="grid-2" style="margin-top: 12px;">
       <div class="sub-monto">
         <div class="label">Anual</div>
-        <div class="valor">${formatCurrency(resultado.pensionAnual)}</div>
+        <div class="valor">${formatCurrency(result.annualPension)}</div>
       </div>
       <div class="sub-monto">
         <div class="label">Diario</div>
-        <div class="valor">${formatCurrency(resultado.montoDiario)}</div>
+        <div class="valor">${formatCurrency(result.dailyAmount)}</div>
       </div>
     </div>
   </div>
 
   <!-- Indicadores -->
   <p>
-    ${resultado.aplicoTope ? '<span class="chip">⚠️ Tope 25 UMA aplicado</span>' : ''}
-    ${resultado.aplicoPMG ? '<span class="chip">⚠️ PMG aplicada</span>' : ''}
-    <span class="chip">Factor edad: ${formatPercent(resultado.factorEdad * 100)}</span>
+    ${result.capApplied ? '<span class="chip">⚠️ Tope 25 UMA aplicado</span>' : ''}
+    ${result.pmgApplied ? '<span class="chip">⚠️ PMG aplicada</span>' : ''}
+    <span class="chip">Factor edad: ${formatPercent(result.ageFactor * 100)}</span>
   </p>
 
   <!-- Desglose del cálculo -->
@@ -110,13 +110,13 @@ function generarHTML(resultado: PensionResult): string {
       <th>Descripción</th>
       <th style="text-align: right;">Valor</th>
     </tr>
-    ${pasosHTML}
+    ${stepsHtml}
   </table>
 
   <!-- Advertencias -->
   <h2>Notas y advertencias</h2>
   <ul style="padding-left: 16px; color: #795548;">
-    ${advertenciasHTML}
+    ${warningsHtml}
   </ul>
 
   <div class="footer">
@@ -133,16 +133,16 @@ function generarHTML(resultado: PensionResult): string {
 /**
  * Genera el PDF del resultado de la pensión y lo abre para compartir.
  */
-export async function generarPDF(resultado: PensionResult): Promise<void> {
-  const html = generarHTML(resultado);
+export async function exportPensionResultToPdf(result: PensionResult): Promise<void> {
+  const html = generateHtml(result);
 
   const { uri } = await Print.printToFileAsync({
     html,
     base64: false,
   });
 
-  const puedeCompartir = await Sharing.isAvailableAsync();
-  if (puedeCompartir) {
+  const canShare = await Sharing.isAvailableAsync();
+  if (canShare) {
     await Sharing.shareAsync(uri, {
       mimeType: 'application/pdf',
       dialogTitle: 'Compartir reporte de pensión',

@@ -8,31 +8,31 @@
  */
 import { Alert, Platform } from 'react-native';
 
-export interface BotonAlerta {
+export interface AlertButton {
   text: string;
   onPress?: () => void;
   style?: 'default' | 'cancel' | 'destructive';
 }
 
-export function mostrarAlerta(titulo: string, mensaje?: string, botones?: BotonAlerta[]): void {
+export function showAlert(title: string, message?: string, buttons?: AlertButton[]): void {
   if (Platform.OS !== 'web') {
-    Alert.alert(titulo, mensaje, botones);
+    Alert.alert(title, message, buttons);
     return;
   }
 
-  const texto = [titulo, mensaje].filter(Boolean).join('\n\n');
+  const text = [title, message].filter(Boolean).join('\n\n');
 
-  if (!botones || botones.length <= 1) {
-    window.alert(texto);
-    botones?.[0]?.onPress?.();
+  if (!buttons || buttons.length <= 1) {
+    window.alert(text);
+    buttons?.[0]?.onPress?.();
     return;
   }
 
-  const cancelar = botones.find((b) => b.style === 'cancel');
-  const confirmar = botones.find((b) => b.style !== 'cancel') ?? botones[0];
-  if (window.confirm(texto)) {
-    confirmar?.onPress?.();
+  const cancelButton = buttons.find((b) => b.style === 'cancel');
+  const confirmButton = buttons.find((b) => b.style !== 'cancel') ?? buttons[0];
+  if (window.confirm(text)) {
+    confirmButton?.onPress?.();
   } else {
-    cancelar?.onPress?.();
+    cancelButton?.onPress?.();
   }
 }

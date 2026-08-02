@@ -3,87 +3,87 @@
  * Garantizan la integridad de los datos antes del cálculo.
  */
 import { z } from 'zod';
-import { SEMANAS_MINIMAS_VEJEZ } from '../constants/ley73';
+import { MINIMUM_WEEKS_VEJEZ } from '../constants/ley73';
 
 // ─────────────────────────────────────────────
 // Esquemas base
 // ─────────────────────────────────────────────
 
-export const SexoSchema = z.enum(['masculino', 'femenino'], {
+export const SexSchema = z.enum(['masculino', 'femenino'], {
   errorMap: () => ({ message: 'Selecciona el sexo' }),
 });
 
-export const DatosPersonalesSchema = z.object({
-  nombre: z.string().max(100, 'El nombre no puede exceder 100 caracteres').optional(),
-  sexo: SexoSchema,
-  fechaNacimiento: z.date({ required_error: 'La fecha de nacimiento es requerida' }),
-  edad: z.number().int().min(0).max(120),
-  fechaRetiroEstimada: z.date({ required_error: 'La fecha de retiro estimada es requerida' }),
-  edadRetiro: z
+export const PersonalDataSchema = z.object({
+  name: z.string().max(100, 'El nombre no puede exceder 100 caracteres').optional(),
+  sex: SexSchema,
+  birthDate: z.date({ required_error: 'La fecha de nacimiento es requerida' }),
+  age: z.number().int().min(0).max(120),
+  estimatedRetirementDate: z.date({ required_error: 'La fecha de retiro estimada es requerida' }),
+  retirementAge: z
     .number({ required_error: 'La edad de retiro es requerida' })
     .int('La edad debe ser un número entero')
     .min(60, 'La edad mínima de retiro es 60 años (Cesantía en Edad Avanzada)')
     .max(100, 'La edad máxima permitida es 100 años'),
 });
 
-export const HistorialLaboralSchema = z.object({
-  semanasTotales: z
+export const WorkHistorySchema = z.object({
+  totalWeeks: z
     .number({ required_error: 'Las semanas cotizadas son requeridas' })
     .int('Las semanas deben ser un número entero')
     .min(
-      SEMANAS_MINIMAS_VEJEZ,
-      `Se requieren mínimo ${SEMANAS_MINIMAS_VEJEZ} semanas cotizadas (Arts. 138 y 145 LSS 1973).`,
+      MINIMUM_WEEKS_VEJEZ,
+      `Se requieren mínimo ${MINIMUM_WEEKS_VEJEZ} semanas cotizadas (Arts. 138 y 145 LSS 1973).`,
     )
     .max(5000, 'El número de semanas parece incorrecto (máximo 5000)'),
-  semanasReconocidas: z.number().int().min(0).optional(),
-  semanasDescontadas: z.number().int().min(0).optional(),
-  relacionesLaborales: z.array(z.any()).default([]),
+  recognizedWeeks: z.number().int().min(0).optional(),
+  deductedWeeks: z.number().int().min(0).optional(),
+  employmentRelations: z.array(z.any()).default([]),
 });
 
-export const SalarioBCPromedioSchema = z.object({
-  salarioDiario: z
+export const AverageContributionSalarySchema = z.object({
+  dailySalary: z
     .number({ required_error: 'El salario diario es requerido' })
     .positive('El salario diario debe ser mayor a cero')
     .max(100000, 'El salario parece excesivo (máximo $100,000/día)'),
-  salarioMensual: z.number().positive(),
-  esManual: z.boolean().default(true),
+  monthlySalary: z.number().positive(),
+  isManual: z.boolean().default(true),
 });
 
-export const ConfiguracionUMASchema = z.object({
-  umaDiaria: z
+export const UMAConfigurationSchema = z.object({
+  dailyUMA: z
     .number({ required_error: 'El valor de la UMA es requerido' })
     .positive('La UMA debe ser mayor a cero')
     .max(10000, 'El valor de la UMA parece incorrecto'),
-  umaMensual: z.number().positive(),
-  umaAnual: z.number().positive(),
-  anio: z.number().int().min(2017).max(2100),
-  esPersonalizada: z.boolean().default(false),
+  monthlyUMA: z.number().positive(),
+  annualUMA: z.number().positive(),
+  year: z.number().int().min(2017).max(2100),
+  isCustom: z.boolean().default(false),
 });
 
 export const Modalidad40Schema = z.object({
-  activa: z.boolean().default(false),
-  salarioCotizacion: z
+  active: z.boolean().default(false),
+  contributionSalary: z
     .number()
     .positive('El salario de Modalidad 40 debe ser mayor a cero')
     .optional()
     .nullable(),
-  fechaInicio: z.date().optional().nullable(),
-  mesesEsperados: z
+  startDate: z.date().optional().nullable(),
+  expectedMonths: z
     .number()
     .int()
     .min(1, 'Los meses de Modalidad 40 deben ser al menos 1')
     .max(600)
     .optional()
     .nullable(),
-  incrementoSalarialAnual: z.number().min(0).max(100).optional().nullable(),
+  annualSalaryIncrease: z.number().min(0).max(100).optional().nullable(),
 });
 
-export const BeneficiariosSchema = z.object({
-  tieneConyuge: z.boolean().default(false),
-  tieneHijosMenores: z.boolean().default(false),
-  numeroHijosMenores: z.number().int().min(0).max(20).default(0),
-  tienePadresDependientes: z.boolean().default(false),
-  numeroPadresDependientes: z.number().int().min(0).max(2).default(0),
+export const BeneficiariesSchema = z.object({
+  hasSpouse: z.boolean().default(false),
+  hasMinorChildren: z.boolean().default(false),
+  numberOfMinorChildren: z.number().int().min(0).max(20).default(0),
+  hasDependentParents: z.boolean().default(false),
+  numberOfDependentParents: z.number().int().min(0).max(2).default(0),
 });
 
 // ─────────────────────────────────────────────
@@ -91,12 +91,12 @@ export const BeneficiariosSchema = z.object({
 // ─────────────────────────────────────────────
 
 export const PensionInputSchema = z.object({
-  datosPersonales: DatosPersonalesSchema,
-  historialLaboral: HistorialLaboralSchema,
-  salarioPromedio: SalarioBCPromedioSchema,
-  uma: ConfiguracionUMASchema,
+  personalData: PersonalDataSchema,
+  workHistory: WorkHistorySchema,
+  averageSalary: AverageContributionSalarySchema,
+  uma: UMAConfigurationSchema,
   modalidad40: Modalidad40Schema,
-  beneficiarios: BeneficiariosSchema,
+  beneficiaries: BeneficiariesSchema,
 });
 
 export type PensionInputForm = z.infer<typeof PensionInputSchema>;
@@ -105,14 +105,14 @@ export type PensionInputForm = z.infer<typeof PensionInputSchema>;
 // Esquema simplificado para el Simulador
 // ─────────────────────────────────────────────
 
-export const SimuladorSchema = z.object({
-  edadRetiro: z.number().int().min(60).max(100),
-  salarioDiario: z.number().positive(),
-  semanasCotizadas: z.number().int().min(1),
-  umaDiaria: z.number().positive(),
-  tieneConyuge: z.boolean().default(false),
-  tieneHijosMenores: z.boolean().default(false),
-  numeroHijos: z.number().int().min(0).default(0),
+export const SimulatorSchema = z.object({
+  retirementAge: z.number().int().min(60).max(100),
+  dailySalary: z.number().positive(),
+  contributedWeeks: z.number().int().min(1),
+  dailyUMA: z.number().positive(),
+  hasSpouse: z.boolean().default(false),
+  hasMinorChildren: z.boolean().default(false),
+  numberOfChildren: z.number().int().min(0).default(0),
 });
 
-export type SimuladorForm = z.infer<typeof SimuladorSchema>;
+export type SimulatorForm = z.infer<typeof SimulatorSchema>;

@@ -9,64 +9,64 @@
  */
 import { round2 } from './format';
 
-export interface PeriodoSBC {
-  fechaInicio: Date;
+export interface SBCPeriod {
+  startDate: Date;
   /** Fin del periodo (inclusive). Si el empleo sigue vigente, usar la fecha de referencia. */
-  fechaFin: Date;
+  endDate: Date;
   /** Salario Base de Cotización diario vigente durante este periodo. */
   sbc: number;
 }
 
-export interface ResultadoPromedioSBC {
+export interface SBCAverageResult {
   /** SBC promedio ponderado por días dentro de la ventana. */
-  promedio: number;
+  average: number;
   /** Días de la ventana efectivamente cubiertos por los periodos dados. */
-  diasCubiertos: number;
+  daysCovered: number;
   /** Días totales de la ventana solicitada (semanas × 7). */
-  diasEsperados: number;
+  expectedDays: number;
   /** Si los periodos cubren la ventana completa (con un margen pequeño). */
-  completo: boolean;
+  isComplete: boolean;
 }
 
-const MS_POR_DIA = 24 * 60 * 60 * 1000;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Calcula el SBC promedio ponderado por días dentro de la ventana de
- * `semanas` semanas previas a `fechaReferencia`.
+ * `weeks` semanas previas a `referenceDate`.
  *
  * @returns null si no hay periodos o ninguno se traslapa con la ventana.
  */
-export function calcularSbcPromedioPonderado(
-  periodos: PeriodoSBC[],
-  fechaReferencia: Date,
-  semanas: number,
-): ResultadoPromedioSBC | null {
-  if (periodos.length === 0) return null;
+export function calculateWeightedAverageSBC(
+  periods: SBCPeriod[],
+  referenceDate: Date,
+  weeks: number,
+): SBCAverageResult | null {
+  if (periods.length === 0) return null;
 
-  const diasEsperados = semanas * 7;
-  const finVentana = fechaReferencia.getTime();
-  const inicioVentana = finVentana - diasEsperados * MS_POR_DIA;
+  const expectedDays = weeks * 7;
+  const windowEnd = referenceDate.getTime();
+  const windowStart = windowEnd - expectedDays * MS_PER_DAY;
 
-  let sumaPonderada = 0;
-  let diasCubiertos = 0;
+  let weightedSum = 0;
+  let daysCovered = 0;
 
-  for (const periodo of periodos) {
-    const inicio = Math.max(periodo.fechaInicio.getTime(), inicioVentana);
-    // +1 día porque fechaFin es inclusiva.
-    const fin = Math.min(periodo.fechaFin.getTime() + MS_POR_DIA, finVentana);
-    if (fin <= inicio) continue;
+  for (const period of periods) {
+    const start = Math.max(period.startDate.getTime(), windowStart);
+    // +1 día porque endDate es inclusiva.
+    const end = Math.min(period.endDate.getTime() + MS_PER_DAY, windowEnd);
+    if (end <= start) continue;
 
-    const dias = (fin - inicio) / MS_POR_DIA;
-    sumaPonderada += dias * periodo.sbc;
-    diasCubiertos += dias;
+    const days = (end - start) / MS_PER_DAY;
+    weightedSum += days * period.sbc;
+    daysCovered += days;
   }
 
-  if (diasCubiertos <= 0) return null;
+  if (daysCovered <= 0) return null;
 
   return {
-    promedio: round2(sumaPonderada / diasCubiertos),
-    diasCubiertos: Math.round(diasCubiertos),
-    diasEsperados,
-    completo: diasCubiertos >= diasEsperados * 0.98,
+    average: round2(weightedSum / daysCovered),
+    daysCovered: Math.round(daysCovered),
+    expectedDays,
+    isComplete: daysCovered >= expectedDays * 0.98,
   };
 }

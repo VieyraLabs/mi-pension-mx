@@ -8,7 +8,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  StatusBar,
 } from 'react-native';
 import { Text, Card, Surface, useTheme, Chip } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -20,9 +19,9 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 interface DashboardCard {
   id: string;
-  titulo: string;
-  descripcion: string;
-  icono: string;
+  title: string;
+  description: string;
+  icon: string;
   color: string;
   onPress: () => void;
 }
@@ -31,20 +30,20 @@ export default function DashboardScreen() {
   const theme = useTheme();
   const navigation = useNavigation<Nav>();
 
-  const tarjetas: DashboardCard[] = [
+  const cards: DashboardCard[] = [
     {
       id: 'nueva',
-      titulo: '🧮 Nueva Simulación',
-      descripcion: 'Calcula tu pensión estimada paso a paso con todos los detalles',
-      icono: '🧮',
+      title: '🧮 Nueva Simulación',
+      description: 'Calcula tu pensión estimada paso a paso con todos los detalles',
+      icon: '🧮',
       color: theme.colors.primary,
       onPress: () => navigation.navigate('NewSimulation'),
     },
     {
       id: 'pdf',
-      titulo: '📄 Importar Constancia IMSS',
-      descripcion: 'Carga tu constancia de semanas cotizadas en PDF y extrae los datos automáticamente',
-      icono: '📄',
+      title: '📄 Importar Constancia IMSS',
+      description: 'Carga tu constancia de semanas cotizadas en PDF y extrae los datos automáticamente',
+      icon: '📄',
       color: COLORS.accent,
       onPress: () => navigation.navigate('PdfImport'),
     },
@@ -79,19 +78,19 @@ export default function DashboardScreen() {
         Acciones rápidas
       </Text>
 
-      {tarjetas.map((tarjeta) => (
-        <TouchableOpacity key={tarjeta.id} onPress={tarjeta.onPress} activeOpacity={0.8}>
+      {cards.map((card) => (
+        <TouchableOpacity key={card.id} onPress={card.onPress} activeOpacity={0.8}>
           <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={2}>
             <Card.Content style={styles.cardContent}>
-              <View style={[styles.cardIconContainer, { backgroundColor: tarjeta.color + '20' }]}>
-                <Text style={styles.cardIcon}>{tarjeta.icono}</Text>
+              <View style={[styles.cardIconContainer, { backgroundColor: card.color + '20' }]}>
+                <Text style={styles.cardIcon}>{card.icon}</Text>
               </View>
               <View style={styles.cardTextContainer}>
                 <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>
-                  {tarjeta.titulo}
+                  {card.title}
                 </Text>
                 <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
-                  {tarjeta.descripcion}
+                  {card.description}
                 </Text>
               </View>
               <Text style={{ color: theme.colors.primary, fontSize: 20 }}>›</Text>

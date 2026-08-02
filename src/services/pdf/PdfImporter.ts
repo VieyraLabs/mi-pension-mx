@@ -16,12 +16,12 @@ import * as DocumentPicker from 'expo-document-picker';
 // v57+ cambió su export principal a una API nueva basada en clases (File/Directory).
 import * as FileSystem from 'expo-file-system/legacy';
 import type { ParseResult } from '../../models';
-import { extraerTextoPDF } from './PdfTextExtractor';
+import { extractPdfText } from './PdfTextExtractor';
 
 export interface ImportResult {
-  textoExtraido: string;
-  esOCR: boolean;
-  advertencias: string[];
+  extractedText: string;
+  isOCR: boolean;
+  warnings: string[];
 }
 
 /**
@@ -29,7 +29,7 @@ export interface ImportResult {
  * Para PDFs digitales con texto seleccionable intenta extracción directa.
  * Para PDFs escaneados informa la limitación y permite entrada manual.
  */
-export async function importarPDF(): Promise<ParseResult<ImportResult>> {
+export async function importPdf(): Promise<ParseResult<ImportResult>> {
   // 1. Seleccionar el archivo PDF
   let fileResult: DocumentPicker.DocumentPickerResult;
   try {
@@ -41,8 +41,8 @@ export async function importarPDF(): Promise<ParseResult<ImportResult>> {
     return {
       ok: false,
       error: 'No se pudo abrir el selector de archivos.',
-      advertencias: [],
-      camposFaltantes: [],
+      warnings: [],
+      missingFields: [],
     };
   }
 
@@ -50,8 +50,8 @@ export async function importarPDF(): Promise<ParseResult<ImportResult>> {
     return {
       ok: false,
       error: 'No se seleccionó ningún archivo.',
-      advertencias: [],
-      camposFaltantes: [],
+      warnings: [],
+      missingFields: [],
     };
   }
 
@@ -63,18 +63,18 @@ export async function importarPDF(): Promise<ParseResult<ImportResult>> {
   // FileReader.readAsDataURL) y expo-file-system no está implementado
   // (es un shim sin acceso real al filesystem), por lo que ahí se extrae
   // el base64 directamente de la data: URL en vez de usar FileSystem.
-  let contenidoBase64: string;
+  let base64Content: string;
   if (Platform.OS === 'web' || uri.startsWith('data:')) {
     const match = uri.match(/^data:[^;]*;base64,(.*)$/);
     if (!match?.[1]) {
       return {
         ok: false,
         error: 'No se pudo leer el archivo PDF. Verifica que el archivo sea válido.',
-        advertencias: [],
-        camposFaltantes: [],
+        warnings: [],
+        missingFields: [],
       };
     }
-    contenidoBase64 = match[1];
+    base64Content = match[1];
   } else {
     // Verificar que el archivo exista localmente y tenga contenido.
     // Nota: si el PDF se eligió desde iCloud Drive / Google Drive y aún no se
@@ -88,8 +88,8 @@ export async function importarPDF(): Promise<ParseResult<ImportResult>> {
           error:
             'El archivo no se descargó por completo al dispositivo (frecuente con PDFs en iCloud Drive u otro almacenamiento en la nube). ' +
             'Ábrelo primero en la app Archivos para descargarlo y vuelve a intentarlo.',
-          advertencias: [],
-          camposFaltantes: [],
+          warnings: [],
+          missingFields: [],
         };
       }
     } catch (e) {
@@ -97,17 +97,17 @@ export async function importarPDF(): Promise<ParseResult<ImportResult>> {
     }
 
     try {
-      contenidoBase64 = await FileSystem.readAsStringAsync(uri, {
+      base64Content = await FileSystem.readAsStringAsync(uri, {
         encoding: FileSystem.EncodingType.Base64,
       });
     } catch (e) {
       console.error('[PdfImporter] Error al leer el archivo PDF:', e);
-      const detalle = e instanceof Error ? e.message : String(e);
+      const detail = e instanceof Error ? e.message : String(e);
       return {
         ok: false,
-        error: `No se pudo leer el archivo PDF. Verifica que el archivo sea válido. (${detalle})`,
-        advertencias: [],
-        camposFaltantes: [],
+        error: `No se pudo leer el archivo PDF. Verifica que el archivo sea válido. (${detail})`,
+        warnings: [],
+        missingFields: [],
       };
     }
   }
@@ -116,17 +116,17 @@ export async function importarPDF(): Promise<ParseResult<ImportResult>> {
   // En web se usa pdfjs-dist (decodifica streams comprimidos y fuentes
   // embebidas). En nativo (sin development build) se usa un fallback
   // heurístico que solo funciona con PDFs no comprimidos.
-  let textoExtraido: string;
+  let extractedText: string;
   try {
-    textoExtraido = await extraerTextoPDF(contenidoBase64);
+    extractedText = await extractPdfText(base64Content);
   } catch (e) {
     console.error('[PdfImporter] Error al extraer texto del PDF:', e);
-    textoExtraido = '';
+    extractedText = '';
   }
-  const advertencias: string[] = [];
+  const warnings: string[] = [];
 
-  if (!textoExtraido || textoExtraido.trim().length < 50) {
-    advertencias.push(
+  if (!extractedText || extractedText.trim().length < 50) {
+    warnings.push(
       Platform.OS === 'web'
         ? 'El PDF parece estar escaneado (imagen) o no contiene texto seleccionable. ' +
           'Por favor ingresa los datos manualmente.'
@@ -138,23 +138,23 @@ export async function importarPDF(): Promise<ParseResult<ImportResult>> {
     return {
       ok: true,
       data: {
-        textoExtraido: '',
-        esOCR: false,
-        advertencias,
+        extractedText: '',
+        isOCR: false,
+        warnings,
       },
-      advertencias,
-      camposFaltantes: ['Nombre', 'CURP', 'NSS', 'Semanas cotizadas', 'SBC'],
+      warnings,
+      missingFields: ['Nombre', 'CURP', 'NSS', 'Semanas cotizadas', 'SBC'],
     };
   }
 
   return {
     ok: true,
     data: {
-      textoExtraido,
-      esOCR: false,
-      advertencias,
+      extractedText,
+      isOCR: false,
+      warnings,
     },
-    advertencias,
-    camposFaltantes: [],
+    warnings,
+    missingFields: [],
   };
 }

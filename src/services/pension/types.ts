@@ -5,51 +5,51 @@
 
 import type {
   PensionInput,
-  PasoCalculo,
-  TipoPension,
+  CalculationStepResult,
+  PensionType,
 } from '../../models';
 
 /** Contexto inmutable que se pasa entre los pasos del pipeline. */
 export interface CalculationContext {
   readonly input: PensionInput;
   /** Salario diario efectivo (ya topado y ajustado por M40) */
-  salarioEfectivoDiario: number;
+  effectiveDailySalary: number;
   /** Salario en veces el SMG (para buscar rango en tabla Art. 167) */
-  salarioEnVecesSMG: number;
+  salaryInTimesMinimumWage: number;
   /** Porcentaje de cuantía básica de la tabla Art. 167 */
-  cuantiaBasicaPct: number;
+  basicQuantityPct: number;
   /** Incremento anual de la tabla Art. 167 */
-  incrementoAnualPct: number;
+  annualIncrementPct: number;
   /** Número de años excedentes (semanas_excedentes / 52) */
-  aniosExcedentes: number;
-  /** Cuantía básica en pesos (salarioEfectivoDiario * cuantiaBasicaPct * 30.4) */
-  cuantiaBasicaMensual: number;
+  excessYears: number;
+  /** Cuantía básica en pesos (effectiveDailySalary * basicQuantityPct * 30.4) */
+  basicAmount: number;
   /** Total de incrementos anuales en pesos */
-  incrementosMensual: number;
+  annualIncrements: number;
   /** Subtotal antes de factor de edad */
-  subtotalAntesFactor: number;
-  /** Monto del incremento del 11% (Decreto DOF 2001/2004) ya incluido en subtotalAntesFactor */
-  incrementoDecreto11Monto: number;
+  subtotalBeforeFactor: number;
+  /** Monto del incremento del 11% (Decreto DOF 2001/2004) ya incluido en subtotalBeforeFactor */
+  decree11Increment: number;
   /** Factor de edad (0.75 a 1.0) */
-  factorEdad: number;
+  ageFactor: number;
   /** Cuantía después de factor de edad */
-  cuantiaConFactor: number;
+  quantityWithFactor: number;
   /** Asignaciones familiares en pesos */
-  asignacionesFamiliares: number;
+  familyAllowances: number;
   /** Ayuda asistencial en pesos */
-  ayudaAsistencial: number;
+  assistanceAid: number;
   /** Tipo de pensión determinado */
-  tipoPension: TipoPension;
+  pensionType: PensionType;
   /** Si se aplicó el tope de 25 UMA */
-  aplicoTope: boolean;
+  capApplied: boolean;
   /** Si se aplicó la pensión mínima garantizada */
-  aplicoPMG: boolean;
+  pmgApplied: boolean;
   /** Total pensión mensual */
-  pensionMensual: number;
+  monthlyPension: number;
   /** Pasos acumulados del pipeline */
-  pasos: PasoCalculo[];
+  steps: CalculationStepResult[];
   /** Advertencias acumuladas */
-  advertencias: string[];
+  warnings: string[];
 }
 
 /** Paso puro del pipeline: recibe contexto y devuelve contexto actualizado. */

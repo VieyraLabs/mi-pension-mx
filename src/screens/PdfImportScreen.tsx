@@ -7,30 +7,30 @@ import { Text, Card, Button, useTheme, ActivityIndicator, Chip } from 'react-nat
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
-import { importarPDF } from '../services/pdf/PdfImporter';
+import { importPdf } from '../services/pdf/PdfImporter';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function PdfImportScreen() {
   const theme = useTheme();
   const navigation = useNavigation<Nav>();
-  const [procesando, setProcesando] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const seleccionarPDF = async () => {
-    setProcesando(true);
+  const selectPdf = async () => {
+    setProcessing(true);
     setError(null);
     try {
-      const resultado = await importarPDF();
-      if (resultado.ok && resultado.data) {
-        navigation.navigate('Validation', { textoExtraido: resultado.data.textoExtraido });
+      const result = await importPdf();
+      if (result.ok && result.data) {
+        navigation.navigate('Validation', { extractedText: result.data.extractedText });
       } else {
-        setError(resultado.error ?? 'No se pudo procesar el PDF.');
+        setError(result.error ?? 'No se pudo procesar el PDF.');
       }
     } catch (e: any) {
       setError(e?.message ?? 'Error al importar el PDF.');
     } finally {
-      setProcesando(false);
+      setProcessing(false);
     }
   };
 
@@ -108,7 +108,7 @@ export default function PdfImportScreen() {
       )}
 
       {/* Botón principal */}
-      {procesando ? (
+      {processing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text variant="bodyMedium" style={{ color: theme.colors.onBackground, marginTop: 16 }}>
@@ -118,7 +118,7 @@ export default function PdfImportScreen() {
       ) : (
         <Button
           mode="contained"
-          onPress={seleccionarPDF}
+          onPress={selectPdf}
           icon="file-upload"
           style={styles.mainBtn}
           contentStyle={{ paddingVertical: 8 }}

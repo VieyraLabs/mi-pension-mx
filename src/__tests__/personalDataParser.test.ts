@@ -52,7 +52,7 @@ Registro Patronal Y584460910
 describe('ConstanciaIMSSParser', () => {
   test('extrae el nombre desde los campos de la cadena original, no desde "Nombre del patrón"', () => {
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
-    expect(result.data?.nombre).toBe('JUAN PEREZ LOPEZ');
+    expect(result.data?.name).toBe('JUAN PEREZ LOPEZ');
   });
 
   test('extrae un "Nombre del Asegurado" de más de una palabra completo (no solo la primera)', () => {
@@ -61,7 +61,7 @@ describe('ConstanciaIMSSParser', () => {
       'Nombre del Asegurado:ALAN FERNANDO',
     );
     const result = ConstanciaIMSSParser.parse(conNombreCompuesto);
-    expect(result.data?.nombre).toBe('ALAN FERNANDO PEREZ LOPEZ');
+    expect(result.data?.name).toBe('ALAN FERNANDO PEREZ LOPEZ');
   });
 
   test('extrae el NSS aunque el nombre esté intercalado antes del valor', () => {
@@ -76,12 +76,12 @@ describe('ConstanciaIMSSParser', () => {
 
   test('extrae las semanas cotizadas totales', () => {
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
-    expect(result.data?.semanasTotales).toBe(800);
+    expect(result.data?.totalWeeks).toBe(800);
   });
 
   test('extrae el último SBC (el del registro más reciente) aunque "Entidad federativa" se intercale antes del monto', () => {
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
-    expect(result.data?.ultimoSBC).toBe(500);
+    expect(result.data?.lastSBC).toBe(500);
   });
 
   test('extrae el último SBC aunque una fecha quede entre la etiqueta y el monto (no confunde el día con el SBC)', () => {
@@ -96,12 +96,12 @@ Entidad federativa
 $ 2172.0
 Nombre del patrón EMPRESA DE PRUEBA SA DE CV`;
     const result = ConstanciaIMSSParser.parse(textoConFechaTrasEtiqueta);
-    expect(result.data?.ultimoSBC).toBe(2172);
+    expect(result.data?.lastSBC).toBe(2172);
   });
 
   test('extrae el sexo desde el 10° carácter del CURP', () => {
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
-    expect(result.data?.sexo).toBe('masculino');
+    expect(result.data?.sex).toBe('masculino');
   });
 
   test('deriva la fecha de nacimiento del CURP cuando el documento no la incluye directamente', () => {
@@ -109,23 +109,23 @@ Nombre del patrón EMPRESA DE PRUEBA SA DE CV`;
     // 01/01/01 → como este documento no trae un campo explícito de fecha de
     // nacimiento, se deriva del CURP en vez de quedar como faltante.
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
-    expect(result.camposFaltantes).not.toContain('Fecha de nacimiento');
-    expect(result.data?.fechaNacimiento?.getFullYear()).toBe(2001);
-    expect(result.data?.fechaNacimiento?.getMonth()).toBe(0);
-    expect(result.data?.fechaNacimiento?.getDate()).toBe(1);
-    expect(result.advertencias.some((a) => /fecha de nacimiento.*curp/i.test(a))).toBe(true);
+    expect(result.missingFields).not.toContain('Fecha de nacimiento');
+    expect(result.data?.birthDate?.getFullYear()).toBe(2001);
+    expect(result.data?.birthDate?.getMonth()).toBe(0);
+    expect(result.data?.birthDate?.getDate()).toBe(1);
+    expect(result.warnings.some((a) => /fecha de nacimiento.*curp/i.test(a))).toBe(true);
   });
 
   test('marca Fecha de nacimiento como faltante cuando tampoco hay CURP para derivarla', () => {
     const sinCurp = TEXTO_CONSTANCIA.replace('CURP: XEXX010101HNEXXX04', '');
     const result = ConstanciaIMSSParser.parse(sinCurp);
-    expect(result.camposFaltantes).toContain('Fecha de nacimiento');
+    expect(result.missingFields).toContain('Fecha de nacimiento');
   });
 
   test('no confunde "Nombre del patrón" con el nombre del asegurado cuando no hay cadena original', () => {
     const sinCadenaOriginal = TEXTO_CONSTANCIA.split('|||Origen de Trámite')[0] ?? '';
     const result = ConstanciaIMSSParser.parse(sinCadenaOriginal);
-    expect(result.data?.nombre).not.toMatch(/patrón|EMPRESA/i);
+    expect(result.data?.name).not.toMatch(/patrón|EMPRESA/i);
   });
 });
 
@@ -141,19 +141,19 @@ Nombre del patrón EMPRESA DE PRUEBA SA DE CV`;
 describe('ConstanciaIMSSParser — historial laboral y SBC promedio', () => {
   test('reconstruye el historial laboral infiriendo la fecha de baja de cada patrón', () => {
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
-    const relaciones = result.data?.relacionesLaborales ?? [];
+    const relaciones = result.data?.employmentRelations ?? [];
     expect(relaciones).toHaveLength(2);
 
-    expect(relaciones[0]?.nombrePatron).toBe('EMPRESA DE PRUEBA SA DE CV');
-    expect(relaciones[0]?.salarioBaseCotizacion).toBe(500);
-    expect(relaciones[0]?.fechaAlta.toISOString().split('T')[0]).toBe('2021-01-16');
+    expect(relaciones[0]?.employerName).toBe('EMPRESA DE PRUEBA SA DE CV');
+    expect(relaciones[0]?.contributionBaseSalary).toBe(500);
+    expect(relaciones[0]?.startDate.toISOString().split('T')[0]).toBe('2021-01-16');
     // Vigente: sin patrón más reciente después, la fecha de baja es "hoy".
 
-    expect(relaciones[1]?.nombrePatron).toBe('OTRA EMPRESA SA DE CV');
-    expect(relaciones[1]?.salarioBaseCotizacion).toBe(200);
-    expect(relaciones[1]?.fechaAlta.toISOString().split('T')[0]).toBe('2018-07-01');
+    expect(relaciones[1]?.employerName).toBe('OTRA EMPRESA SA DE CV');
+    expect(relaciones[1]?.contributionBaseSalary).toBe(200);
+    expect(relaciones[1]?.startDate.toISOString().split('T')[0]).toBe('2018-07-01');
     // Inferida como un día antes del alta del siguiente patrón (16/01/2021).
-    expect(relaciones[1]?.fechaBaja?.toISOString().split('T')[0]).toBe('2021-01-15');
+    expect(relaciones[1]?.endDate?.toISOString().split('T')[0]).toBe('2021-01-15');
   });
 
   test('no calcula ningún SBC promedio cuando la constancia no trae el historial detallado de modificaciones', () => {
@@ -161,13 +161,13 @@ describe('ConstanciaIMSSParser — historial laboral y SBC promedio', () => {
     // no se debe inventar un número aproximado: se deja en blanco y se pide
     // la constancia correcta.
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
-    expect(result.data?.promedioSBC).toBeUndefined();
-    expect(result.camposFaltantes).toContain('SBC promedio (250 semanas)');
+    expect(result.data?.averageSBC).toBeUndefined();
+    expect(result.missingFields).toContain('SBC promedio (250 semanas)');
     expect(
-      result.advertencias.some((a) => /no incluye el historial detallado de modificaciones salariales/i.test(a)),
+      result.warnings.some((a) => /no incluye el historial detallado de modificaciones salariales/i.test(a)),
     ).toBe(true);
     expect(
-      result.advertencias.some((a) =>
+      result.warnings.some((a) =>
         a.includes('gob.mx/imss/prensa/el-imss-te-invita-a-obtener-tu-constancia-de-semanas-cotizadas'),
       ),
     ).toBe(true);
@@ -176,12 +176,12 @@ describe('ConstanciaIMSSParser — historial laboral y SBC promedio', () => {
   test('omite el patrón más reciente del cálculo si no está marcado "Vigente" (no se sabe cuándo terminó)', () => {
     const sinVigente = TEXTO_CONSTANCIA.replace('Vigente\n', '');
     const result = ConstanciaIMSSParser.parse(sinVigente);
-    const relaciones = result.data?.relacionesLaborales ?? [];
+    const relaciones = result.data?.employmentRelations ?? [];
 
     expect(relaciones).toHaveLength(1);
-    expect(relaciones[0]?.nombrePatron).toBe('OTRA EMPRESA SA DE CV');
+    expect(relaciones[0]?.employerName).toBe('OTRA EMPRESA SA DE CV');
     expect(
-      result.advertencias.some((a) => /no se pudo determinar cuándo terminó tu empleo más reciente/i.test(a)),
+      result.warnings.some((a) => /no se pudo determinar cuándo terminó tu empleo más reciente/i.test(a)),
     ).toBe(true);
   });
 
@@ -190,8 +190,8 @@ describe('ConstanciaIMSSParser — historial laboral y SBC promedio', () => {
     // que cada patrón tiene exactamente un alta, un monto y un nombre.
     const textoConMontoExtra = TEXTO_CONSTANCIA.replace('$ 500.0', '$ 500.0\n$ 999.0');
     const result = ConstanciaIMSSParser.parse(textoConMontoExtra);
-    expect(result.data?.relacionesLaborales).toEqual([]);
-    expect(result.data?.promedioSBC).toBeUndefined();
+    expect(result.data?.employmentRelations).toEqual([]);
+    expect(result.data?.averageSBC).toBeUndefined();
   });
 });
 
@@ -236,9 +236,9 @@ Fecha de movimiento Tipo de movimiento Salario Base
 |||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:500||`;
 
     const result = ConstanciaIMSSParser.parse(texto);
-    expect(result.data?.promedioSBC).toBe(200);
-    expect(result.advertencias.some((a) => /historial detallado de modificaciones salariales/i.test(a))).toBe(true);
-    expect(result.advertencias.some((a) => /APROXIMADO/i.test(a))).toBe(false);
+    expect(result.data?.averageSBC).toBe(200);
+    expect(result.warnings.some((a) => /historial detallado de modificaciones salariales/i.test(a))).toBe(true);
+    expect(result.warnings.some((a) => /APROXIMADO/i.test(a))).toBe(false);
   });
 
   test('detecta periodos traslapados entre dos patrones distintos y lo advierte', () => {
@@ -279,14 +279,14 @@ Fecha de movimiento Tipo de movimiento Salario Base
 |||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:500||`;
 
     const result = ConstanciaIMSSParser.parse(texto);
-    expect(result.data?.promedioSBC).toBe(999);
+    expect(result.data?.averageSBC).toBe(999);
     expect(
-      result.advertencias.some((a) => /periodos con más de un patrón simultáneo/i.test(a)),
+      result.warnings.some((a) => /periodos con más de un patrón simultáneo/i.test(a)),
     ).toBe(true);
   });
 
   test('no advierte traslape cuando los patrones son contiguos', () => {
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
-    expect(result.advertencias.some((a) => /patrón simultáneo/i.test(a))).toBe(false);
+    expect(result.warnings.some((a) => /patrón simultáneo/i.test(a))).toBe(false);
   });
 });

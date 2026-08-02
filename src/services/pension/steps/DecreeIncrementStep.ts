@@ -9,34 +9,34 @@
  * DOF 20-dic-2001, modificado DOF 5-ene-2004.
  */
 import type { CalculationContext, CalculationStep } from '../types';
-import { INCREMENTO_DECRETO_11 } from '../../../constants/ley73';
+import { DECREE_11_INCREMENT } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
 export const DecreeIncrementStep: CalculationStep = (ctx): CalculationContext => {
-  const { subtotalAntesFactor } = ctx;
-  const pasos = [...ctx.pasos];
+  const { subtotalBeforeFactor } = ctx;
+  const steps = [...ctx.steps];
 
-  const incrementoDecreto11Monto = round2(subtotalAntesFactor * INCREMENTO_DECRETO_11);
-  const subtotalConDecreto = round2(subtotalAntesFactor + incrementoDecreto11Monto);
+  const decree11Increment = round2(subtotalBeforeFactor * DECREE_11_INCREMENT);
+  const subtotalWithDecree = round2(subtotalBeforeFactor + decree11Increment);
 
-  pasos.push({
+  steps.push({
     id: 'incremento_decreto_11',
-    titulo: '5. Incremento del 11% (Decreto DOF 2001/2004)',
-    descripcion:
-      `Cuantía $${subtotalAntesFactor.toFixed(2)} × ${(INCREMENTO_DECRETO_11 * 100).toFixed(0)}% = ` +
-      `$${incrementoDecreto11Monto.toFixed(2)} adicionales → $${subtotalConDecreto.toFixed(2)}/mes`,
-    valor: subtotalConDecreto,
-    formula: `Cuantía × (1 + ${INCREMENTO_DECRETO_11})`,
-    baseLegal:
+    title: '5. Incremento del 11% (Decreto DOF 2001/2004)',
+    description:
+      `Cuantía $${subtotalBeforeFactor.toFixed(2)} × ${(DECREE_11_INCREMENT * 100).toFixed(0)}% = ` +
+      `$${decree11Increment.toFixed(2)} adicionales → $${subtotalWithDecree.toFixed(2)}/mes`,
+    value: subtotalWithDecree,
+    formula: `Cuantía × (1 + ${DECREE_11_INCREMENT})`,
+    legalBasis:
       'Decreto DOF 20-dic-2001 (arts. Décimo Cuarto y Vigésimo Cuarto Transitorios LSS), ' +
       'modificado DOF 5-ene-2004',
-    esEstimacion: false,
+    isEstimate: false,
   });
 
   return {
     ...ctx,
-    incrementoDecreto11Monto,
-    subtotalAntesFactor: subtotalConDecreto,
-    pasos,
+    decree11Increment,
+    subtotalBeforeFactor: subtotalWithDecree,
+    steps,
   };
 };

@@ -2,49 +2,50 @@
  * Pantalla de historial de simulaciones guardadas.
  */
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { View, ScrollView, StyleSheet, Modal } from 'react-native';
 import { Text, Card, Button, IconButton, useTheme, ActivityIndicator, Divider, Portal } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
 import { formatCurrency, formatDateShort } from '../utils/format';
+import { DataRow } from '../components/DataRow';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function HistoryScreen() {
   const theme = useTheme();
   const navigation = useNavigation<Nav>();
-  const { simulaciones, cargando, eliminar, limpiar } = useHistory();
-  
-  // Estado para los dialogs
-  const [dialogEliminarVisible, setDialogEliminarVisible] = useState(false);
-  const [simAEliminar, setSimAEliminar] = useState<{ id: string; nombre: string } | null>(null);
-  const [dialogLimpiarVisible, setDialogLimpiarVisible] = useState(false);
+  const { simulations, loading, remove, clear } = useHistory();
 
-  const onEliminar = (id: string, nombre: string) => {
-    setSimAEliminar({ id, nombre });
-    setDialogEliminarVisible(true);
+  // Estado para los dialogs
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const [simToDelete, setSimToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [clearDialogVisible, setClearDialogVisible] = useState(false);
+
+  const handleDelete = (id: string, name: string) => {
+    setSimToDelete({ id, name });
+    setDeleteDialogVisible(true);
   };
 
-  const confirmarEliminar = () => {
-    if (simAEliminar) {
-      eliminar(simAEliminar.id);
-      setDialogEliminarVisible(false);
-      setSimAEliminar(null);
+  const confirmDelete = () => {
+    if (simToDelete) {
+      remove(simToDelete.id);
+      setDeleteDialogVisible(false);
+      setSimToDelete(null);
     }
   };
 
-  const onLimpiar = () => {
-    setDialogLimpiarVisible(true);
+  const handleClear = () => {
+    setClearDialogVisible(true);
   };
 
-  const confirmarLimpiar = () => {
-    limpiar();
-    setDialogLimpiarVisible(false);
+  const confirmClear = () => {
+    clear();
+    setClearDialogVisible(false);
   };
 
-  if (cargando) {
+  if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -56,16 +57,16 @@ export default function HistoryScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
         <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>
-          Historial de simulaciones ({simulaciones.length}/20)
+          Historial de simulaciones ({simulations.length}/20)
         </Text>
-        {simulaciones.length > 0 && (
-          <Button onPress={onLimpiar} textColor={theme.colors.error} compact>
+        {simulations.length > 0 && (
+          <Button onPress={handleClear} textColor={theme.colors.error} compact>
             Limpiar todo
           </Button>
         )}
       </View>
 
-      {simulaciones.length === 0 ? (
+      {simulations.length === 0 ? (
         <View style={styles.center}>
           <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
             📊 No hay simulaciones guardadas.{'\n'}Crea tu primera simulación desde el Dashboard.
@@ -81,7 +82,7 @@ export default function HistoryScreen() {
       ) : (
         <>
           <ScrollView contentContainerStyle={styles.list}>
-            {simulaciones.map((sim) => (
+            {simulations.map((sim) => (
               <Card
                 key={sim.id}
                 style={[styles.card, { backgroundColor: theme.colors.surface }]}
@@ -91,10 +92,10 @@ export default function HistoryScreen() {
                   <View style={styles.cardHeader}>
                     <View style={{ flex: 1 }}>
                       <Text variant="titleSmall" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>
-                        {sim.nombre}
+                        {sim.name}
                       </Text>
                       <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                        {formatDateShort(new Date(sim.fechaCreacion))}
+                        {formatDateShort(new Date(sim.creationDate))}
                       </Text>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -102,22 +103,22 @@ export default function HistoryScreen() {
                         icon="eye-outline"
                         iconColor={theme.colors.primary}
                         size={20}
-                        onPress={() => navigation.navigate('Result', { simulacionId: sim.id })}
+                        onPress={() => navigation.navigate('Result', { simulationId: sim.id })}
                       />
                       <IconButton
                         icon="delete-outline"
                         iconColor={theme.colors.error}
                         size={20}
-                        onPress={() => onEliminar(sim.id, sim.nombre)}
+                        onPress={() => handleDelete(sim.id, sim.name)}
                       />
                     </View>
                   </View>
                   <Divider style={{ marginVertical: 8 }} />
                   <View style={styles.cardData}>
-                    <DataRow label="Pensión mensual" value={formatCurrency(sim.resultado.pensionMensual)} theme={theme} highlight />
-                    <DataRow label="Semanas cotizadas" value={String(sim.resultado.input.historialLaboral.semanasTotales)} theme={theme} />
-                    <DataRow label="Edad de retiro" value={`${sim.resultado.input.datosPersonales.edadRetiro} años`} theme={theme} />
-                    <DataRow label="Tipo" value={sim.resultado.tipoPension === 'vejez' ? 'Vejez' : 'Cesantía'} theme={theme} />
+                    <DataRow label="Pensión mensual" value={formatCurrency(sim.result.monthlyPension)} theme={theme} highlight />
+                    <DataRow label="Semanas cotizadas" value={String(sim.result.input.workHistory.totalWeeks)} theme={theme} />
+                    <DataRow label="Edad de retiro" value={`${sim.result.input.personalData.retirementAge} años`} theme={theme} />
+                    <DataRow label="Tipo" value={sim.result.pensionType === 'vejez' ? 'Vejez' : 'Cesantía'} theme={theme} />
                   </View>
                 </Card.Content>
               </Card>
@@ -128,20 +129,20 @@ export default function HistoryScreen() {
 
       {/* Dialog para eliminar simulación individual */}
       <Portal>
-        <Modal visible={dialogEliminarVisible} transparent animationType="fade">
+        <Modal visible={deleteDialogVisible} transparent animationType="fade">
           <View style={[styles.dialogOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
             <View style={[styles.dialogContainer, { backgroundColor: theme.colors.surface }]}>
               <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold', marginBottom: 16 }}>
                 Eliminar simulación
               </Text>
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, marginBottom: 24 }}>
-                ¿Deseas eliminar "{simAEliminar?.nombre}"?
+                ¿Deseas eliminar "{simToDelete?.name}"?
               </Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Button onPress={() => setDialogEliminarVisible(false)} style={{ flex: 1 }}>
+                <Button onPress={() => setDeleteDialogVisible(false)} style={{ flex: 1 }}>
                   Cancelar
                 </Button>
-                <Button onPress={confirmarEliminar} textColor={theme.colors.error} style={{ flex: 1 }}>
+                <Button onPress={confirmDelete} textColor={theme.colors.error} style={{ flex: 1 }}>
                   Eliminar
                 </Button>
               </View>
@@ -152,7 +153,7 @@ export default function HistoryScreen() {
 
       {/* Dialog para limpiar todo el historial */}
       <Portal>
-        <Modal visible={dialogLimpiarVisible} transparent animationType="fade">
+        <Modal visible={clearDialogVisible} transparent animationType="fade">
           <View style={[styles.dialogOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
             <View style={[styles.dialogContainer, { backgroundColor: theme.colors.surface }]}>
               <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold', marginBottom: 16 }}>
@@ -162,10 +163,10 @@ export default function HistoryScreen() {
                 ¿Deseas eliminar todas las simulaciones guardadas?
               </Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Button onPress={() => setDialogLimpiarVisible(false)} style={{ flex: 1 }}>
+                <Button onPress={() => setClearDialogVisible(false)} style={{ flex: 1 }}>
                   Cancelar
                 </Button>
-                <Button onPress={confirmarLimpiar} textColor={theme.colors.error} style={{ flex: 1 }}>
+                <Button onPress={confirmClear} textColor={theme.colors.error} style={{ flex: 1 }}>
                   Limpiar
                 </Button>
               </View>
@@ -173,17 +174,6 @@ export default function HistoryScreen() {
           </View>
         </Modal>
       </Portal>
-    </View>
-  );
-}
-
-function DataRow({ label, value, theme, highlight }: { label: string; value: string; theme: any; highlight?: boolean }) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{label}</Text>
-      <Text variant="bodySmall" style={{ color: highlight ? theme.colors.primary : theme.colors.onSurface, fontWeight: highlight ? 'bold' : 'normal' }}>
-        {value}
-      </Text>
     </View>
   );
 }

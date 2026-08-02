@@ -18,15 +18,15 @@ import { AgeFactorStep } from './steps/AgeFactorStep';
 import { FamilyAssignmentsStep } from './steps/FamilyAssignmentsStep';
 import { AssistanceAidStep } from './steps/AssistanceAidStep';
 import { LimitsStep } from './steps/LimitsStep';
-import { DIAS_ANIO_UMA, DIAS_PROMEDIO_MES, MESES_POR_ANIO, SEMANAS_MINIMAS_VEJEZ } from '../../constants/ley73';
+import { DAYS_PER_YEAR_UMA, AVERAGE_DAYS_PER_MONTH, MONTHS_PER_YEAR, MINIMUM_WEEKS_VEJEZ } from '../../constants/ley73';
 import { round2 } from '../../utils/format';
 import { PensionInputSchema } from '../../validation/pensionSchema';
 
 /** Resultado de validación previa al cálculo. */
 export interface ValidationResult {
-  valido: boolean;
-  errores: string[];
-  advertencias: string[];
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
 }
 
 /**
@@ -35,54 +35,54 @@ export interface ValidationResult {
  * fuente de verdad — aquí solo se traducen sus resultados y se agregan
  * advertencias informativas (no bloqueantes) sobre el input.
  */
-export function validarInput(input: PensionInput): ValidationResult {
-  const advertencias: string[] = [];
-  const resultado = PensionInputSchema.safeParse(input);
-  const errores = resultado.success ? [] : resultado.error.issues.map((issue) => issue.message);
+export function validateInput(input: PensionInput): ValidationResult {
+  const warnings: string[] = [];
+  const parseResult = PensionInputSchema.safeParse(input);
+  const errors = parseResult.success ? [] : parseResult.error.issues.map((issue) => issue.message);
 
-  const semanas = input.historialLaboral.semanasTotales;
-  if (semanas >= SEMANAS_MINIMAS_VEJEZ && semanas < 520) {
-    advertencias.push(
+  const weeks = input.workHistory.totalWeeks;
+  if (weeks >= MINIMUM_WEEKS_VEJEZ && weeks < 520) {
+    warnings.push(
       'Tienes justo el mínimo de semanas. Considera cotizar más para incrementar tu pensión.',
     );
   }
 
-  if (input.uma.esPersonalizada) {
-    advertencias.push('Se está utilizando un valor de UMA personalizado ingresado manualmente.');
+  if (input.uma.isCustom) {
+    warnings.push('Se está utilizando un valor de UMA personalizado ingresado manualmente.');
   }
 
   return {
-    valido: resultado.success,
-    errores,
-    advertencias,
+    valid: parseResult.success,
+    errors,
+    warnings,
   };
 }
 
 /**
  * Crea el contexto inicial del pipeline con valores por defecto.
  */
-function crearContextoInicial(input: PensionInput): CalculationContext {
+function createInitialContext(input: PensionInput): CalculationContext {
   return {
     input,
-    salarioEfectivoDiario: input.salarioPromedio.salarioDiario,
-    salarioEnVecesSMG: 0,
-    cuantiaBasicaPct: 0,
-    incrementoAnualPct: 0,
-    aniosExcedentes: 0,
-    cuantiaBasicaMensual: 0,
-    incrementosMensual: 0,
-    subtotalAntesFactor: 0,
-    incrementoDecreto11Monto: 0,
-    factorEdad: 1.0,
-    cuantiaConFactor: 0,
-    asignacionesFamiliares: 0,
-    ayudaAsistencial: 0,
-    tipoPension: 'vejez',
-    aplicoTope: false,
-    aplicoPMG: false,
-    pensionMensual: 0,
-    pasos: [],
-    advertencias: [],
+    effectiveDailySalary: input.averageSalary.dailySalary,
+    salaryInTimesMinimumWage: 0,
+    basicQuantityPct: 0,
+    annualIncrementPct: 0,
+    excessYears: 0,
+    basicAmount: 0,
+    annualIncrements: 0,
+    subtotalBeforeFactor: 0,
+    decree11Increment: 0,
+    ageFactor: 1.0,
+    quantityWithFactor: 0,
+    familyAllowances: 0,
+    assistanceAid: 0,
+    pensionType: 'vejez',
+    capApplied: false,
+    pmgApplied: false,
+    monthlyPension: 0,
+    steps: [],
+    warnings: [],
   };
 }
 
@@ -104,63 +104,63 @@ const PIPELINE = [
  * @param input Datos de entrada del asegurado
  * @returns PensionResult con el resultado y desglose completo
  */
-export function calcularPension(input: PensionInput): PensionResult {
+export function calculatePension(input: PensionInput): PensionResult {
   // Ejecutar pipeline: cada paso recibe y devuelve un contexto
-  const ctxFinal = PIPELINE.reduce<CalculationContext>(
+  const finalContext = PIPELINE.reduce<CalculationContext>(
     (ctx, step) => step(ctx),
-    crearContextoInicial(input),
+    createInitialContext(input),
   );
 
-  const pensionMensual = round2(ctxFinal.pensionMensual);
-  const pensionAnual = round2(pensionMensual * MESES_POR_ANIO);
-  const montoDiario = round2(pensionMensual / DIAS_PROMEDIO_MES);
+  const monthlyPension = round2(finalContext.monthlyPension);
+  const annualPension = round2(monthlyPension * MONTHS_PER_YEAR);
+  const dailyAmount = round2(monthlyPension / AVERAGE_DAYS_PER_MONTH);
 
   // Agregar paso final de resumen
-  const pasosConResumen = [
-    ...ctxFinal.pasos,
+  const stepsWithSummary = [
+    ...finalContext.steps,
     {
       id: 'resultado_final',
-      titulo: '✅ Resultado Final',
-      descripcion: `Pensión mensual estimada: $${pensionMensual.toFixed(2)} MXN`,
-      valor: pensionMensual,
+      title: '✅ Resultado Final',
+      description: `Pensión mensual estimada: $${monthlyPension.toFixed(2)} MXN`,
+      value: monthlyPension,
       formula: 'Pipeline completo Ley 73',
-      baseLegal: 'Ley del Seguro Social 1973',
-      esEstimacion: true,
-      supuesto:
+      legalBasis: 'Ley del Seguro Social 1973',
+      isEstimate: true,
+      assumption:
         'Este resultado es una ESTIMACIÓN. La resolución oficial corresponde al IMSS. ' +
         'Los porcentajes de la tabla Art. 167 son de referencia bibliográfica.',
     },
   ];
 
   return {
-    tipoPension: ctxFinal.tipoPension,
-    pensionMensual,
-    pensionAnual,
-    montoDiario,
-    cuantiaBasica: ctxFinal.cuantiaBasicaMensual,
-    incrementosAnuales: ctxFinal.incrementosMensual,
-    incrementoDecreto11: ctxFinal.incrementoDecreto11Monto,
-    factorEdad: ctxFinal.factorEdad,
-    asignacionesFamiliares: ctxFinal.asignacionesFamiliares,
-    ayudaAsistencial: ctxFinal.ayudaAsistencial,
-    aplicoTope: ctxFinal.aplicoTope,
-    aplicoPMG: ctxFinal.aplicoPMG,
-    pasos: pasosConResumen,
-    advertencias: [
-      ...ctxFinal.advertencias,
+    pensionType: finalContext.pensionType,
+    monthlyPension,
+    annualPension,
+    dailyAmount,
+    basicAmount: finalContext.basicAmount,
+    annualIncrements: finalContext.annualIncrements,
+    decree11Increment: finalContext.decree11Increment,
+    ageFactor: finalContext.ageFactor,
+    familyAllowances: finalContext.familyAllowances,
+    assistanceAid: finalContext.assistanceAid,
+    capApplied: finalContext.capApplied,
+    pmgApplied: finalContext.pmgApplied,
+    steps: stepsWithSummary,
+    warnings: [
+      ...finalContext.warnings,
       '⚠️ AVISO LEGAL: Este resultado es una estimación con fines informativos únicamente. ' +
         'La resolución oficial de su pensión corresponde al IMSS conforme a sus procedimientos institucionales.',
     ],
-    esEstimacion: true,
+    isEstimate: true,
     input,
-    fechaCalculo: new Date().toISOString(),
+    calculationDate: new Date().toISOString(),
   };
 }
 
 /**
  * Calcula la pensión para un escenario simplificado (para el simulador de escenarios).
  */
-export function calcularEscenarioSimple(params: {
+export function calculateSimpleScenario(params: {
   semanasCotizadas: number;
   salarioDiario: number;
   umaDiaria: number;
@@ -170,42 +170,42 @@ export function calcularEscenarioSimple(params: {
   numeroHijos?: number;
 }): number {
   const input: PensionInput = {
-    datosPersonales: {
-      sexo: 'masculino',
-      fechaNacimiento: new Date(new Date().getFullYear() - params.edadRetiro, 0, 1),
-      edad: params.edadRetiro,
-      fechaRetiroEstimada: new Date(),
-      edadRetiro: params.edadRetiro,
+    personalData: {
+      sex: 'masculino',
+      birthDate: new Date(new Date().getFullYear() - params.edadRetiro, 0, 1),
+      age: params.edadRetiro,
+      estimatedRetirementDate: new Date(),
+      retirementAge: params.edadRetiro,
     },
-    historialLaboral: {
-      semanasTotales: params.semanasCotizadas,
-      relacionesLaborales: [],
+    workHistory: {
+      totalWeeks: params.semanasCotizadas,
+      employmentRelations: [],
     },
-    salarioPromedio: {
-      salarioDiario: params.salarioDiario,
-      salarioMensual: round2(params.salarioDiario * DIAS_PROMEDIO_MES),
-      esManual: true,
+    averageSalary: {
+      dailySalary: params.salarioDiario,
+      monthlySalary: round2(params.salarioDiario * AVERAGE_DAYS_PER_MONTH),
+      isManual: true,
     },
     uma: {
-      umaDiaria: params.umaDiaria,
-      umaMensual: round2(params.umaDiaria * DIAS_PROMEDIO_MES),
-      umaAnual: round2(params.umaDiaria * DIAS_ANIO_UMA),
-      anio: new Date().getFullYear(),
-      esPersonalizada: false,
+      dailyUMA: params.umaDiaria,
+      monthlyUMA: round2(params.umaDiaria * AVERAGE_DAYS_PER_MONTH),
+      annualUMA: round2(params.umaDiaria * DAYS_PER_YEAR_UMA),
+      year: new Date().getFullYear(),
+      isCustom: false,
     },
-    modalidad40: { activa: false },
-    beneficiarios: {
-      tieneConyuge: params.tieneConyuge ?? false,
-      tieneHijosMenores: params.tieneHijosMenores ?? false,
-      numeroHijosMenores: params.numeroHijos ?? 0,
-      tienePadresDependientes: false,
-      numeroPadresDependientes: 0,
+    modalidad40: { active: false },
+    beneficiaries: {
+      hasSpouse: params.tieneConyuge ?? false,
+      hasMinorChildren: params.tieneHijosMenores ?? false,
+      numberOfMinorChildren: params.numeroHijos ?? 0,
+      hasDependentParents: false,
+      numberOfDependentParents: 0,
     },
   };
 
-  const validation = validarInput(input);
-  if (!validation.valido) return 0;
+  const validation = validateInput(input);
+  if (!validation.valid) return 0;
 
-  const result = calcularPension(input);
-  return result.pensionMensual;
+  const result = calculatePension(input);
+  return result.monthlyPension;
 }

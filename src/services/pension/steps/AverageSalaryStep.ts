@@ -6,10 +6,10 @@
  */
 import type { CalculationContext, CalculationStep } from '../types';
 import {
-  DIAS_PROMEDIO_MES,
-  MODALIDAD_40_TOPE_VECES_UMA,
-  SEMANAS_PROMEDIO_SBC,
-  TOPE_SBC_VECES_UMA,
+  AVERAGE_DAYS_PER_MONTH,
+  MODALIDAD_40_CAP_TIMES_UMA,
+  SBC_AVERAGE_WEEKS,
+  SBC_CAP_TIMES_UMA,
 } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
 
@@ -23,83 +23,83 @@ import { round2 } from '../../../utils/format';
  */
 export const AverageSalaryStep: CalculationStep = (ctx): CalculationContext => {
   const { input } = ctx;
-  const { salarioPromedio, uma, modalidad40 } = input;
-  const advertencias = [...ctx.advertencias];
-  const pasos = [...ctx.pasos];
+  const { averageSalary, uma, modalidad40 } = input;
+  const warnings = [...ctx.warnings];
+  const steps = [...ctx.steps];
 
-  const topeUMADiario = TOPE_SBC_VECES_UMA * uma.umaDiaria;
-  let salarioDiarioBase = salarioPromedio.salarioDiario;
-  let esEstimacionSalario = false;
-  let descripcionSalario = `Salario diario promedio ingresado: $${salarioDiarioBase.toFixed(2)}`;
-  let formulaSalario = 'SBC promedio (250 semanas) — ingresado por el usuario';
+  const dailyUMACap = SBC_CAP_TIMES_UMA * uma.dailyUMA;
+  let baseDailySalary = averageSalary.dailySalary;
+  let isSalaryEstimate = false;
+  let salaryDescription = `Salario diario promedio ingresado: $${baseDailySalary.toFixed(2)}`;
+  let salaryFormula = 'SBC promedio (250 semanas) — ingresado por el usuario';
 
   // Ajuste por Modalidad 40
-  if (modalidad40.activa && modalidad40.salarioCotizacion && modalidad40.mesesEsperados) {
-    const sbcM40 = modalidad40.salarioCotizacion;
-    const sbcM40Topado = Math.min(sbcM40, MODALIDAD_40_TOPE_VECES_UMA * uma.umaDiaria);
+  if (modalidad40.active && modalidad40.contributionSalary && modalidad40.expectedMonths) {
+    const sbcM40 = modalidad40.contributionSalary;
+    const sbcM40Topado = Math.min(sbcM40, MODALIDAD_40_CAP_TIMES_UMA * uma.dailyUMA);
 
     // Semanas totales del período de referencia
-    const semanasRef = SEMANAS_PROMEDIO_SBC; // 250
+    const referenceWeeks = SBC_AVERAGE_WEEKS; // 250
     // Semanas de M40 dentro del período de referencia
-    const semanasM40 = Math.min(modalidad40.mesesEsperados * 4.33, semanasRef);
-    const semanasBase = semanasRef - semanasM40;
+    const m40Weeks = Math.min(modalidad40.expectedMonths * 4.33, referenceWeeks);
+    const baseWeeks = referenceWeeks - m40Weeks;
 
     // Incremento anual de M40 si aplica
-    let salarioM40AjustadoDiario = sbcM40Topado;
-    if (modalidad40.incrementoSalarialAnual && modalidad40.incrementoSalarialAnual > 0) {
+    let adjustedDailyM40Salary = sbcM40Topado;
+    if (modalidad40.annualSalaryIncrease && modalidad40.annualSalaryIncrease > 0) {
       // Para simplificar, aplicamos el incremento promedio en la mitad del período
-      const aniosM40 = semanasM40 / 52;
-      const factorIncremento = 1 + (modalidad40.incrementoSalarialAnual / 100) * (aniosM40 / 2);
-      salarioM40AjustadoDiario = Math.min(sbcM40Topado * factorIncremento, MODALIDAD_40_TOPE_VECES_UMA * uma.umaDiaria);
-      esEstimacionSalario = true;
+      const m40Years = m40Weeks / 52;
+      const increaseFactor = 1 + (modalidad40.annualSalaryIncrease / 100) * (m40Years / 2);
+      adjustedDailyM40Salary = Math.min(sbcM40Topado * increaseFactor, MODALIDAD_40_CAP_TIMES_UMA * uma.dailyUMA);
+      isSalaryEstimate = true;
     }
 
     // Promedio ponderado
-    const promedioPonderado =
-      (salarioDiarioBase * semanasBase + salarioM40AjustadoDiario * semanasM40) / semanasRef;
+    const weightedAverage =
+      (baseDailySalary * baseWeeks + adjustedDailyM40Salary * m40Weeks) / referenceWeeks;
 
-    salarioDiarioBase = round2(promedioPonderado);
-    descripcionSalario = `Promedio ponderado: ${semanasBase.toFixed(0)} sem. ordinarias ($${salarioPromedio.salarioDiario.toFixed(2)}/día) + ${semanasM40.toFixed(0)} sem. M40 ($${salarioM40AjustadoDiario.toFixed(2)}/día) = $${salarioDiarioBase.toFixed(2)}/día`;
-    formulaSalario = '(SBC_ord × sem_ord + SBC_M40 × sem_M40) ÷ 250';
-    esEstimacionSalario = true;
-    advertencias.push(
+    baseDailySalary = round2(weightedAverage);
+    salaryDescription = `Promedio ponderado: ${baseWeeks.toFixed(0)} sem. ordinarias ($${averageSalary.dailySalary.toFixed(2)}/día) + ${m40Weeks.toFixed(0)} sem. M40 ($${adjustedDailyM40Salary.toFixed(2)}/día) = $${baseDailySalary.toFixed(2)}/día`;
+    salaryFormula = '(SBC_ord × sem_ord + SBC_M40 × sem_M40) ÷ 250';
+    isSalaryEstimate = true;
+    warnings.push(
       'El promedio salarial incluye un ajuste estimado por Modalidad 40. ' +
         'El IMSS calculará el promedio exacto con tu historial completo.',
     );
   }
 
   // Aplicar tope de 25 UMA
-  const aplicoTope = salarioDiarioBase > topeUMADiario;
-  const salarioEfectivoDiario = aplicoTope ? topeUMADiario : salarioDiarioBase;
+  const capApplied = baseDailySalary > dailyUMACap;
+  const effectiveDailySalary = capApplied ? dailyUMACap : baseDailySalary;
 
-  if (aplicoTope) {
-    advertencias.push(
-      `El SBC ($${salarioDiarioBase.toFixed(2)}/día) excede el tope de 25 UMA ` +
-        `($${topeUMADiario.toFixed(2)}/día). Se utiliza el tope máximo. ` +
+  if (capApplied) {
+    warnings.push(
+      `El SBC ($${baseDailySalary.toFixed(2)}/día) excede el tope de 25 UMA ` +
+        `($${dailyUMACap.toFixed(2)}/día). Se utiliza el tope máximo. ` +
         `(Art. 28 LSS vigente; ref. DOF 27-ene-2016)`,
     );
   }
 
-  pasos.push({
+  steps.push({
     id: 'salario_promedio',
-    titulo: '1. Salario Base de Cotización Promedio',
-    descripcion: aplicoTope
-      ? `${descripcionSalario} → topado a 25 UMA = $${salarioEfectivoDiario.toFixed(2)}/día`
-      : descripcionSalario,
-    valor: salarioEfectivoDiario * DIAS_PROMEDIO_MES,
-    formula: aplicoTope ? `min(${formulaSalario}, 25 × UMA_diaria)` : formulaSalario,
-    baseLegal: 'Art. 167 LSS 1973 (promedio 250 semanas); Art. 28 LSS vigente (tope 25 UMA)',
-    esEstimacion: esEstimacionSalario,
-    supuesto: esEstimacionSalario
+    title: '1. Salario Base de Cotización Promedio',
+    description: capApplied
+      ? `${salaryDescription} → topado a 25 UMA = $${effectiveDailySalary.toFixed(2)}/día`
+      : salaryDescription,
+    value: effectiveDailySalary * AVERAGE_DAYS_PER_MONTH,
+    formula: capApplied ? `min(${salaryFormula}, 25 × UMA_diaria)` : salaryFormula,
+    legalBasis: 'Art. 167 LSS 1973 (promedio 250 semanas); Art. 28 LSS vigente (tope 25 UMA)',
+    isEstimate: isSalaryEstimate,
+    assumption: isSalaryEstimate
       ? 'Promedio ponderado estimado considerando Modalidad 40. El IMSS usará el historial exacto.'
       : undefined,
   });
 
   return {
     ...ctx,
-    salarioEfectivoDiario,
-    aplicoTope,
-    pasos,
-    advertencias,
+    effectiveDailySalary,
+    capApplied,
+    steps,
+    warnings,
   };
 };
