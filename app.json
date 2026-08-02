@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "mx.vieyralabs.miprension",
+      "bundleIdentifier": "com.vieyralabs.mipensionmx",
       "infoPlist": {
         "CFBundleDisplayName": "Mi Pensión MX"
       }
@@ -26,7 +26,7 @@
         "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#1565C0"
       },
-      "package": "mx.vieyralabs.miprension"
+      "package": "com.vieyralabs.mipensionmx"
     },
     "web": {
       "favicon": "./src/assets/favicon.png"
