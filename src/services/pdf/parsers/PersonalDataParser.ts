@@ -198,9 +198,13 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
       (v) => v !== undefined && v !== '' && v !== null && (Array.isArray(v) ? v.length > 0 : true),
     ).length;
 
-    if (camposFaltantes.length > 0) {
+    // "SBC promedio (250 semanas)" ya tiene su propia advertencia detallada
+    // más arriba (con la sugerencia de qué constancia descargar); no repetir
+    // el mismo campo en este resumen genérico.
+    const camposFaltantesParaResumen = camposFaltantes.filter((c) => c !== 'SBC promedio (250 semanas)');
+    if (camposFaltantesParaResumen.length > 0) {
       advertencias.push(
-        `No se pudieron extraer automáticamente: ${camposFaltantes.join(', ')}. Por favor completa estos campos manualmente.`,
+        `No se pudieron extraer automáticamente: ${camposFaltantesParaResumen.join(', ')}. Por favor completa estos campos manualmente.`,
       );
     }
 
