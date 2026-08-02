@@ -32,7 +32,6 @@ export default function ValidationScreen() {
   });
   const [warnings, setWarnings] = useState<string[]>([]);
   const [missingFields, setMissingFields] = useState<string[]>([]);
-  const [showExtractedText, setShowExtractedText] = useState(false);
 
   useEffect(() => {
     const result = ConstanciaIMSSParser.parse(extractedText);
@@ -185,25 +184,6 @@ export default function ValidationScreen() {
       <Button mode="outlined" onPress={() => navigation.goBack()} style={styles.btn}>
         Volver a importar
       </Button>
-
-      {/* Debug temporal: texto crudo extraído del PDF, para diagnosticar
-          fallas de extracción. Selecciona y copia el texto para reportarlo. */}
-      <Button
-        mode="text"
-        onPress={() => setShowExtractedText((v) => !v)}
-        style={styles.btn}
-      >
-        {showExtractedText ? 'Ocultar texto extraído (debug)' : 'Ver texto extraído (debug)'}
-      </Button>
-      {showExtractedText && (
-        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
-          <Card.Content>
-            <Text selectable variant="bodySmall" style={{ color: theme.colors.onSurface, fontFamily: 'monospace' }}>
-              {extractedText || '(vacío)'}
-            </Text>
-          </Card.Content>
-        </Card>
-      )}
     </ScrollView>
   );
 }
