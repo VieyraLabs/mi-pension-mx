@@ -89,8 +89,8 @@ export default function NewSimulationScreen() {
       return;
     }
     const resultado = calcularPension(input);
-    await guardar(resultado, input.datosPersonales.nombre ?? 'Simulación');
-    navigation.navigate('Result', {});
+    const guardada = await guardar(resultado, input.datosPersonales.nombre ?? 'Simulación');
+    navigation.navigate('Result', { simulacionId: guardada.id });
   };
 
   const renderPaso = () => {
