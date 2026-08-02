@@ -77,7 +77,7 @@ export default function NewSimulationScreen() {
       setSbcPrecargadoEsPromedio(true);
     }
     setPrecargadoDePdf(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Solo debe correr cuando cambian los datos importados de la ruta, no en cada render.
   }, [route.params?.datosImportados]);
 
   const ir = (n: number) => setPaso((p) => Math.max(0, Math.min(PASOS.length - 1, p + n)));

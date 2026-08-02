@@ -12,7 +12,7 @@ import type {
   Modalidad40,
   Beneficiarios,
 } from '../models';
-import { UMA_ACTUAL, calcularUMADesdeValorDiario } from '../constants/uma';
+import { UMA_ACTUAL, calcularUMADesdeValorDiario, getUMAPorAnio } from '../constants/uma';
 import { calcularEdad, calcularFechaRetiro } from '../utils/date';
 import { diarioAMensual, mensualADiario } from '../utils/format';
 
@@ -108,7 +108,6 @@ export function usePensionForm() {
   }, []);
 
   const seleccionarUMAPorAnio = useCallback((anio: number) => {
-    const { getUMAPorAnio } = require('../constants/uma');
     const registro = getUMAPorAnio(anio);
     if (registro) {
       setInput((prev) => ({
