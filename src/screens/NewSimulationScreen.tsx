@@ -50,6 +50,7 @@ export default function NewSimulationScreen() {
   const [salarioModoMensual, setSalarioModoMensual] = useState(false);
   const [umaPersonalizada, setUmaPersonalizada] = useState(false);
   const [precargadoDePdf, setPrecargadoDePdf] = useState(false);
+  const [sbcPrecargadoEsPromedio, setSbcPrecargadoEsPromedio] = useState(false);
 
   // Precarga el formulario con los datos revisados en ValidationScreen
   // (importación de PDF). Solo corre una vez, al entrar a la pantalla.
@@ -57,7 +58,7 @@ export default function NewSimulationScreen() {
     const datosImportados = route.params?.datosImportados;
     if (!datosImportados) return;
 
-    const { nombre, sexo, fechaNacimiento, semanasTotales, ultimoSBC } = datosImportados;
+    const { nombre, sexo, fechaNacimiento, semanasTotales, promedioSBC, ultimoSBC } = datosImportados;
 
     const fecha = fechaNacimiento ? new Date(fechaNacimiento + 'T00:00:00') : undefined;
     actualizarDatosPersonales({
@@ -68,8 +69,12 @@ export default function NewSimulationScreen() {
     if (semanasTotales) {
       actualizarHistorial({ semanasTotales });
     }
-    if (ultimoSBC) {
-      actualizarSalarioDiario(ultimoSBC);
+    // Preferir el SBC promedio (ya ponderado sobre las últimas 250 semanas)
+    // sobre el último SBC registrado, que solo refleja el patrón más reciente.
+    const sbcParaPrecargar = promedioSBC ?? ultimoSBC;
+    if (sbcParaPrecargar) {
+      actualizarSalarioDiario(sbcParaPrecargar);
+      setSbcPrecargadoEsPromedio(promedioSBC !== undefined);
     }
     setPrecargadoDePdf(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,8 +156,9 @@ export default function NewSimulationScreen() {
             <Card.Content>
               <Text variant="bodySmall" style={{ color: '#1565C0', lineHeight: 18 }}>
                 📄 Este formulario se precargó con los datos de tu constancia IMSS. Revisa cada paso —
-                especialmente el SBC, que corresponde a tu último salario registrado, no necesariamente al
-                promedio de tus últimas 250 semanas.
+                {sbcPrecargadoEsPromedio
+                  ? ' el SBC es un promedio estimado (APROXIMADO) de las últimas 250 semanas a partir de tu historial de patrones; la constancia no trae el historial completo de cambios salariales dentro de cada empleo, así que verifícalo.'
+                  : ' especialmente el SBC, que corresponde a tu último salario registrado, no al promedio de tus últimas 250 semanas.'}
               </Text>
             </Card.Content>
           </Card>

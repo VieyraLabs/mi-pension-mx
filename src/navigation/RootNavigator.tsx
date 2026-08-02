@@ -30,6 +30,9 @@ export interface DatosImportadosSimulacion {
   /** Fecha en formato AAAA-MM-DD */
   fechaNacimiento?: string;
   semanasTotales?: number;
+  /** SBC promedio estimado de las últimas 250 semanas (aproximado; ver advertencias del parser). */
+  promedioSBC?: number;
+  /** Último SBC registrado con el patrón más reciente — solo informativo, no es el promedio. */
   ultimoSBC?: number;
 }
 

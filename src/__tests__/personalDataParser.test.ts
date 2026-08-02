@@ -119,3 +119,60 @@ Nombre del patrón EMPRESA DE PRUEBA SA DE CV`;
     expect(result.data?.nombre).not.toMatch(/patrón|EMPRESA/i);
   });
 });
+
+// ─────────────────────────────────────────────
+// Historial laboral y SBC promedio (aproximado)
+// ─────────────────────────────────────────────
+//
+// Nota sobre determinismo: estas pruebas usan una fecha de alta fija muy en
+// el pasado (16/01/2021) para el patrón "Vigente", cuya antigüedad ya supera
+// las 250 semanas y seguirá superándolas siempre (el pasado no cambia), así
+// que el resultado no depende de la fecha real en la que corra la prueba.
+
+describe('ConstanciaIMSSParser — historial laboral y SBC promedio', () => {
+  test('reconstruye el historial laboral infiriendo la fecha de baja de cada patrón', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
+    const relaciones = result.data?.relacionesLaborales ?? [];
+    expect(relaciones).toHaveLength(2);
+
+    expect(relaciones[0]?.nombrePatron).toBe('EMPRESA DE PRUEBA SA DE CV');
+    expect(relaciones[0]?.salarioBaseCotizacion).toBe(500);
+    expect(relaciones[0]?.fechaAlta.toISOString().split('T')[0]).toBe('2021-01-16');
+    // Vigente: sin patrón más reciente después, la fecha de baja es "hoy".
+
+    expect(relaciones[1]?.nombrePatron).toBe('OTRA EMPRESA SA DE CV');
+    expect(relaciones[1]?.salarioBaseCotizacion).toBe(200);
+    expect(relaciones[1]?.fechaAlta.toISOString().split('T')[0]).toBe('2018-07-01');
+    // Inferida como un día antes del alta del siguiente patrón (16/01/2021).
+    expect(relaciones[1]?.fechaBaja?.toISOString().split('T')[0]).toBe('2021-01-15');
+  });
+
+  test('el SBC promedio (aproximado) es el del patrón vigente cuando este solo ya cubre las 250 semanas', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
+    // El patrón vigente (alta 16/01/2021) por sí solo ya supera 250 semanas
+    // de antigüedad, así que el promedio ponderado coincide con su SBC.
+    expect(result.data?.promedioSBC).toBe(500);
+    expect(result.advertencias.some((a) => /SBC promedio estimado.*APROXIMADO/i.test(a))).toBe(true);
+  });
+
+  test('omite el patrón más reciente del cálculo si no está marcado "Vigente" (no se sabe cuándo terminó)', () => {
+    const sinVigente = TEXTO_CONSTANCIA.replace('Vigente\n', '');
+    const result = ConstanciaIMSSParser.parse(sinVigente);
+    const relaciones = result.data?.relacionesLaborales ?? [];
+
+    expect(relaciones).toHaveLength(1);
+    expect(relaciones[0]?.nombrePatron).toBe('OTRA EMPRESA SA DE CV');
+    expect(
+      result.advertencias.some((a) => /no se pudo determinar cuándo terminó tu empleo más reciente/i.test(a)),
+    ).toBe(true);
+  });
+
+  test('no reconstruye el historial si las etiquetas no cuadran en cantidad (evita adivinar)', () => {
+    // Un "$" de más (p. ej. un monto que no es un SBC) rompe el supuesto de
+    // que cada patrón tiene exactamente un alta, un monto y un nombre.
+    const textoConMontoExtra = TEXTO_CONSTANCIA.replace('$ 500.0', '$ 500.0\n$ 999.0');
+    const result = ConstanciaIMSSParser.parse(textoConMontoExtra);
+    expect(result.data?.relacionesLaborales).toEqual([]);
+    expect(result.data?.promedioSBC).toBeUndefined();
+  });
+});

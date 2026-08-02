@@ -25,6 +25,7 @@ export default function ValidationScreen() {
     curp: '',
     nss: '',
     semanasTotales: '',
+    promedioSBC: '',
     ultimoSBC: '',
     fechaNacimiento: '',
     sexo: undefined as 'masculino' | 'femenino' | undefined,
@@ -41,6 +42,7 @@ export default function ValidationScreen() {
         curp: d.curp ?? '',
         nss: d.nss ?? '',
         semanasTotales: d.semanasTotales ? String(d.semanasTotales) : '',
+        promedioSBC: d.promedioSBC ? String(d.promedioSBC) : '',
         ultimoSBC: d.ultimoSBC ? String(d.ultimoSBC) : '',
         fechaNacimiento: d.fechaNacimiento ? d.fechaNacimiento.toISOString().split('T')[0] ?? '' : '',
         sexo: d.sexo,
@@ -57,6 +59,7 @@ export default function ValidationScreen() {
     }
 
     const semanasTotales = parseInt(datos.semanasTotales);
+    const promedioSBC = datos.promedioSBC ? parseFloat(datos.promedioSBC) : undefined;
     const ultimoSBC = datos.ultimoSBC ? parseFloat(datos.ultimoSBC) : undefined;
 
     mostrarAlerta(
@@ -72,6 +75,7 @@ export default function ValidationScreen() {
                 sexo: datos.sexo,
                 fechaNacimiento: datos.fechaNacimiento || undefined,
                 semanasTotales: !isNaN(semanasTotales) ? semanasTotales : undefined,
+                promedioSBC: promedioSBC && !isNaN(promedioSBC) ? promedioSBC : undefined,
                 ultimoSBC: ultimoSBC && !isNaN(ultimoSBC) ? ultimoSBC : undefined,
               },
             }),
@@ -141,7 +145,20 @@ export default function ValidationScreen() {
             style={styles.input}
           />
           <TextInput
-            label="Último SBC (salario diario, MXN)"
+            label="SBC promedio de las últimas 250 semanas (diario, MXN)"
+            value={datos.promedioSBC}
+            onChangeText={(v) => setDatos({ ...datos, promedioSBC: v })}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            style={styles.input}
+          />
+          {datos.promedioSBC !== '' && (
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: -8, marginBottom: 12 }}>
+              ⚠️ Aproximado: la constancia solo trae el último SBC de cada patrón, no el historial completo de cambios salariales. Verifícalo.
+            </Text>
+          )}
+          <TextInput
+            label="Último SBC registrado (solo referencia, no es el promedio)"
             value={datos.ultimoSBC}
             onChangeText={(v) => setDatos({ ...datos, ultimoSBC: v })}
             mode="outlined"

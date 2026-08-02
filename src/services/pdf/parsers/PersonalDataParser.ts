@@ -5,7 +5,10 @@
  * NOTA: El IMSS puede cambiar el formato del documento. Este parser se basa
  * en los patrones comunes observados en constancias digitales (no escaneadas).
  */
-import type { DatosExtraidos, ParseResult, DocumentType } from '../../../models';
+import type { DatosExtraidos, ParseResult, DocumentType, RelacionLaboral } from '../../../models';
+import { calcularSbcPromedioPonderado } from '../../../utils/sbcPromedio';
+import { round2 } from '../../../utils/format';
+import { SEMANAS_PROMEDIO_SBC } from '../../../constants/ley73';
 
 /** Interfaz común para todos los parsers de documentos. */
 export interface DocumentParser<T> {
@@ -124,6 +127,42 @@ export const ConstanciaIMSSParser: DocumentParser<DatosExtraidos> = {
       camposFaltantes.push('Último SBC');
     }
 
+    // ─── SBC promedio (últimas 250 semanas, aproximado) ───────────────────
+    // La Constancia de Semanas Cotizadas solo muestra el ÚLTIMO SBC
+    // registrado con cada patrón (ver nota en extraerHistorialLaboral), no
+    // el historial completo de cambios salariales dentro de cada empleo.
+    // Por eso esto es una APROXIMACIÓN, no el promedio exacto que usa el
+    // IMSS — se calcula ponderando por días cada patrón dentro de la
+    // ventana de 250 semanas, asumiendo que no hubo periodos sin cotizar
+    // entre un empleo y el siguiente.
+    const historialResultado = extraerHistorialLaboral(text);
+    datos.relacionesLaborales = historialResultado.relaciones;
+    if (historialResultado.omitioMasReciente) {
+      advertencias.push(
+        'No se pudo determinar cuándo terminó tu empleo más reciente (no aparece marcado como "Vigente"), ' +
+          'así que no se incluyó en el cálculo del SBC promedio. Verifica el promedio manualmente.',
+      );
+    }
+    if (historialResultado.relaciones.length > 0) {
+      const periodos = historialResultado.relaciones.map((r) => ({
+        fechaInicio: r.fechaAlta,
+        fechaFin: r.fechaBaja ?? new Date(),
+        sbc: r.salarioBaseCotizacion,
+      }));
+      const promedioResultado = calcularSbcPromedioPonderado(periodos, new Date(), SEMANAS_PROMEDIO_SBC);
+      if (promedioResultado) {
+        datos.promedioSBC = round2(promedioResultado.promedio);
+        advertencias.push(
+          `SBC promedio estimado de las últimas 250 semanas: $${datos.promedioSBC.toFixed(2)} (APROXIMADO, no el cálculo exacto del IMSS). ` +
+            'Cada patrón en la constancia solo muestra su último SBC registrado, no el historial completo de cambios salariales dentro de ese empleo, ' +
+            'y se asumió que no hubo periodos sin cotizar entre un empleo y el siguiente. Verifica este valor.' +
+            (promedioResultado.completo
+              ? ''
+              : ' Tu historial laboral registrado no alcanza a cubrir las 250 semanas completas; el promedio se calculó solo con los días disponibles.'),
+        );
+      }
+    }
+
     // ─── Último patrón ───────────────────────────────────────────
     const patronMatch = text.match(/(?:último patrón|patrón)[:\s]+([^\n\r]{5,80})/i);
     if (patronMatch?.[1]) {
@@ -209,6 +248,94 @@ function fechaNacimientoDesdeCURP(curp: string): Date | null {
   // mes resultante no coincide, la fecha original no era válida.
   if (isNaN(fecha.getTime()) || fecha.getMonth() !== mes - 1) return null;
   return fecha;
+}
+
+interface HistorialLaboralResultado {
+  relaciones: RelacionLaboral[];
+  /** Si el empleo más reciente no se pudo incluir por no saber su fecha de baja. */
+  omitioMasReciente: boolean;
+}
+
+/**
+ * Reconstruye el historial laboral (patrón, fechas, SBC) a partir de la
+ * Constancia de Semanas Cotizadas.
+ *
+ * LIMITACIÓN IMPORTANTE: cada bloque de patrón en este documento solo trae
+ * el ÚLTIMO SBC registrado con ese patrón (ver el pie "Valor del último
+ * salario base de cotización diario en pesos" que acompaña cada uno), no el
+ * historial completo de cambios salariales dentro de ese empleo. El
+ * historial reconstruido aquí es entonces una APROXIMACIÓN.
+ *
+ * Estrategia: "Fecha de alta", los montos "$" y "Nombre del patrón" quedan
+ * de forma fiable en el mismo orden relativo en el texto extraído (a
+ * diferencia de "Fecha de baja", cuyo valor puede quedar intercalado en
+ * cualquier parte por el orden de dibujado del PDF — ver notas en el
+ * llamador). Se toman esas tres listas en orden y se emparejan por
+ * posición; la fecha de baja de cada patrón (salvo el más reciente) se
+ * infiere como el día anterior al alta del patrón siguiente en la lista,
+ * asumiendo que no hubo huecos entre empleos. El patrón más reciente se
+ * considera vigente (baja = hoy) solo si el texto contiene la palabra
+ * "Vigente"; si no, se omite del historial reconstruido por no poder
+ * determinar cuándo terminó.
+ */
+function extraerHistorialLaboral(text: string): HistorialLaboralResultado {
+  const altas = [...text.matchAll(/fecha de alta\s+(\d{2})\/(\d{2})\/(\d{4})/gi)];
+  const sbcs = [...text.matchAll(/\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/g)];
+  const patrones = [...text.matchAll(/nombre del patr[oó]n\s+([^\n\r]{2,80})/gi)];
+  const registros = [...text.matchAll(/registro patronal\s+(\S+)/gi)];
+
+  const n = altas.length;
+  if (n === 0 || sbcs.length !== n || patrones.length !== n) {
+    // Las listas no cuadran: el documento no sigue la estructura esperada
+    // (o hay más/menos patrones de los detectados). Evitar adivinar.
+    return { relaciones: [], omitioMasReciente: false };
+  }
+
+  const esVigente = /\bvigente\b/i.test(text);
+  const hoy = new Date();
+  const fechaAltaDe = (m: RegExpMatchArray) =>
+    new Date(parseInt(m[3] as string, 10), parseInt(m[2] as string, 10) - 1, parseInt(m[1] as string, 10));
+
+  const relaciones: RelacionLaboral[] = [];
+  let omitioMasReciente = false;
+
+  for (let i = 0; i < n; i++) {
+    const altaMatch = altas[i];
+    const sbcMatch = sbcs[i];
+    const patronMatch = patrones[i];
+    if (!altaMatch || !sbcMatch || !patronMatch) continue;
+
+    const fechaAlta = fechaAltaDe(altaMatch);
+
+    let fechaBaja: Date;
+    if (i === 0) {
+      if (!esVigente) {
+        omitioMasReciente = true;
+        continue;
+      }
+      fechaBaja = hoy;
+    } else {
+      const altaAnterior = altas[i - 1];
+      if (!altaAnterior) continue;
+      fechaBaja = new Date(fechaAltaDe(altaAnterior).getTime() - 24 * 60 * 60 * 1000);
+    }
+
+    const sbc = parseFloat((sbcMatch[1] as string).replace(',', '.'));
+    if (isNaN(sbc) || sbc <= 0) continue;
+
+    const registroMatch = registros[i];
+    relaciones.push({
+      nombrePatron: patronMatch[1]?.trim() ?? '',
+      registroPatronal: registroMatch?.[1] ?? '',
+      fechaAlta,
+      fechaBaja,
+      salarioBaseCotizacion: sbc,
+      tipoMovimiento: '',
+      diasCotizados: Math.max(0, Math.round((fechaBaja.getTime() - fechaAlta.getTime()) / (24 * 60 * 60 * 1000))),
+    });
+  }
+
+  return { relaciones, omitioMasReciente };
 }
 
 /** Normaliza un candidato a nombre y descarta los que claramente no lo son. */
