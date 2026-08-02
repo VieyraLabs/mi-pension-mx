@@ -6,9 +6,7 @@
  * en los patrones comunes observados en constancias digitales (no escaneadas).
  */
 import type { ExtractedData, ParseResult, DocumentType, EmploymentRelation } from '../../../models';
-import { calculateWeightedAverageSBC, type SBCPeriod } from '../../../utils/sbcPromedio';
-import { round2 } from '../../../utils/format';
-import { SBC_AVERAGE_WEEKS } from '../../../constants/ley73';
+import { summarizeLastContributedWeeks, type SBCPeriod } from '../../pension/history';
 
 /** Interfaz común para todos los parsers de documentos. */
 export interface DocumentParser<T> {
@@ -143,18 +141,23 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
       );
     }
     if (workHistoryResult.usedDetailedData) {
-      const averageResult = calculateWeightedAverageSBC(
+      // Últimas 250 semanas COTIZADAS (Art. 167 LSS 1973): los periodos sin
+      // cotización se saltan y el recorrido sigue hacia atrás, en vez de
+      // tomar las últimas 250 semanas calendario.
+      const summary = summarizeLastContributedWeeks(
         workHistoryResult.periods,
         workHistoryResult.referenceDate,
-        SBC_AVERAGE_WEEKS,
       );
-      if (averageResult) {
-        data.averageSBC = round2(averageResult.average);
+      if (summary) {
+        data.averageSBC = summary.averageSalary;
         warnings.push(
-          `SBC promedio de las últimas 250 semanas: $${data.averageSBC.toFixed(2)} (calculado a partir del historial detallado de modificaciones salariales de tus patrones). Verifica este valor.` +
-            (averageResult.isComplete
+          `SBC promedio de las últimas 250 semanas cotizadas: $${data.averageSBC.toFixed(2)} (calculado a partir del historial detallado de modificaciones salariales de tus patrones). Verifica este valor.` +
+            (summary.isComplete
               ? ''
-              : ' Tu historial no cubre las 250 semanas completas; el promedio se calculó solo con los días disponibles.') +
+              : ` Tu historial solo registra ${summary.contributedWeeks} semanas cotizadas, menos de las 250 que exige el cálculo; el promedio se obtuvo con las disponibles.`) +
+            (summary.skippedWeeks > 0
+              ? ` Se omitieron ${summary.skippedWeeks} semanas sin cotización (periodos sin patrón), que no cuentan para el promedio.`
+              : '') +
             (workHistoryResult.hadOverlap
               ? ' Detectamos periodos con más de un patrón simultáneo; para esos días se sumaron los SBC de los patrones, sin duplicar las semanas cotizadas.'
               : '') +
@@ -165,7 +168,7 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
       } else {
         missingFields.push('SBC promedio (250 semanas)');
         warnings.push(
-          'El historial detallado de modificaciones salariales de tus patrones no alcanza a cubrir ninguna parte de las últimas 250 semanas; ' +
+          'El historial detallado de modificaciones salariales de tus patrones no registra ninguna semana cotizada; ' +
             'no fue posible calcular el SBC promedio. Complétalo manualmente.',
         );
       }
