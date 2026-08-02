@@ -58,7 +58,7 @@ export default function NewSimulationScreen() {
     const datosImportados = route.params?.datosImportados;
     if (!datosImportados) return;
 
-    const { nombre, sexo, fechaNacimiento, semanasTotales, promedioSBC, ultimoSBC } = datosImportados;
+    const { nombre, sexo, fechaNacimiento, semanasTotales, promedioSBC } = datosImportados;
 
     const fecha = fechaNacimiento ? new Date(fechaNacimiento + 'T00:00:00') : undefined;
     actualizarDatosPersonales({
@@ -69,12 +69,12 @@ export default function NewSimulationScreen() {
     if (semanasTotales) {
       actualizarHistorial({ semanasTotales });
     }
-    // Preferir el SBC promedio (ya ponderado sobre las últimas 250 semanas)
-    // sobre el último SBC registrado, que solo refleja el patrón más reciente.
-    const sbcParaPrecargar = promedioSBC ?? ultimoSBC;
-    if (sbcParaPrecargar) {
-      actualizarSalarioDiario(sbcParaPrecargar);
-      setSbcPrecargadoEsPromedio(promedioSBC !== undefined);
+    // Solo se precarga cuando hay un SBC promedio calculado con el historial
+    // detallado de modificaciones salariales — el último SBC registrado no
+    // es el promedio y no debe usarse como si lo fuera (ver ValidationScreen).
+    if (promedioSBC) {
+      actualizarSalarioDiario(promedioSBC);
+      setSbcPrecargadoEsPromedio(true);
     }
     setPrecargadoDePdf(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -157,8 +157,8 @@ export default function NewSimulationScreen() {
               <Text variant="bodySmall" style={{ color: '#1565C0', lineHeight: 18 }}>
                 📄 Este formulario se precargó con los datos de tu constancia IMSS. Revisa cada paso —
                 {sbcPrecargadoEsPromedio
-                  ? ' el SBC es un promedio estimado (APROXIMADO) de las últimas 250 semanas a partir de tu historial de patrones; la constancia no trae el historial completo de cambios salariales dentro de cada empleo, así que verifícalo.'
-                  : ' especialmente el SBC, que corresponde a tu último salario registrado, no al promedio de tus últimas 250 semanas.'}
+                  ? ' el SBC es un promedio calculado a partir del historial detallado de modificaciones salariales de tus patrones; verifícalo.'
+                  : ' tu constancia no incluía el historial de modificaciones salariales necesario para calcular el SBC promedio, así que ese campo quedó en blanco. Complétalo manualmente.'}
               </Text>
             </Card.Content>
           </Card>

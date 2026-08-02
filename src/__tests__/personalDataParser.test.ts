@@ -147,12 +147,21 @@ describe('ConstanciaIMSSParser — historial laboral y SBC promedio', () => {
     expect(relaciones[1]?.fechaBaja?.toISOString().split('T')[0]).toBe('2021-01-15');
   });
 
-  test('el SBC promedio (aproximado) es el del patrón vigente cuando este solo ya cubre las 250 semanas', () => {
+  test('no calcula ningún SBC promedio cuando la constancia no trae el historial detallado de modificaciones', () => {
+    // Sin la tabla de movimientos (REINGRESO/MODIFICACIÓN/BAJA) por patrón,
+    // no se debe inventar un número aproximado: se deja en blanco y se pide
+    // la constancia correcta.
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
-    // El patrón vigente (alta 16/01/2021) por sí solo ya supera 250 semanas
-    // de antigüedad, así que el promedio ponderado coincide con su SBC.
-    expect(result.data?.promedioSBC).toBe(500);
-    expect(result.advertencias.some((a) => /SBC promedio estimado.*APROXIMADO/i.test(a))).toBe(true);
+    expect(result.data?.promedioSBC).toBeUndefined();
+    expect(result.camposFaltantes).toContain('SBC promedio (250 semanas)');
+    expect(
+      result.advertencias.some((a) => /no incluye el historial detallado de modificaciones salariales/i.test(a)),
+    ).toBe(true);
+    expect(
+      result.advertencias.some((a) =>
+        a.includes('gob.mx/imss/prensa/el-imss-te-invita-a-obtener-tu-constancia-de-semanas-cotizadas'),
+      ),
+    ).toBe(true);
   });
 
   test('omite el patrón más reciente del cálculo si no está marcado "Vigente" (no se sabe cuándo terminó)', () => {
@@ -174,5 +183,101 @@ describe('ConstanciaIMSSParser — historial laboral y SBC promedio', () => {
     const result = ConstanciaIMSSParser.parse(textoConMontoExtra);
     expect(result.data?.relacionesLaborales).toEqual([]);
     expect(result.data?.promedioSBC).toBeUndefined();
+  });
+});
+
+// ─────────────────────────────────────────────
+// Historial detallado (tabla de modificaciones salariales)
+// ─────────────────────────────────────────────
+//
+// Algunas constancias traen, por patrón, una tabla "Tipo de movimiento /
+// Fecha de movimiento / Salario Base" (REINGRESO / MODIFICACIÓN DE SALARIO /
+// BAJA) con el historial completo de cambios de SBC. Cuando está disponible,
+// se usa para un cálculo más preciso en vez de la aproximación de un solo
+// SBC por patrón.
+
+describe('ConstanciaIMSSParser — historial detallado de modificaciones salariales', () => {
+  test('usa el SBC de la última modificación (no el del encabezado) cuando ya cubre las 250 semanas', () => {
+    // El encabezado trae un SBC ($999, deliberadamente distinto) que NO debe
+    // usarse: la tabla de movimientos indica que el SBC vigente desde
+    // 01/01/2018 es $200, y esa fecha ya es lo bastante antigua para cubrir
+    // por sí sola las 250 semanas — las modificaciones anteriores (2010,
+    // 2012) quedan fuera de la ventana y no deben afectar el promedio.
+    const texto = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+Vigente
+CIUDAD DE MÉXICO
+Fecha de alta 01/01/2010 Fecha de baja Salario Base de Cotización *
+Entidad federativa
+$ 999.0
+Nombre del patrón EMPRESA DE PRUEBA SA DE CV
+Registro Patronal Y549999940
+Tipo de movimiento Fecha de movimiento Salario Base
+MODIFICACION DE SALARIO 01/01/2018 $ 200.0
+MODIFICACION DE SALARIO 01/01/2012 $ 75.0
+REINGRESO 01/01/2010 $ 50.0
+* Valor del último salario base de cotización diario en pesos.
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:500||`;
+
+    const result = ConstanciaIMSSParser.parse(texto);
+    expect(result.data?.promedioSBC).toBe(200);
+    expect(result.advertencias.some((a) => /historial detallado de modificaciones salariales/i.test(a))).toBe(true);
+    expect(result.advertencias.some((a) => /APROXIMADO/i.test(a))).toBe(false);
+  });
+
+  test('detecta periodos traslapados entre dos patrones distintos y lo advierte', () => {
+    // PATRON B (vigente, alta 01/06/2015) por sí solo ya cubre las 250
+    // semanas, así que domina el promedio — pero PATRON A (01/01/2015 a
+    // 01/06/2016) se traslapa con él (01/06/2015–01/06/2016), como el caso
+    // real de empleos simultáneos que el propio IMSS reconoce como válido.
+    const texto = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+Vigente
+CIUDAD DE MÉXICO
+Fecha de alta 01/06/2015 Fecha de baja Salario Base de Cotización *
+Entidad federativa
+$ 999.0
+Nombre del patrón PATRON B SA DE CV
+Registro Patronal Y549999940
+Tipo de movimiento Fecha de movimiento Salario Base
+REINGRESO 01/06/2015 $ 999.0
+* Valor del último salario base de cotización diario en pesos.
+01/01/2015
+CIUDAD DE MÉXICO
+Fecha de alta 01/01/2015 Fecha de baja Salario Base de Cotización *
+Entidad federativa
+$ 500.0
+Nombre del patrón PATRON A SA DE CV
+Registro Patronal Y584460910
+Tipo de movimiento Fecha de movimiento Salario Base
+BAJA 01/06/2016 $ 500.0
+REINGRESO 01/01/2015 $ 500.0
+* Valor del último salario base de cotización diario en pesos.
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:500||`;
+
+    const result = ConstanciaIMSSParser.parse(texto);
+    expect(result.data?.promedioSBC).toBe(999);
+    expect(
+      result.advertencias.some((a) => /periodos con más de un patrón simultáneo/i.test(a)),
+    ).toBe(true);
+  });
+
+  test('no advierte traslape cuando los patrones son contiguos', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
+    expect(result.advertencias.some((a) => /patrón simultáneo/i.test(a))).toBe(false);
   });
 });

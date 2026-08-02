@@ -152,9 +152,15 @@ export default function ValidationScreen() {
             keyboardType="decimal-pad"
             style={styles.input}
           />
-          {datos.promedioSBC !== '' && (
+          {datos.promedioSBC !== '' ? (
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: -8, marginBottom: 12 }}>
-              ⚠️ Aproximado: la constancia solo trae el último SBC de cada patrón, no el historial completo de cambios salariales. Verifícalo.
+              ✓ Calculado a partir del historial detallado de modificaciones salariales de tus patrones. Verifícalo.
+            </Text>
+          ) : (
+            <Text variant="bodySmall" style={{ color: '#C62828', marginTop: -8, marginBottom: 12 }}>
+              ⚠️ Esta constancia no incluye el historial de modificaciones salariales necesario para calcularlo.
+              Descarga la "Constancia de Semanas Cotizadas en el IMSS e Historial de Registros Afiliatorios de la
+              Persona Asegurada" desde los servicios digitales del IMSS, o complétalo manualmente.
             </Text>
           )}
           <TextInput
