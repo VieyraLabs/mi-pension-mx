@@ -20,6 +20,7 @@ import { AssistanceAidStep } from './steps/AssistanceAidStep';
 import { LimitsStep } from './steps/LimitsStep';
 import { DIAS_ANIO_UMA, DIAS_PROMEDIO_MES, MESES_POR_ANIO, SEMANAS_MINIMAS_VEJEZ } from '../../constants/ley73';
 import { round2 } from '../../utils/format';
+import { PensionInputSchema } from '../../validation/pensionSchema';
 
 /** Resultado de validación previa al cálculo. */
 export interface ValidationResult {
@@ -28,38 +29,21 @@ export interface ValidationResult {
   advertencias: string[];
 }
 
-/** Valida los datos de entrada antes del cálculo. */
+/**
+ * Valida los datos de entrada antes del cálculo.
+ * Las reglas de validación viven en el schema Zod (`pensionSchema.ts`), única
+ * fuente de verdad — aquí solo se traducen sus resultados y se agregan
+ * advertencias informativas (no bloqueantes) sobre el input.
+ */
 export function validarInput(input: PensionInput): ValidationResult {
-  const errores: string[] = [];
   const advertencias: string[] = [];
+  const resultado = PensionInputSchema.safeParse(input);
+  const errores = resultado.success ? [] : resultado.error.issues.map((issue) => issue.message);
 
   const semanas = input.historialLaboral.semanasTotales;
-  const edadRetiro = input.datosPersonales.edadRetiro;
-  const salario = input.salarioPromedio.salarioDiario;
-  const uma = input.uma.umaDiaria;
-
-  if (semanas < SEMANAS_MINIMAS_VEJEZ) {
-    errores.push(
-      `Semanas cotizadas insuficientes: ${semanas} semanas. ` +
-        `Se requieren mínimo ${SEMANAS_MINIMAS_VEJEZ} semanas (Arts. 138 y 145 LSS 1973).`,
-    );
-  }
-
-  if (edadRetiro < 60 || edadRetiro > 100) {
-    errores.push(`Edad de retiro inválida: ${edadRetiro} años. Rango válido: 60–100.`);
-  }
-
-  if (salario <= 0) {
-    errores.push('El salario diario promedio debe ser mayor a cero.');
-  }
-
-  if (uma <= 0) {
-    errores.push('El valor de la UMA diaria debe ser mayor a cero.');
-  }
-
   if (semanas >= SEMANAS_MINIMAS_VEJEZ && semanas < 520) {
     advertencias.push(
-      `Tienes justo el mínimo de semanas. Considera cotizar más para incrementar tu pensión.`,
+      'Tienes justo el mínimo de semanas. Considera cotizar más para incrementar tu pensión.',
     );
   }
 
@@ -68,7 +52,7 @@ export function validarInput(input: PensionInput): ValidationResult {
   }
 
   return {
-    valido: errores.length === 0,
+    valido: resultado.success,
     errores,
     advertencias,
   };

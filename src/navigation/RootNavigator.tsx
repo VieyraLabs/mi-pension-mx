@@ -18,23 +18,11 @@ import InfoScreen from '../screens/InfoScreen';
 import FAQScreen from '../screens/FAQScreen';
 import PdfImportScreen from '../screens/PdfImportScreen';
 import ValidationScreen from '../screens/ValidationScreen';
+import type { DatosImportadosSimulacion } from '../models';
 
 // ─────────────────────────────────────────────
 // Tipos de rutas
 // ─────────────────────────────────────────────
-
-/** Datos ya revisados/corregidos por el usuario en ValidationScreen, para precargar NewSimulationScreen. */
-export interface DatosImportadosSimulacion {
-  nombre?: string;
-  sexo?: 'masculino' | 'femenino';
-  /** Fecha en formato AAAA-MM-DD */
-  fechaNacimiento?: string;
-  semanasTotales?: number;
-  /** SBC promedio estimado de las últimas 250 semanas (aproximado; ver advertencias del parser). */
-  promedioSBC?: number;
-  /** Último SBC registrado con el patrón más reciente — solo informativo, no es el promedio. */
-  ultimoSBC?: number;
-}
 
 export type RootStackParamList = {
   MainTabs: undefined;
@@ -42,6 +30,7 @@ export type RootStackParamList = {
   Result: { simulacionId?: string };
   PdfImport: undefined;
   Validation: { textoExtraido: string };
+  FAQ: undefined;
 };
 
 export type TabParamList = {
@@ -149,6 +138,11 @@ export default function RootNavigator() {
         name="Validation"
         component={ValidationScreen}
         options={{ title: 'Validar Datos Importados' }}
+      />
+      <Stack.Screen
+        name="FAQ"
+        component={FAQScreen}
+        options={{ title: 'Preguntas Frecuentes' }}
       />
     </Stack.Navigator>
   );

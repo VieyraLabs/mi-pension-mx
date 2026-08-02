@@ -203,6 +203,23 @@ export interface SimulacionGuardada {
 }
 
 // ─────────────────────────────────────────────
+// Datos importados de PDF, ya revisados por el usuario
+// ─────────────────────────────────────────────
+
+/** Datos ya revisados/corregidos por el usuario en ValidationScreen, para precargar NewSimulationScreen. */
+export interface DatosImportadosSimulacion {
+  nombre?: string;
+  sexo?: Sexo;
+  /** Fecha en formato AAAA-MM-DD */
+  fechaNacimiento?: string;
+  semanasTotales?: number;
+  /** SBC promedio estimado de las últimas 250 semanas (aproximado; ver advertencias del parser). */
+  promedioSBC?: number;
+  /** Último SBC registrado con el patrón más reciente — solo informativo, no es el promedio. */
+  ultimoSBC?: number;
+}
+
+// ─────────────────────────────────────────────
 // Comparación de escenarios (Simulador)
 // ─────────────────────────────────────────────
 

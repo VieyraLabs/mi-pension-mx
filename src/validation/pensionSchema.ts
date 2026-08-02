@@ -3,6 +3,7 @@
  * Garantizan la integridad de los datos antes del cálculo.
  */
 import { z } from 'zod';
+import { SEMANAS_MINIMAS_VEJEZ } from '../constants/ley73';
 
 // ─────────────────────────────────────────────
 // Esquemas base
@@ -29,7 +30,10 @@ export const HistorialLaboralSchema = z.object({
   semanasTotales: z
     .number({ required_error: 'Las semanas cotizadas son requeridas' })
     .int('Las semanas deben ser un número entero')
-    .min(1, 'Ingresa al menos 1 semana cotizada')
+    .min(
+      SEMANAS_MINIMAS_VEJEZ,
+      `Se requieren mínimo ${SEMANAS_MINIMAS_VEJEZ} semanas cotizadas (Arts. 138 y 145 LSS 1973).`,
+    )
     .max(5000, 'El número de semanas parece incorrecto (máximo 5000)'),
   semanasReconocidas: z.number().int().min(0).optional(),
   semanasDescontadas: z.number().int().min(0).optional(),

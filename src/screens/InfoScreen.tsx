@@ -3,13 +3,17 @@
  */
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, List, useTheme, Divider } from 'react-native-paper';
+import { Text, Card, List, useTheme, Divider, Button } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/RootNavigator';
 import { INFO_LEY73 } from '../constants/infoLegal';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export default function InfoScreen() {
   const theme = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
@@ -74,9 +78,12 @@ export default function InfoScreen() {
           <Text variant="titleSmall" style={{ color: theme.colors.onSurface, fontWeight: 'bold', marginBottom: 4 }}>
             ¿Tienes más preguntas?
           </Text>
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 12 }}>
             Consulta las Preguntas Frecuentes en la sección FAQ.
           </Text>
+          <Button mode="outlined" onPress={() => navigation.navigate('FAQ')}>
+            Ver Preguntas Frecuentes
+          </Button>
         </Card.Content>
       </Card>
     </ScrollView>

@@ -153,10 +153,6 @@ export function usePensionForm() {
     setInput(ESTADO_INICIAL);
   }, []);
 
-  const cargarSimulacion = useCallback((inputGuardado: PensionInput) => {
-    setInput(inputGuardado);
-  }, []);
-
   return {
     input,
     actualizarDatosPersonales,
@@ -168,6 +164,5 @@ export function usePensionForm() {
     actualizarModalidad40,
     actualizarBeneficiarios,
     resetForm,
-    cargarSimulacion,
   };
 }
