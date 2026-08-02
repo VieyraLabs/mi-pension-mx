@@ -24,10 +24,10 @@ export default function InfoScreen() {
     >
       <Card style={[styles.headerCard, { backgroundColor: theme.colors.primary }]} elevation={3}>
         <Card.Content style={{ alignItems: 'center', padding: 20 }}>
-          <Text variant="headlineSmall" style={{ color: '#FFFFFF', fontWeight: 'bold', textAlign: 'center' }}>
+          <Text variant="headlineSmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold', textAlign: 'center' }}>
             📚 Información Ley 73
           </Text>
-          <Text variant="bodySmall" style={{ color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 8 }}>
+          <Text variant="bodySmall" style={{ color: theme.colors.onPrimary, opacity: 0.9, textAlign: 'center', marginTop: 8 }}>
             Todo lo que necesitas saber sobre la Ley del Seguro Social de 1973
           </Text>
         </Card.Content>

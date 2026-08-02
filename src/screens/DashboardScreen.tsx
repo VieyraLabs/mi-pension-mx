@@ -58,16 +58,16 @@ export default function DashboardScreen() {
     >
       {/* Header */}
       <Surface style={[styles.header, { backgroundColor: theme.colors.primary }]} elevation={4}>
-        <Text variant="headlineMedium" style={styles.headerTitle}>
+        <Text variant="headlineMedium" style={[styles.headerTitle, { color: theme.colors.onPrimary }]}>
           Mi Pensión MX
         </Text>
-        <Text variant="bodyMedium" style={styles.headerSubtitle}>
+        <Text variant="bodyMedium" style={[styles.headerSubtitle, { color: theme.colors.onPrimary, opacity: 0.9 }]}>
           Calculadora de Pensión IMSS Ley 73
         </Text>
         <View style={styles.chipContainer}>
           <Chip
-            style={[styles.chip, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
-            textStyle={{ color: '#FFFFFF', fontSize: 11 }}
+            style={[styles.chip, { backgroundColor: theme.dark ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.2)' }]}
+            textStyle={{ color: theme.colors.onPrimary, fontSize: 11 }}
             compact
           >
             ⚠️ {ESTIMATION_DISCLAIMER_SHORT}
@@ -146,12 +146,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    color: '#FFFFFF',
     fontWeight: 'bold',
     textAlign: 'center',
   },
   headerSubtitle: {
-    color: 'rgba(255,255,255,0.9)',
     textAlign: 'center',
     marginTop: 4,
   },

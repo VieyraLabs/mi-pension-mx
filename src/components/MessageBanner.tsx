@@ -2,10 +2,12 @@
  * Banner de mensaje reutilizable (aviso/éxito/error/info).
  * Reemplaza los bloques `<Card style={{backgroundColor: '#FFF8E1'}}>` que
  * cada pantalla repetía a mano, con emoji y colores inconsistentes entre sí.
+ *
+ * Soporta modo oscuro: el color de fondo y de texto se adaptan al `theme.dark`.
  */
 import React from 'react';
-import { Card, Text } from 'react-native-paper';
-import { BANNER_COLORS } from '../theme';
+import { Card, Text, useTheme } from 'react-native-paper';
+import { getBannerColors } from '../theme';
 
 export type MessageBannerVariant = 'warning' | 'success' | 'error' | 'info';
 
@@ -25,7 +27,8 @@ export interface MessageBannerProps {
 }
 
 export function MessageBanner({ variant, children, title, style }: MessageBannerProps) {
-  const colors = BANNER_COLORS[variant];
+  const theme = useTheme();
+  const colors = getBannerColors(variant, theme.dark);
   const emoji = EMOJI_BY_VARIANT[variant];
 
   return (

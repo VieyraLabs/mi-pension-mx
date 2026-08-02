@@ -43,10 +43,10 @@ export default function PdfImportScreen() {
       {/* Header */}
       <Card style={[styles.headerCard, { backgroundColor: theme.colors.primary }]} elevation={3}>
         <Card.Content style={{ alignItems: 'center', padding: 20 }}>
-          <Text variant="headlineSmall" style={{ color: '#FFFFFF', fontWeight: 'bold', textAlign: 'center' }}>
+          <Text variant="headlineSmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold', textAlign: 'center' }}>
             📄 Importar Constancia IMSS
           </Text>
-          <Text variant="bodySmall" style={{ color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 8 }}>
+          <Text variant="bodySmall" style={{ color: theme.colors.onPrimary, opacity: 0.9, textAlign: 'center', marginTop: 8 }}>
             Importa tu Constancia de Semanas Cotizadas en PDF para extraer los datos automáticamente
           </Text>
         </Card.Content>

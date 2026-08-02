@@ -13,6 +13,7 @@ import { exportPensionResultToPdf } from '../services/export/pdfExport';
 import { formatCurrency, formatPercent, formatInteger } from '../utils/format';
 import { showAlert } from '../utils/alert';
 import { calculateM40Summary } from '../utils/modalidad40';
+import { getBannerColors } from '../theme';
 import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
 import { EmptyState } from '../components/EmptyState';
 import { SummaryRow } from '../components/SummaryRow';
@@ -42,6 +43,10 @@ export default function ResultScreen() {
       />
     );
   }
+
+  const warningColors = getBannerColors('warning', theme.dark);
+  const successColors = getBannerColors('success', theme.dark);
+  const infoColors = getBannerColors('info', theme.dark);
 
   const exportPdf = async () => {
     setExporting(true);
@@ -84,7 +89,7 @@ export default function ResultScreen() {
               result.input.uma.dailyUMA,
             );
             return (
-              <View style={styles.m40Block}>
+              <View style={[styles.m40Block, { borderTopColor: theme.colors.outline }]}>
                 <Text
                   variant="labelLarge"
                   style={{ color: theme.colors.primary, marginBottom: 6 }}
@@ -147,23 +152,23 @@ export default function ResultScreen() {
       {/* Resultado principal */}
       <Card style={[styles.mainResultCard, { backgroundColor: theme.colors.primary }]} elevation={4}>
         <Card.Content style={{ alignItems: 'center', padding: 24 }}>
-          <Text variant="titleSmall" style={{ color: 'rgba(255,255,255,0.8)' }}>
+          <Text variant="titleSmall" style={{ color: theme.colors.onPrimary, opacity: 0.8 }}>
             Pensión mensual estimada
           </Text>
-          <Text variant="displaySmall" style={{ color: '#FFFFFF', fontWeight: 'bold', marginVertical: 8 }}>
+          <Text variant="displaySmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold', marginVertical: 8 }}>
             {formatCurrency(result.monthlyPension)}
           </Text>
-          <Divider style={{ backgroundColor: 'rgba(255,255,255,0.3)', width: '100%', marginVertical: 8 }} />
+          <Divider style={{ backgroundColor: theme.colors.onPrimary, opacity: 0.3, width: '100%', marginVertical: 8 }} />
           <View style={styles.subResults}>
             <View style={styles.subResult}>
-              <Text variant="labelSmall" style={{ color: 'rgba(255,255,255,0.8)' }}>Anual</Text>
-              <Text variant="titleSmall" style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
+              <Text variant="labelSmall" style={{ color: theme.colors.onPrimary, opacity: 0.8 }}>Anual</Text>
+              <Text variant="titleSmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold' }}>
                 {formatCurrency(result.annualPension)}
               </Text>
             </View>
             <View style={styles.subResult}>
-              <Text variant="labelSmall" style={{ color: 'rgba(255,255,255,0.8)' }}>Diario</Text>
-              <Text variant="titleSmall" style={{ color: '#FFFFFF', fontWeight: 'bold' }}>
+              <Text variant="labelSmall" style={{ color: theme.colors.onPrimary, opacity: 0.8 }}>Diario</Text>
+              <Text variant="titleSmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold' }}>
                 {formatCurrency(result.dailyAmount)}
               </Text>
             </View>
@@ -173,10 +178,42 @@ export default function ResultScreen() {
 
       {/* Indicadores clave */}
       <View style={styles.chipsRow}>
-        {result.capApplied && <Chip icon="alert" style={{ backgroundColor: '#FFF9C4' }}>Tope 25 UMA</Chip>}
-        {result.pmgApplied && <Chip icon="alert" style={{ backgroundColor: '#FFF9C4' }}>PMG aplicada</Chip>}
-        {result.input.modalidad40.active && <Chip icon="check" style={{ backgroundColor: '#E8F5E9' }}>Modalidad 40</Chip>}
-        <Chip icon="information" style={{ backgroundColor: '#E3F2FD' }}>
+        {result.capApplied && (
+          <Chip
+            icon="alert"
+            compact
+            style={{ backgroundColor: warningColors.background }}
+            textStyle={{ color: warningColors.text }}
+          >
+            Tope 25 UMA
+         </Chip>
+        )}
+        {result.pmgApplied && (
+          <Chip
+            icon="alert"
+            compact
+            style={{ backgroundColor: warningColors.background }}
+            textStyle={{ color: warningColors.text }}
+          >
+            PMG aplicada
+         </Chip>
+        )}
+        {result.input.modalidad40.active && (
+          <Chip
+            icon="check"
+            compact
+            style={{ backgroundColor: successColors.background }}
+            textStyle={{ color: successColors.text }}
+          >
+            Modalidad 40
+         </Chip>
+        )}
+        <Chip
+          icon="information"
+          compact
+          style={{ backgroundColor: infoColors.background }}
+          textStyle={{ color: infoColors.text }}
+        >
           Factor edad: {formatPercent(result.ageFactor * 100)}
         </Chip>
       </View>
@@ -196,18 +233,18 @@ export default function ResultScreen() {
           <>
             <Divider />
             {result.steps.map((step) => (
-              <View key={step.id} style={styles.breakdownItem}>
+              <View key={step.id} style={[styles.breakdownItem, { borderBottomColor: theme.colors.outlineVariant }]}>
                 <View style={styles.breakdownContent}>
                   <Text variant="bodyMedium" style={styles.breakdownTitle}>
                     {step.title}
                   </Text>
-                  <Text variant="bodySmall" style={styles.breakdownDescription}>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, width: '100%', fontSize: 11, lineHeight: 16 }}>
                     {step.description}
-                    {step.legalBasis && <Text style={styles.breakdownLegal}>📋 {step.legalBasis}</Text>}
-                    {step.isEstimate && <Text style={styles.breakdownEstimate}>⚠️ ESTIMACIÓN</Text>}
+                    {step.legalBasis && <Text style={{ color: theme.colors.primary }}>📋 {step.legalBasis}</Text>}
+                    {step.isEstimate && <Text style={{ color: theme.colors.secondary }}>⚠️ ESTIMACIÓN</Text>}
                   </Text>
                 </View>
-                <Text variant="labelLarge" style={styles.breakdownValue}>
+                <Text variant="labelLarge" style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 13, alignSelf: 'center' }}>
                   {formatCurrency(step.value)}
                 </Text>
               </View>
@@ -218,11 +255,11 @@ export default function ResultScreen() {
 
       {/* Advertencias */}
       {result.warnings.length > 0 && (
-        <Card style={[styles.card, { backgroundColor: '#FFF8E1' }]} elevation={0}>
+        <Card style={[styles.card, { backgroundColor: warningColors.background }]} elevation={0}>
           <Card.Title title="Notas y advertencias" titleVariant="titleSmall" />
           <Card.Content>
             {result.warnings.map((warning, i) => (
-              <Text key={i} variant="bodySmall" style={{ color: '#5D4037', marginBottom: 8, lineHeight: 18 }}>
+              <Text key={i} variant="bodySmall" style={{ color: warningColors.text, marginBottom: 8, lineHeight: 18 }}>
                 • {warning}
               </Text>
             ))}
@@ -266,18 +303,14 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   card: { borderRadius: 12, marginBottom: 16 },
-  m40Block: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E0E0E0' },
+  m40Block: { marginTop: 12, paddingTop: 12, borderTopWidth: 1 },
   mainResultCard: { borderRadius: 16, marginBottom: 16 },
   subResults: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
   subResult: { alignItems: 'center' },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   actions: { gap: 12, marginBottom: 20 },
   actionBtn: { borderRadius: 8 },
-  breakdownItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E0E0E0' },
+  breakdownItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1 },
   breakdownContent: { flex: 1 },
   breakdownTitle: { fontWeight: 'bold', fontSize: 13, marginBottom: 4, width: '100%' },
-  breakdownDescription: { fontSize: 11, lineHeight: 16, color: '#757575', width: '100%' },
-  breakdownLegal: { color: '#1976D2' },
-  breakdownEstimate: { color: '#FF6F00' },
-  breakdownValue: { color: '#1976D2', fontWeight: 'bold', fontSize: 13, alignSelf: 'center' },
 });

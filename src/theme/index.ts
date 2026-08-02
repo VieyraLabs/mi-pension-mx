@@ -25,11 +25,16 @@ const COLORS = {
  * hex literales para "aviso"/"error"/"éxito"/"info".
  */
 export const BANNER_COLORS = {
-  warning: { background: '#FFF8E1', text: '#795548' },
-  success: { background: '#E8F5E9', text: '#2E7D32' },
-  error: { background: '#FFEBEE', text: '#C62828' },
-  info: { background: '#E3F2FD', text: '#1565C0' },
+  warning: { background: '#FFF8E1', text: '#795548', dark: { background: '#3E2D1A', text: '#FFCC80' } },
+  success: { background: '#E8F5E9', text: '#2E7D32', dark: { background: '#1B3D1B', text: '#81C784' } },
+  error: { background: '#FFEBEE', text: '#C62828', dark: { background: '#3E1B1B', text: '#EF9A9A' } },
+  info: { background: '#E3F2FD', text: '#1565C0', dark: { background: '#1A2D3E', text: '#90CAF9' } },
 } as const;
+
+export function getBannerColors(variant: keyof typeof BANNER_COLORS, isDark: boolean) {
+  const c = BANNER_COLORS[variant];
+  return isDark ? c.dark : { background: c.background, text: c.text };
+}
 
 /** Tema claro (Material Design 3). */
 export const lightTheme: MD3Theme = {

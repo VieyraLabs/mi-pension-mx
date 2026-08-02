@@ -10,6 +10,7 @@ import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-n
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { ConstanciaIMSSParser } from '../services/pdf/parsers/PersonalDataParser';
 import { showAlert } from '../utils/alert';
+import { getBannerColors } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Validation'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -32,6 +33,9 @@ export default function ValidationScreen() {
   });
   const [warnings, setWarnings] = useState<string[]>([]);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+
+  const warningColors = getBannerColors('warning', theme.dark);
+  const errorColors = getBannerColors('error', theme.dark);
 
   useEffect(() => {
     const result = ConstanciaIMSSParser.parse(extractedText);
@@ -91,11 +95,11 @@ export default function ValidationScreen() {
     >
       {/* Advertencias */}
       {warnings.length > 0 && (
-        <Card style={[styles.card, { backgroundColor: '#FFF8E1' }]} elevation={0}>
+        <Card style={[styles.card, { backgroundColor: warningColors.background }]} elevation={0}>
           <Card.Title title="Notas de extracción" titleVariant="titleSmall" />
           <Card.Content>
             {warnings.map((warning, i) => (
-              <Text key={i} variant="bodySmall" style={{ color: '#795548', lineHeight: 18, marginBottom: 4 }}>
+              <Text key={i} variant="bodySmall" style={{ color: warningColors.text, lineHeight: 18, marginBottom: 4 }}>
                 • {warning}
               </Text>
             ))}
@@ -105,14 +109,21 @@ export default function ValidationScreen() {
 
       {/* Campos faltantes */}
       {missingFields.length > 0 && (
-        <Card style={[styles.card, { backgroundColor: '#FFEBEE' }]} elevation={0}>
+        <Card style={[styles.card, { backgroundColor: errorColors.background }]} elevation={0}>
           <Card.Content>
-            <Text variant="labelSmall" style={{ color: '#C62828', marginBottom: 8 }}>
+            <Text variant="labelSmall" style={{ color: errorColors.text, marginBottom: 8 }}>
               ⚠️ Campos no encontrados en el PDF (completa manualmente):
             </Text>
             <View style={styles.chips}>
               {missingFields.map((field) => (
-                <Chip key={field} compact style={{ backgroundColor: '#FFCDD2' }}>{field}</Chip>
+                <Chip
+                  key={field}
+                  compact
+                  style={{ backgroundColor: theme.colors.errorContainer }}
+                  textStyle={{ color: theme.colors.onErrorContainer }}
+                >
+                  {field}
+                </Chip>
               ))}
             </View>
           </Card.Content>
@@ -157,7 +168,7 @@ export default function ValidationScreen() {
               ✓ Calculado a partir del historial detallado de modificaciones salariales de tus patrones. Verifícalo.
             </Text>
           ) : (
-            <Text variant="bodySmall" style={{ color: '#C62828', marginTop: -8, marginBottom: 12 }}>
+            <Text variant="bodySmall" style={{ color: errorColors.text, marginTop: -8, marginBottom: 12 }}>
               ⚠️ Esta constancia no incluye el historial de modificaciones salariales necesario para calcularlo.
               Descarga la "Constancia de Semanas Cotizadas en el IMSS e Historial de Registros Afiliatorios de la
               Persona Asegurada" desde los servicios digitales del IMSS, o complétalo manualmente.

@@ -10,6 +10,7 @@ import { UMA_ACTUAL } from '../constants/uma';
 import { ScenarioInputs, type Scenario } from '../components/ScenarioInputs';
 import { CompRow } from '../components/CompRow';
 import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
+import { getBannerColors } from '../theme';
 
 const DEFAULT_SCENARIO: Scenario = {
   retirementAge: '65',
@@ -48,6 +49,7 @@ export default function SimulatorScreen() {
   const annualDifference = monthlyDifference * 12;
   const percentIncrease = resultB && resultB > 0 && resultA ? ((resultA - resultB) / resultB) * 100 : 0;
   const better = (resultA ?? 0) >= (resultB ?? 0) ? 'A' : 'B';
+  const winnerColors = getBannerColors('success', theme.dark);
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={styles.content}>
@@ -69,7 +71,7 @@ export default function SimulatorScreen() {
 
         {/* Escenario B */}
         <Card style={[styles.scenarioCard, { backgroundColor: theme.colors.surface }]} elevation={2}>
-          <Card.Title title="Escenario B" titleStyle={{ color: '#FF6F00', fontWeight: 'bold' }} />
+          <Card.Title title="Escenario B" titleStyle={{ color: theme.colors.secondary, fontWeight: 'bold' }} />
           <Card.Content>
             <ScenarioInputs scenario={scenarioB} onChange={setScenarioB} />
           </Card.Content>
@@ -84,20 +86,20 @@ export default function SimulatorScreen() {
         <>
           {/* Resultados */}
           <View style={styles.resultsRow}>
-            <Card style={[styles.resultCard, { backgroundColor: resultA >= resultB ? '#E8F5E9' : theme.colors.surface }]} elevation={2}>
+            <Card style={[styles.resultCard, { backgroundColor: resultA >= resultB ? winnerColors.background : theme.colors.surface }]} elevation={2}>
               <Card.Content style={{ alignItems: 'center' }}>
-                <Text variant="labelMedium" style={{ color: '#1565C0' }}>Escenario A</Text>
-                <Text variant="headlineSmall" style={{ color: '#1565C0', fontWeight: 'bold' }}>
+                <Text variant="labelMedium" style={{ color: theme.colors.primary }}>Escenario A</Text>
+                <Text variant="headlineSmall" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
                   {formatCurrency(resultA)}/mes
                 </Text>
                 {resultA === 0 && <HelperText type="error">Datos insuficientes</HelperText>}
               </Card.Content>
             </Card>
 
-            <Card style={[styles.resultCard, { backgroundColor: resultB > resultA ? '#E8F5E9' : theme.colors.surface }]} elevation={2}>
+            <Card style={[styles.resultCard, { backgroundColor: resultB > resultA ? winnerColors.background : theme.colors.surface }]} elevation={2}>
               <Card.Content style={{ alignItems: 'center' }}>
-                <Text variant="labelMedium" style={{ color: '#FF6F00' }}>Escenario B</Text>
-                <Text variant="headlineSmall" style={{ color: '#FF6F00', fontWeight: 'bold' }}>
+                <Text variant="labelMedium" style={{ color: theme.colors.secondary }}>Escenario B</Text>
+                <Text variant="headlineSmall" style={{ color: theme.colors.secondary, fontWeight: 'bold' }}>
                   {formatCurrency(resultB)}/mes
                 </Text>
                 {resultB === 0 && <HelperText type="error">Datos insuficientes</HelperText>}
