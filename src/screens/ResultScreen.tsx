@@ -12,6 +12,7 @@ import { useHistory } from '../hooks/useHistory';
 import { exportPensionResultToPdf } from '../services/export/pdfExport';
 import { formatCurrency, formatPercent, formatInteger } from '../utils/format';
 import { showAlert } from '../utils/alert';
+import { calculateM40Summary } from '../utils/modalidad40';
 import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
 import { EmptyState } from '../components/EmptyState';
 import { SummaryRow } from '../components/SummaryRow';
@@ -74,9 +75,72 @@ export default function ResultScreen() {
           <SummaryRow label="Semanas cotizadas" value={formatInteger(result.input.workHistory.totalWeeks)} theme={theme} />
           <SummaryRow label="Salario diario promedio" value={formatCurrency(result.input.averageSalary.dailySalary)} theme={theme} />
           <SummaryRow label="UMA utilizada" value={`$${result.input.uma.dailyUMA}/día (${result.input.uma.year}${result.input.uma.isCustom ? ', personalizada' : ''})`} theme={theme} />
-          {result.input.modalidad40.active && (
-            <SummaryRow label="Modalidad 40" value={`Activa — $${result.input.modalidad40.contributionSalary}/día`} theme={theme} />
-          )}
+          {result.input.modalidad40.active && (() => {
+            const m40 = result.input.modalidad40;
+            const summary = calculateM40Summary(
+              m40,
+              result.input.workHistory.totalWeeks,
+              result.input.averageSalary.dailySalary,
+              result.input.uma.dailyUMA,
+            );
+            return (
+              <View style={styles.m40Block}>
+                <Text
+                  variant="labelLarge"
+                  style={{ color: theme.colors.primary, marginBottom: 6 }}
+                >
+                  Modalidad 40
+                </Text>
+                <SummaryRow
+                  label="Salario base a cotizar"
+                  value={`${formatCurrency(m40.contributionSalary ?? 0)}/día`}
+                  theme={theme}
+                />
+                <SummaryRow
+                  label="Meses que planeas cotizar"
+                  value={`${m40.expectedMonths ?? 0} meses`}
+                  theme={theme}
+                />
+                <SummaryRow
+                  label="SBC M40 con incremento anual"
+                  value={`${formatCurrency(summary.adjustedDailyM40Salary)}/día`}
+                  theme={theme}
+                />
+                <SummaryRow
+                  label="Semanas M40 (de las 250)"
+                  value={`${summary.referenceWeeks} sem.`}
+                  theme={theme}
+                />
+                <SummaryRow
+                  label="Semanas previas al M40"
+                  value={`${summary.baseWeeks} sem.`}
+                  theme={theme}
+                />
+                <SummaryRow
+                  label="Total de semanas cotizadas"
+                  value={`${formatInteger(summary.estimatedTotalWeeks)} sem.`}
+                  theme={theme}
+                />
+                <SummaryRow
+                  label="Salario promedio ponderado"
+                  value={`${formatCurrency(summary.estimatedAverageDailySalary)}/día`}
+                  theme={theme}
+                />
+                <Text
+                  variant="bodySmall"
+                  style={{ color: theme.colors.onSurfaceVariant, marginTop: 4, fontStyle: 'italic' }}
+                >
+                  Promedio = (salario × semanas previas + SBC M40 × semanas M40) ÷ 250
+                </Text>
+                <Text
+                  variant="bodySmall"
+                  style={{ color: theme.colors.onSurfaceVariant, fontStyle: 'italic' }}
+                >
+                  Suma ponderada de las 250 semanas que usa el IMSS para calcular tu pensión.
+                </Text>
+              </View>
+            );
+          })()}
         </Card.Content>
       </Card>
 
@@ -185,6 +249,14 @@ export default function ResultScreen() {
         >
           Nueva simulación
         </Button>
+        <Button
+          mode="outlined"
+          icon="home"
+          onPress={() => navigation.popToTop()}
+          style={styles.actionBtn}
+        >
+          Ir al inicio
+        </Button>
       </View>
     </ScrollView>
   );
@@ -194,6 +266,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   card: { borderRadius: 12, marginBottom: 16 },
+  m40Block: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E0E0E0' },
   mainResultCard: { borderRadius: 16, marginBottom: 16 },
   subResults: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
   subResult: { alignItems: 'center' },

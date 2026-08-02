@@ -30,7 +30,7 @@ export function Modalidad40Step({ modalidad40, onChange, theme }: Modalidad40Ste
             onValueChange={(v) => onChange({ active: v })}
           />
           <Text variant="bodyMedium" style={{ marginLeft: 8, color: theme.colors.onSurface }}>
-            ¿Cotiza actualmente en Modalidad 40?
+            ¿Deseas cotizar en Modalidad 40?
           </Text>
         </View>
 
@@ -60,6 +60,9 @@ export function Modalidad40Step({ modalidad40, onChange, theme }: Modalidad40Ste
               keyboardType="decimal-pad"
               style={styles.input}
             />
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: -4, marginBottom: 8 }}>
+              Ejemplo: si esperas que el salario de cotización M40 crezca ~5% cada año (por UMA o inflación), captura 5. Déjalo vacío para usar el mismo salario durante todo el periodo M40.
+            </Text>
           </>
         )}
       </Card.Content>

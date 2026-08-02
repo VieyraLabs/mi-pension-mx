@@ -11,11 +11,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 const mockNavigate = jest.fn();
 const mockGoBack = jest.fn();
+const mockPopToTop = jest.fn();
 let mockRouteParams: { simulationId?: string } = {};
 
 jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
-  useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
+  useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack, popToTop: mockPopToTop }),
   useRoute: () => ({ params: mockRouteParams }),
 }));
 
