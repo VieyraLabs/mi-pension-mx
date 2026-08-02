@@ -55,6 +55,15 @@ describe('ConstanciaIMSSParser', () => {
     expect(result.data?.nombre).toBe('JUAN PEREZ LOPEZ');
   });
 
+  test('extrae un "Nombre del Asegurado" de más de una palabra completo (no solo la primera)', () => {
+    const conNombreCompuesto = TEXTO_CONSTANCIA.replace(
+      'Nombre del Asegurado:JUAN',
+      'Nombre del Asegurado:ALAN FERNANDO',
+    );
+    const result = ConstanciaIMSSParser.parse(conNombreCompuesto);
+    expect(result.data?.nombre).toBe('ALAN FERNANDO PEREZ LOPEZ');
+  });
+
   test('extrae el NSS aunque el nombre esté intercalado antes del valor', () => {
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
     expect(result.data?.nss).toBe('12345678901');
@@ -218,10 +227,10 @@ Entidad federativa
 $ 999.0
 Nombre del patrón EMPRESA DE PRUEBA SA DE CV
 Registro Patronal Y549999940
-Tipo de movimiento Fecha de movimiento Salario Base
-MODIFICACION DE SALARIO 01/01/2018 $ 200.0
-MODIFICACION DE SALARIO 01/01/2012 $ 75.0
-REINGRESO 01/01/2010 $ 50.0
+Fecha de movimiento Tipo de movimiento Salario Base
+01/01/2018 MODIFICACION DE SALARIO $ 200.0
+01/01/2012 MODIFICACION DE SALARIO $ 75.0
+01/01/2010 REINGRESO $ 50.0
 * Valor del último salario base de cotización diario en pesos.
 
 |||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:500||`;
@@ -252,8 +261,8 @@ Entidad federativa
 $ 999.0
 Nombre del patrón PATRON B SA DE CV
 Registro Patronal Y549999940
-Tipo de movimiento Fecha de movimiento Salario Base
-REINGRESO 01/06/2015 $ 999.0
+Fecha de movimiento Tipo de movimiento Salario Base
+01/06/2015 REINGRESO $ 999.0
 * Valor del último salario base de cotización diario en pesos.
 01/01/2015
 CIUDAD DE MÉXICO
@@ -262,9 +271,9 @@ Entidad federativa
 $ 500.0
 Nombre del patrón PATRON A SA DE CV
 Registro Patronal Y584460910
-Tipo de movimiento Fecha de movimiento Salario Base
-BAJA 01/06/2016 $ 500.0
-REINGRESO 01/01/2015 $ 500.0
+Fecha de movimiento Tipo de movimiento Salario Base
+01/06/2016 BAJA $ 500.0
+01/01/2015 REINGRESO $ 500.0
 * Valor del último salario base de cotización diario en pesos.
 
 |||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:500||`;

@@ -297,11 +297,12 @@ const DIA_MS = 24 * 60 * 60 * 1000;
  * asignando cada fila al patrón cuyo "Nombre del patrón" la antecede más de
  * cerca en el texto. No se asume que las 3 columnas de una fila queden
  * adyacentes por posición de columna vs. fila (el orden de dibujado del PDF
- * puede variar); en cambio, cada fila "TIPO FECHA $MONTO" sí se observa
- * consistentemente junta, igual que "Nombre del patrón NOMBRE".
+ * puede variar); en cambio, cada fila "FECHA TIPO $MONTO" sí se observa
+ * consistentemente junta (en ese orden — la columna "Fecha de movimiento"
+ * va primero en el texto extraído), igual que "Nombre del patrón NOMBRE".
  */
 const MOVIMIENTO_REGEX =
-  /(REINGRESO|MODIFICACION DE SALARIO|BAJA)\s+(\d{2})\/(\d{2})\/(\d{4})\s+\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/gi;
+  /(\d{2})\/(\d{2})\/(\d{4})\s+(REINGRESO|MODIFICACION DE SALARIO|BAJA)\s+\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/gi;
 
 /** Extrae las filas crudas de la tabla de movimientos en todo el documento. */
 function extraerMovimientosRaw(text: string): RegExpMatchArray[] {
@@ -327,16 +328,16 @@ function agruparMovimientosPorPatron(
     }
     if (empleadorIdx === -1) continue;
 
-    const tipoRaw = (mov[1] ?? '').toUpperCase();
+    const tipoRaw = (mov[4] ?? '').toUpperCase();
     const tipo: MovimientoSalarial['tipo'] = tipoRaw.startsWith('REINGRESO')
       ? 'REINGRESO'
       : tipoRaw.startsWith('BAJA')
         ? 'BAJA'
         : 'MODIFICACION';
     const fecha = new Date(
-      parseInt(mov[4] as string, 10),
-      parseInt(mov[3] as string, 10) - 1,
-      parseInt(mov[2] as string, 10),
+      parseInt(mov[3] as string, 10),
+      parseInt(mov[2] as string, 10) - 1,
+      parseInt(mov[1] as string, 10),
     );
     const salario = parseFloat((mov[5] as string).replace(',', '.'));
     if (isNaN(salario) || salario <= 0) continue;
@@ -424,7 +425,10 @@ function detectarSolapamiento(periodos: PeriodoSBC[]): boolean {
  * poder determinar cuándo terminó.
  */
 function extraerHistorialLaboral(text: string): HistorialLaboralResultado {
-  const altas = [...text.matchAll(/fecha de alta\s+(\d{2})\/(\d{2})\/(\d{4})/gi)];
+  // "Fecha de alta" puede venir seguido directamente de su fecha, o de la
+  // etiqueta "Fecha de baja" (sin valor propio, ver nota de la función) antes
+  // de la fecha — que en ambos casos es la de alta.
+  const altas = [...text.matchAll(/fecha de alta(?:\s+fecha de baja)?\s+(\d{2})\/(\d{2})\/(\d{4})/gi)];
   const patrones = [...text.matchAll(/nombre del patr[oó]n\s+([^\n\r]{2,80})/gi)];
   const registros = [...text.matchAll(/registro patronal\s+(\S+)/gi)];
 
@@ -533,9 +537,12 @@ function extraerNombre(text: string): string | null {
   // 1. Campos estructurados de la "cadena original" del sello digital
   //    (Apellido Paterno / Apellido Materno / Nombre del Asegurado).
   //    Es la fuente más confiable cuando está presente.
-  const apPaterno = text.match(/apellido\s*paterno\s*:\s*([a-záéíóúñ]+)/i)?.[1];
-  const apMaterno = text.match(/apellido\s*materno\s*:\s*([a-záéíóúñ]+)/i)?.[1];
-  const nombreAsegurado = text.match(/nombre\s*del\s*asegurado\s*:\s*([a-záéíóúñ]+)/i)?.[1];
+  // NOTA: la clase de caracteres incluye espacio — "Nombre del Asegurado"
+  // puede traer más de una palabra (ej. "ALAN FERNANDO"), y sin espacio la
+  // captura se cortaba en la primera.
+  const apPaterno = text.match(/apellido\s*paterno\s*:\s*([a-záéíóúñ ]+?)(?=\s*[|\n]|$)/i)?.[1];
+  const apMaterno = text.match(/apellido\s*materno\s*:\s*([a-záéíóúñ ]+?)(?=\s*[|\n]|$)/i)?.[1];
+  const nombreAsegurado = text.match(/nombre\s*del\s*asegurado\s*:\s*([a-záéíóúñ ]+?)(?=\s*[|\n]|$)/i)?.[1];
   if (nombreAsegurado || apPaterno || apMaterno) {
     const completo = [nombreAsegurado, apPaterno, apMaterno].filter(Boolean).join(' ');
     const limpio = limpiarCandidatoNombre(completo);
