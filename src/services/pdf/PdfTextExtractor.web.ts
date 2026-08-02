@@ -9,9 +9,10 @@
  * El worker de pdfjs-dist se sirve como archivo estático desde /public
  * (public/pdfjs/pdf.worker.min.js) para no depender de un CDN externo.
  */
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
+// pdfjs-dist v5+ es ESM-only (ya no publica un build "legacy" CJS).
+import * as pdfjsLib from 'pdfjs-dist';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs/pdf.worker.min.mjs';
 
 function base64ToUint8Array(base64: string): Uint8Array {
   const binario = atob(base64);

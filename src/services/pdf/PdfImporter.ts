@@ -12,7 +12,9 @@
  */
 import { Platform } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
+// Se usa explícitamente la API "legacy" (async, basada en URIs): expo-file-system
+// v57+ cambió su export principal a una API nueva basada en clases (File/Directory).
+import * as FileSystem from 'expo-file-system/legacy';
 import type { ParseResult } from '../../models';
 import { extraerTextoPDF } from './PdfTextExtractor';
 
@@ -79,7 +81,7 @@ export async function importarPDF(): Promise<ParseResult<ImportResult>> {
     // descargó al dispositivo, copyToCacheDirectory puede devolver un archivo
     // de 0 bytes en lugar de lanzar un error.
     try {
-      const info = await FileSystem.getInfoAsync(uri, { size: true });
+      const info = await FileSystem.getInfoAsync(uri);
       if (!info.exists || info.size === 0) {
         return {
           ok: false,

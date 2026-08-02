@@ -5,46 +5,44 @@
     "types": [
       "jest"
     ],
-    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@components/*": [
-        "src/components/*"
+        "./src/components/*"
       ],
       "@screens/*": [
-        "src/screens/*"
+        "./src/screens/*"
       ],
       "@services/*": [
-        "src/services/*"
+        "./src/services/*"
       ],
       "@models/*": [
-        "src/models/*"
+        "./src/models/*"
       ],
       "@constants/*": [
-        "src/constants/*"
+        "./src/constants/*"
       ],
       "@hooks/*": [
-        "src/hooks/*"
+        "./src/hooks/*"
       ],
       "@utils/*": [
-        "src/utils/*"
+        "./src/utils/*"
       ],
       "@theme/*": [
-        "src/theme/*"
+        "./src/theme/*"
       ],
       "@storage/*": [
-        "src/storage/*"
+        "./src/storage/*"
       ],
       "@validation/*": [
-        "src/validation/*"
+        "./src/validation/*"
       ],
       "@navigation/*": [
-        "src/navigation/*"
+        "./src/navigation/*"
       ]
     },
-    "experimentalDecorators": true,
     "noUncheckedIndexedAccess": true
   },
   "include": [
