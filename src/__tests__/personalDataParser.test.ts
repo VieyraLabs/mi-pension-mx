@@ -291,4 +291,82 @@ Fecha de movimiento Tipo de movimiento Salario Base
     const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
     expect(result.warnings.some((a) => /patrón simultáneo/i.test(a))).toBe(false);
   });
+
+  test('reconoce la tabla de movimientos cuando el orden real es "TIPO FECHA $MONTO" (no solo "FECHA TIPO $MONTO")', () => {
+    // Regresión: una Constancia de Semanas Cotizadas real trajo la tabla de
+    // movimientos en este orden (columna "Tipo de movimiento" antes que
+    // "Fecha de movimiento" en el texto extraído), lo cual hacía que el
+    // regex de movimientos nunca hiciera match — todos los "$" de la tabla
+    // se contaban entonces como si fueran el encabezado del patrón, el
+    // conteo no cuadraba, y el parser abandonaba sin calcular el promedio.
+    // "Vigente" + alta muy antigua, sin fila BAJA (igual que otras pruebas
+    // de este bloque), para que el resultado no dependa de la fecha en que
+    // corra la prueba: la última modificación (01/01/2021) ya es lo bastante
+    // antigua para cubrir por sí sola las 250 semanas.
+    const texto = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+Vigente
+DISTRITO FEDERAL
+Fecha de alta 01/07/2018 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 999.0
+Nombre del patrón EMPRESA DE PRUEBA SA DE CV
+Registro Patronal Y584460910
+Tipo de movimiento Fecha de movimiento Salario Base
+MODIFICACION DE SALARIO 01/01/2021 $ 148.1
+MODIFICACION DE SALARIO 01/01/2020 $ 128.79
+MODIFICACION DE SALARIO 01/01/2019 $ 107.32
+REINGRESO 01/07/2018 $ 103.23
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:1048||`;
+
+    const result = ConstanciaIMSSParser.parse(texto);
+
+    expect(result.data?.employmentRelations).toHaveLength(1);
+    // El SBC de la última modificación (148.1), no el del encabezado (999).
+    expect(result.data?.averageSBC).toBe(148.1);
+    expect(result.missingFields).not.toContain('SBC promedio (250 semanas)');
+  });
+
+  test('ancla la ventana de 250 semanas a la fecha de baja más reciente cuando el patrón no está "Vigente"', () => {
+    // Regresión: con la misma constancia real del caso anterior, el único
+    // patrón registrado terminó (BAJA) mucho antes de "hoy" (más de 250
+    // semanas), así que usar "hoy" como referencia de la ventana no
+    // encontraba ningún periodo dentro de ella y el promedio fallaba pese a
+    // tener el historial detallado completo. La referencia debe ser la
+    // fecha de baja más reciente, no "hoy".
+    const texto = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+DISTRITO FEDERAL
+Fecha de alta 01/01/2010 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 999.0
+Nombre del patrón EMPRESA ANTIGUA SA DE CV
+Registro Patronal Y500000000
+Tipo de movimiento Fecha de movimiento Salario Base
+BAJA 01/01/2020 $ 300.0
+REINGRESO 01/01/2010 $ 300.0
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:521||`;
+
+    const result = ConstanciaIMSSParser.parse(texto);
+
+    expect(result.data?.averageSBC).toBe(300);
+    expect(result.missingFields).not.toContain('SBC promedio (250 semanas)');
+    expect(
+      result.warnings.some((a) => /no indica que sigas cotizando actualmente/i.test(a)),
+    ).toBe(true);
+  });
 });

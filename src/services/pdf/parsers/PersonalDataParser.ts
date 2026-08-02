@@ -145,7 +145,7 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
     if (workHistoryResult.usedDetailedData) {
       const averageResult = calculateWeightedAverageSBC(
         workHistoryResult.periods,
-        new Date(),
+        workHistoryResult.referenceDate,
         SBC_AVERAGE_WEEKS,
       );
       if (averageResult) {
@@ -157,6 +157,9 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
               : ' Tu historial no cubre las 250 semanas completas; el promedio se calculó solo con los días disponibles.') +
             (workHistoryResult.hadOverlap
               ? ' Detectamos periodos con más de un patrón simultáneo; verifica manualmente si tuviste empleos simultáneos.'
+              : '') +
+            (workHistoryResult.usesPastReferenceDate
+              ? ` Como tu historial no indica que sigas cotizando actualmente, se usó tu fecha de baja más reciente (${workHistoryResult.referenceDate.toLocaleDateString('es-MX')}) como referencia en vez de la fecha de hoy.`
               : ''),
         );
       } else {
@@ -276,6 +279,16 @@ interface WorkHistoryParseResult {
   usedDetailedData: boolean;
   /** Si se detectaron periodos de más de un patrón traslapados en el tiempo. */
   hadOverlap: boolean;
+  /**
+   * Fecha hasta la cual se conoce el historial de cotización: "hoy" si el
+   * patrón más reciente está marcado "Vigente", o la fecha de baja más
+   * reciente en caso contrario. Ancla la ventana de las últimas 250 semanas
+   * — usar siempre "hoy" haría que el promedio fallara para cualquiera cuyo
+   * último empleo registrado haya terminado hace más de ~4.8 años.
+   */
+  referenceDate: Date;
+  /** Si `referenceDate` es una fecha pasada (no "hoy") — para poder avisarlo. */
+  usesPastReferenceDate: boolean;
 }
 
 interface SalaryMovement {
@@ -292,12 +305,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * asignando cada fila al patrón cuyo "Nombre del patrón" la antecede más de
  * cerca en el texto. No se asume que las 3 columnas de una fila queden
  * adyacentes por posición de columna vs. fila (el orden de dibujado del PDF
- * puede variar); en cambio, cada fila "FECHA TIPO $MONTO" sí se observa
- * consistentemente junta (en ese orden — la columna "Fecha de movimiento"
- * va primero en el texto extraído), igual que "Nombre del patrón NOMBRE".
+ * puede variar); en cambio, cada fila "TIPO/FECHA $MONTO" sí se observa
+ * consistentemente junta, pero el orden relativo de TIPO y FECHA varía entre
+ * constancias reales (algunas traen "FECHA TIPO $MONTO", otras "TIPO FECHA
+ * $MONTO" — el orden de la tabla visual "Tipo de movimiento | Fecha de
+ * movimiento | Salario Base" no siempre coincide con el orden de dibujado
+ * del PDF). Por eso el regex acepta ambos órdenes.
  */
 const MOVEMENT_REGEX =
-  /(\d{2})\/(\d{2})\/(\d{4})\s+(REINGRESO|MODIFICACION DE SALARIO|BAJA)\s+\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/gi;
+  /(?:(?<day1>\d{2})\/(?<month1>\d{2})\/(?<year1>\d{4})\s+(?<type1>REINGRESO|MODIFICACION DE SALARIO|BAJA)|(?<type2>REINGRESO|MODIFICACION DE SALARIO|BAJA)\s+(?<day2>\d{2})\/(?<month2>\d{2})\/(?<year2>\d{4}))\s+\$\s*(?<amount>\d{1,6}(?:[.,]\d{1,4})?)/gi;
 
 /** Extrae las filas crudas de la tabla de movimientos en todo el documento. */
 function extractRawMovements(text: string): RegExpMatchArray[] {
@@ -308,7 +324,7 @@ function groupMovementsByEmployer(
   movements: RegExpMatchArray[],
   employers: RegExpMatchArray[],
 ): SalaryMovement[][] {
-  const groups: SalaryMovement[][] = employers.map(() => []);
+  const groupsByEmployer: SalaryMovement[][] = employers.map(() => []);
 
   for (const movement of movements) {
     if (movement.index === undefined) continue;
@@ -323,28 +339,31 @@ function groupMovementsByEmployer(
     }
     if (employerIdx === -1) continue;
 
-    const typeRaw = (movement[4] ?? '').toUpperCase();
+    const m = movement.groups;
+    const day = m?.day1 ?? m?.day2;
+    const month = m?.month1 ?? m?.month2;
+    const year = m?.year1 ?? m?.year2;
+    const amountRaw = m?.amount;
+    if (!day || !month || !year || !amountRaw) continue;
+
+    const typeRaw = (m?.type1 ?? m?.type2 ?? '').toUpperCase();
     const type: SalaryMovement['type'] = typeRaw.startsWith('REINGRESO')
       ? 'REINGRESO'
       : typeRaw.startsWith('BAJA')
         ? 'BAJA'
         : 'MODIFICACION';
-    const date = new Date(
-      parseInt(movement[3] as string, 10),
-      parseInt(movement[2] as string, 10) - 1,
-      parseInt(movement[1] as string, 10),
-    );
-    const salary = parseFloat((movement[5] as string).replace(',', '.'));
+    const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+    const salary = parseFloat(amountRaw.replace(',', '.'));
     if (isNaN(salary) || salary <= 0) continue;
 
-    groups[employerIdx]?.push({ type, date, salary });
+    groupsByEmployer[employerIdx]?.push({ type, date, salary });
   }
 
-  for (const group of groups) {
+  for (const group of groupsByEmployer) {
     group.sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 
-  return groups;
+  return groupsByEmployer;
 }
 
 /**
@@ -443,7 +462,15 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
   if (count === 0 || sbcAmounts.length !== count || employers.length !== count) {
     // Las listas no cuadran: el documento no sigue la estructura esperada
     // (o hay más/menos patrones de los detectados). Evitar adivinar.
-    return { relations: [], periods: [], omittedMostRecent: false, usedDetailedData: false, hadOverlap: false };
+    return {
+      relations: [],
+      periods: [],
+      omittedMostRecent: false,
+      usedDetailedData: false,
+      hadOverlap: false,
+      referenceDate: new Date(),
+      usesPastReferenceDate: false,
+    };
   }
 
   const movementsByEmployer = groupMovementsByEmployer(rawMovements, employers);
@@ -505,12 +532,24 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
     });
   }
 
+  // Si el patrón más reciente no está "Vigente", el historial conocido
+  // termina en la fecha de baja más reciente, no en "hoy" — de lo
+  // contrario, la ventana de las últimas 250 semanas nunca tocaría ningún
+  // periodo real para alguien que dejó de cotizar hace tiempo.
+  const mostRecentEnd = periods.reduce<Date | undefined>(
+    (latest, p) => (!latest || p.endDate.getTime() > latest.getTime() ? p.endDate : latest),
+    undefined,
+  );
+  const referenceDate = isCurrentlyActiveGlobal || !mostRecentEnd ? today : mostRecentEnd;
+
   return {
     relations,
     periods,
     omittedMostRecent,
     usedDetailedData,
     hadOverlap: detectOverlap(periods),
+    referenceDate,
+    usesPastReferenceDate: referenceDate !== today,
   };
 }
 
