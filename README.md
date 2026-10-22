@@ -1,29 +1,79 @@
-# Mi Pensión MX — Calculadora de Pensión IMSS Ley 73
+# Mi Pensión MX — Calculadora de pensión IMSS (Ley 73)
 
-Aplicación móvil desarrollada con **React Native + Expo + TypeScript** para estimar pensiones bajo la **Ley del Seguro Social de 1973 (Ley 73)**.
+> **English summary below.** App móvil que estima la pensión de vejez bajo la **Ley del
+> Seguro Social de 1973** en México. **React Native + Expo + TypeScript**, **sin backend**
+> y **sin telemetría**: todo el cálculo y todos los datos del usuario viven en el
+> dispositivo. La diferencia del producto no es el formulario: es que **el resultado es
+> auditable** — cada número viene con su fórmula, su fundamento legal y la marca de si
+> es exacto o estimado. Motor de cálculo como pipeline de 8 pasos puros, **116 pruebas**
+> en 12 suites, **5 workflows de CI** con puerta de promoción.
 
-> ⚠️ **AVISO LEGAL**: Esta aplicación proporciona **ESTIMACIONES** con fines informativos únicamente. La resolución oficial de cualquier pensión corresponde exclusivamente al IMSS conforme a sus procedimientos institucionales. Los cálculos se basan en la Ley del Seguro Social de 1973 y valores de referencia (UMA, SMG) que pueden diferir de los criterios operativos del IMSS en cada caso particular. Acuda a la Subdelegación del IMSS correspondiente para información oficial.
+Aplicación móvil desarrollada con **React Native 0.86 + Expo SDK 57 + TypeScript** para
+estimar pensiones bajo la **Ley del Seguro Social de 1973 (Ley 73)**.
+
+> ⚠️ **AVISO LEGAL**: Esta aplicación proporciona **ESTIMACIONES** con fines informativos
+> únicamente. La resolución oficial de cualquier pensión corresponde exclusivamente al
+> IMSS conforme a sus procedimientos institucionales. Los cálculos se basan en la Ley del
+> Seguro Social de 1973 y valores de referencia (UMA, SMG) que pueden diferir de los
+> criterios operativos del IMSS en cada caso particular. Acuda a la Subdelegación del
+> IMSS correspondiente para información oficial.
+
+---
+
+## English summary
+
+A mobile app that estimates the old-age pension under Mexico's **Social Security Law
+(1973)**. Built with **React Native 0.86 + Expo SDK 57 + TypeScript**.
+
+**What makes it different:** the result is not a number, it is an **auditable breakdown**.
+Every step of the calculation carries its formula, the legal article it comes from, and
+whether the value is exact or an estimate. A pension estimate is a number a person will
+take to a government office, so it has to be explainable.
+
+**Engineering highlights:**
+
+- **Pure-function calculation pipeline.** The Ley 73 rules are 8 independent steps
+  (`AverageSalaryStep` → `BasicQuantityStep` → … → `LimitsStep`), each a function
+  `(ctx) => ctx`. Adding or fixing a rule touches one file.
+- **No backend, no telemetry, no third-party SDKs.** The payroll record never leaves the
+  device; there is no account, no analytics and no crash reporting.
+- **Local PDF pipeline.** `pdfjs-dist` extracts text from the IMSS statement on the
+  device; the parser rebuilds the weekly contribution history and computes the average
+  over the last **250 *contributed* weeks** (not 250 calendar weeks).
+- **One source of truth for validation.** A Zod schema drives both the forms and the
+  calculation engine, with the legal article cited in the error message.
+- **116 tests across 12 suites**, 89.1 % statement / 96.1 % function coverage on the
+  decision-making code.
+- **5 CI workflows**, including a promotion gate that requires human approval before a
+  release is authorized.
+
+**Docs:** [`docs/adr/`](docs/adr/) (10 architecture decision records),
+[`docs/spec/`](docs/spec/) (9 behavioural specs),
+[`docs/runbooks/`](docs/runbooks/) (6 operational procedures), plus
+[`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).
 
 ---
 
 ## 📋 Características
 
-- **Calculadora de pensión Ley 73** con todas las reglas oficiales:
+- **Calculadora de pensión Ley 73** con las reglas del articulado:
   - Cuantía básica (Art. 167 LSS 1973)
   - Incrementos anuales por semanas excedentes
+  - Incremento del 11 % (decreto DOF 2001/2004)
   - Factor por edad (Cesantía en Edad Avanzada, Arts. 138–140)
   - Asignaciones familiares (Arts. 163–164)
   - Ayuda asistencial (Art. 165)
   - Pensión Mínima Garantizada (Art. 170)
   - Tope de 25 UMA (Art. 28 LSS vigente)
   - Ajuste por Modalidad 40 (Art. 218 Reglamento LSS)
-
+- **Desglose auditable**: cada paso del cálculo muestra su fórmula, su referencia legal
+  y si el valor es exacto o estimado
 - **Simulador de escenarios A vs B** con comparación detallada
 - **Historial** de las últimas 20 simulaciones (AsyncStorage)
-- **Importación de Constancia IMSS** en PDF con extracción automática de datos
-- **Exportación a PDF** del reporte completo
+- **Importación de la Constancia de cotizaciones en PDF** con extracción local de datos
+- **Exportación a PDF** del reporte completo, con el desglose
 - **Modo claro y oscuro** (Material Design 3)
-- **Sección educativa** sobre Ley 73, UMA, Modalidad 40, FAQ
+- **Sección educativa** sobre Ley 73, UMA, Modalidad 40 y FAQ
 
 ---
 
@@ -31,119 +81,104 @@ Aplicación móvil desarrollada con **React Native + Expo + TypeScript** para es
 
 ```
 src/
-├── models/          # Tipos TypeScript (PensionInput, PensionResult, etc.)
-├── constants/       # Tablas Ley 73 (Art. 167), UMA/SMG históricos, textos
+├── models/          # Tipos TypeScript (PensionInput, PensionResult, ...)
+├── constants/       # Tablas Ley 73 (Art. 167), UMA/SMG, textos legales
 ├── services/
-│   ├── pension/     # Motor de cálculo (pipeline de pasos puros)
-│   │   ├── steps/   # AverageSalaryStep, BasicQuantityStep, ...
-│   │   └── PensionCalculator.ts  # Orquestador
+│   ├── pension/     # Motor de cálculo
+│   │   ├── steps/   # Un archivo por regla de la ley (8 pasos)
+│   │   ├── history/ # Historial semanal y promedio del SBC
+│   │   └── PensionCalculator.ts  # Orquestador del pipeline
 │   ├── export/      # pdfExport.ts (expo-print + expo-sharing)
-│   └── pdf/         # Importación y parsing de PDFs
-│       └── parsers/ # PersonalDataParser (Strategy pattern)
-├── screens/         # 9 pantallas (Dashboard, Simulation, Result, ...)
-├── navigation/      # React Navigation (Stack + BottomTabs)
+│   └── pdf/         # Importación y parsing de PDFs (pdfjs-dist)
+├── screens/         # 9 pantallas
+├── navigation/      # React Navigation v7 (Stack + Bottom Tabs)
 ├── hooks/           # usePensionForm, useHistory
 ├── theme/           # MD3 claro/oscuro
-├── validation/      # Schemas Zod
+├── validation/      # Schemas Zod (fuente única de verdad)
 ├── storage/         # AsyncStorage (últimas 20 simulaciones)
-└── utils/           # format.ts (Intl), date.ts
+└── utils/           # format.ts (Intl), date.ts, modalidad40.ts
 ```
 
-### Motor de cálculo (Pipeline)
-
-El motor implementa un patrón **Pipeline** donde cada paso es una función pura:
+### El motor de cálculo es un pipeline de funciones puras
 
 ```
 Input → AverageSalaryStep → BasicQuantityStep → AnnualIncrementsStep
-      → AgeFactorStep → FamilyAssignmentsStep → AssistanceAidStep
-      → LimitsStep → PensionResult
+      → DecreeIncrementStep → AgeFactorStep → FamilyAssignmentsStep
+      → AssistanceAidStep → LimitsStep → PensionResult
 ```
 
 Cada paso:
-- Recibe un `CalculationContext` inmutable
-- Devuelve un contexto actualizado
-- Genera su propio fragmento del desglose (`PasoCalculo`)
-- Documenta supuestos y fuentes legales
+
+- Recibe un `CalculationContext` y devuelve un contexto actualizado (sin mutar).
+- Deja su propio fragmento del desglose, con la fórmula, la referencia legal y el
+  supuesto si lo hay.
+- Es puro: sin UI, sin navegación, sin efectos secundarios.
+
+> Ver [ADR-0001](docs/adr/0001-motor-de-calculo-como-pipeline-de-funciones-puras.md) para
+> el razonamiento completo, y
+> [Spec-01](docs/spec/01-motor-de-calculo-ley-73.md) para el comportamiento esperado.
 
 ---
 
-## 🚀 Instalación y ejecución
+## 📚 Documentación
 
-### Prerrequisitos
-
-- Node.js 18+
-- npm 9+
-- Expo CLI: `npm install -g expo-cli`
-- Expo Go instalado en tu dispositivo (iOS/Android)
-
-### Instalación
-
-```bash
-# Clonar el repositorio
-cd mi-pension-mx
-
-# Instalar dependencias
-npm install
-
-# Iniciar el servidor de desarrollo
-npm start
-```
-
-Escanea el QR con Expo Go para abrir la aplicación en tu dispositivo.
-
-### Scripts disponibles
-
-```bash
-npm start          # Iniciar servidor Expo
-npm run ios        # Abrir en simulador iOS (requiere macOS + Xcode)
-npm run android    # Abrir en emulador Android
-npm run test       # Ejecutar pruebas unitarias
-npm run test:watch # Ejecutar pruebas en modo watch
-npm run test:coverage  # Generar reporte de cobertura
-npm run typecheck  # Verificar tipos TypeScript
-```
+| Carpeta | Qué contiene | Cantidad |
+|---|---|---|
+| [`docs/adr/`](docs/adr/) | Decisiones de arquitectura: **por qué** el código es así | 10 ADR |
+| [`docs/spec/`](docs/spec/) | Comportamiento observable: **qué** hace el sistema | 9 specs |
+| [`docs/runbooks/`](docs/runbooks/) | Procedimientos: **cómo** se hace cada tarea repetida | 6 runbooks |
+| [`AGENTS.md`](AGENTS.md) | Contrato de trabajo para agentes de código | — |
+| [`CONTEXT.md`](CONTEXT.md) | Contexto del proyecto y del dominio | — |
 
 ---
 
-## 🧪 Pruebas unitarias
-
-Las pruebas del motor de cálculo se encuentran en `src/__tests__/pensionCalculator.test.ts`.
+## 🧪 Pruebas
 
 ```bash
-npm test
+npm run test:run       # 12 suites, 116 casos
+npm run test:coverage  # con reporte de cobertura
+npm run typecheck
+npm run lint
 ```
 
-Escenarios cubiertos:
-- Validación de entrada (semanas < 500, edad < 60, salario 0)
-- Pensión de Vejez (65 años, factor 100%)
-- Cesantía en Edad Avanzada (60–64 años, factores 75–95%)
-- Incrementos anuales por semanas excedentes
-- Asignaciones familiares (cónyuge, hijos)
-- Ayuda asistencial (sin beneficiarios)
-- Tope de 25 UMA
-- Pensión Mínima Garantizada
-- Desglose de pasos
-- `calcularEscenarioSimple` para el simulador
+**Cobertura** (medida sobre `src/services/**`, `src/hooks/**` y `src/storage/**` — el
+código que decide, no las pantallas):
+
+| Métrica | Valor |
+|---|---|
+| Sentimientos | 89.1 % |
+| Ramas | 83.3 % |
+| Funciones | 96.1 % |
+| Líneas | 91.7 % |
+
+La cobertura **no** se mide sobre las pantallas: un snapshot que se actualiza a ciega no
+prueba nada. La cobertura de una pantalla es un indicador pobre; la del motor no.
+
+Escenarios cubiertos: validación de entrada (semanas < 500, edad < 60, salario 0),
+pensión de vejez, cesantía en edad avanzada, incrementos anuales, asignaciones
+familiares, ayuda asistencial, tope de 25 UMA, pensión mínima garantizada, desglose de
+pasos, simulador de escenarios, promedio del SBC sobre 250 semanas cotizadas, empleos
+simultáneos, cambios de salario a mitad de semana, importación de PDF, parsing de la
+constancia, exportación a PDF y persistencia del historial.
 
 ---
 
-## ⚖️ Base legal
+## ⚙️ Integración continua
 
-Los cálculos se basan en:
+| Workflow | Qué hace |
+|---|---|
+| [`ci.yml`](.github/workflows/ci.yml) | Tipos, lint, pruebas fragmentadas en 3 shards, cobertura y empaquetado web |
+| [`codeql.yml`](.github/workflows/codeql.yml) | Análisis de seguridad de CodeQL |
+| [`release.yml`](.github/workflows/release.yml) | Publica un release de GitHub por etiqueta, si CI está en verde |
+| [`deploy-staging.yml`](.github/workflows/deploy-staging.yml) | Build de preview y actualización OTA al canal `staging` |
+| [`promotion-gate.yml`](.github/workflows/promotion-gate.yml) | Verifica CI y staging, y **exige aprobación humana** antes de autorizar un release a producción |
 
-| Artículo | Contenido |
-|----------|-----------|
-| Arts. 138–140 LSS 1973 | Cesantía en Edad Avanzada y factores de reducción |
-| Art. 145 LSS 1973 | Pensión de Vejez |
-| Art. 163–164 LSS 1973 | Asignaciones familiares |
-| Art. 165 LSS 1973 | Ayuda asistencial |
-| Art. 167 LSS 1973 | Tabla de cuantías básicas e incrementos anuales |
-| Art. 170 LSS 1973 | Pensión Mínima Garantizada |
-| Art. 182 LSS 1973 | Conservación de derechos |
-| Art. 28 LSS vigente | Tope 25 UMA del SBC |
-| Art. 218 RIR-IMSS | Modalidad 40 |
+Las acciones están fijadas por SHA de commit, no por etiqueta: una etiqueta puede
+re-apuntar, un commit no.
 
-> **Nota sobre la tabla del Art. 167**: Los porcentajes de cuantía básica e incrementos anuales son de referencia bibliográfica. El IMSS puede aplicar criterios operativos distintos. Los resultados siempre se marcan como ESTIMACIONES.
+La puerta de promoción produce el artefacto `AUTORIZACION.md` con el commit
+autorizado y el aprobador. **La publicación en producción es un procedimiento manual**
+(runbook 01), porque hoy no hay un proyecto de EAS vinculado ni publicación en tiendas.
 
 ---
 
@@ -151,9 +186,69 @@ Los cálculos se basan en:
 
 - **Sin backend**: toda la información permanece en el dispositivo
 - **Sin login**: sin registro de usuarios
+- **Sin telemetría**: sin analítica, sin reporte de errores remoto, sin push, sin SDKs de terceros
 - **Sin base de datos remota**: sin persistencia en servidores
 - El historial de simulaciones se guarda únicamente en `AsyncStorage` local
-- La importación de PDFs se procesa 100% localmente
+- La importación de PDFs se procesa 100 % localmente
+
+> Ver [ADR-0002](docs/adr/0002-cero-backend-todo-en-el-dispositivo.md) y
+> [ADR-0009](docs/adr/0009-cero-telemetria-y-cero-servicios-de-terceros.md).
+
+---
+
+## ⚖️ Base legal
+
+| Artículo | Contenido |
+|---|---|
+| Arts. 138–140 LSS 1973 | Cesantía en Edad Avanzada y factores de reducción |
+| Art. 145 LSS 1973 | Pensión de Vejez |
+| Arts. 163–164 LSS 1973 | Asignaciones familiares |
+| Art. 165 LSS 1973 | Ayuda asistencial |
+| Art. 167 LSS 1973 | Tabla de cuantías básicas e incrementos anuales |
+| Art. 170 LSS 1973 | Pensión Mínima Garantizada |
+| Art. 182 LSS 1973 | Conservación de derechos |
+| Art. 28 LSS vigente | Tope de 25 UMA del SBC |
+| Art. 218 RIR-IMSS | Modalidad 40 |
+
+> **Nota sobre la tabla del Art. 167**: los porcentajes de cuantía básica e incrementos
+> anuales son de referencia bibliográfica. El IMSS puede aplicar criterios operativos
+> distintos. Los resultados siempre se marcan como ESTIMACIONES.
+
+---
+
+## 🚀 Instalación y ejecución
+
+### Prerrequisitos
+
+- Node.js 22+
+- npm 10+
+- Expo CLI: `npm install -g expo-cli`
+- Expo Go en el dispositivo (iOS/Android), o un development build
+
+### Instalación
+
+```bash
+git clone https://github.com/VieyraLabs/mi-pension-mx.git
+cd mi-pension-mx
+npm install
+npm start
+```
+
+Escanea el QR con Expo Go. Para la importación de PDF en nativo, hace falta un
+development build: el fallback heurístico no decodifica streams comprimidos
+([ADR-0003](docs/adr/0003-extraccion-local-de-pdf-con-pdfjs-dist.md)).
+
+### Scripts
+
+```bash
+npm start              # Servidor de Expo
+npm run ios            # Simulador iOS
+npm run android        # Emulador Android
+npm run test:run       # Pruebas
+npm run test:coverage  # Pruebas con cobertura
+npm run typecheck      # Tipos
+npm run lint           # ESLint
+```
 
 ---
 
@@ -161,96 +256,37 @@ Los cálculos se basan en:
 
 | Paquete | Propósito |
 |---------|-----------|
-| `expo ~52.0.0` | Framework base |
+| `expo ~57` | Framework base |
+| `react-native 0.86` | Runtime |
 | `react-native-paper ^5` | Componentes MD3 |
 | `@react-navigation/*` | Navegación |
 | `react-hook-form ^7` | Formularios |
-| `zod ^3` | Validación de esquemas |
+| `zod` | Validación de esquemas |
 | `@react-native-async-storage/async-storage` | Historial local |
-| `expo-print`, `expo-sharing` | Exportación PDF |
-| `expo-document-picker`, `expo-file-system` | Importación PDF |
-| `react-native-reanimated ~3` | Animaciones |
-| `react-native-chart-kit ^6` | Gráficas |
+| `pdfjs-dist` | Extracción local de texto de PDF |
+| `expo-print`, `expo-sharing` | Exportación a PDF |
+| `expo-document-picker`, `expo-file-system` | Importación de PDF |
+| `jest`, `jest-expo`, `@testing-library/react-native` | Pruebas |
 
 ---
 
-## 🗂️ Estructura de archivos generados
+## 📌 Estado y alcance
 
-```
-mi-pension-mx/
-├── App.tsx                          # Punto de entrada
-├── index.ts                         # Registro Expo
-├── package.json
-├── tsconfig.json
-├── babel.config.js
-├── app.json
-├── README.md
-└── src/
-    ├── __tests__/
-    │   └── pensionCalculator.test.ts  # 25+ pruebas unitarias
-    ├── models/index.ts
-    ├── constants/
-    │   ├── uma.ts           # Tabla UMA/SMG 2017-2026
-    │   ├── ley73.ts         # Tabla Art.167, factores edad, constantes
-    │   ├── infoLegal.ts     # Textos educativos y FAQ
-    │   └── index.ts
-    ├── utils/
-    │   ├── format.ts        # Intl formatters (es-MX)
-    │   ├── date.ts          # Utilidades de fechas
-    │   └── index.ts
-    ├── services/
-    │   ├── pension/
-    │   │   ├── types.ts
-    │   │   ├── steps/
-    │   │   │   ├── AverageSalaryStep.ts
-    │   │   │   ├── BasicQuantityStep.ts
-    │   │   │   ├── AnnualIncrementsStep.ts
-    │   │   │   ├── AgeFactorStep.ts
-    │   │   │   ├── FamilyAssignmentsStep.ts
-    │   │   │   ├── AssistanceAidStep.ts
-    │   │   │   └── LimitsStep.ts
-    │   │   ├── PensionCalculator.ts
-    │   │   └── index.ts
-    │   ├── export/
-    │   │   └── pdfExport.ts
-    │   └── pdf/
-    │       ├── PdfImporter.ts
-    │       └── parsers/
-    │           └── PersonalDataParser.ts
-    ├── screens/
-    │   ├── DashboardScreen.tsx
-    │   ├── NewSimulationScreen.tsx
-    │   ├── ResultScreen.tsx
-    │   ├── SimulatorScreen.tsx
-    │   ├── HistoryScreen.tsx
-    │   ├── InfoScreen.tsx
-    │   ├── FAQScreen.tsx
-    │   ├── PdfImportScreen.tsx
-    │   └── ValidationScreen.tsx
-    ├── navigation/
-    │   └── RootNavigator.tsx
-    ├── hooks/
-    │   ├── usePensionForm.ts
-    │   └── useHistory.ts
-    ├── theme/
-    │   ├── index.ts          # Temas MD3 claro/oscuro
-    │   └── useAppTheme.ts
-    ├── validation/
-    │   └── pensionSchema.ts  # Esquemas Zod
-    └── storage/
-        └── simulationStorage.ts  # AsyncStorage
-```
+- La app **no está publicada en ninguna tienda**. No hay descargas, ni usuarios, ni
+  ingresos, ni pagos en producción.
+- No hay backend, ni cuentas, ni telemetría.
+- No hay OCR: un PDF escaneado requiere captura manual, y la app lo dice.
+- La Modalidad 40 se estima con un promedio ponderado, no con el historial exacto.
 
 ---
 
-## 🛠️ Desarrollo futuro
+## 📄 Licencia
 
-La arquitectura está diseñada para extensión:
+MIT. Ver [LICENSE](LICENSE).
 
-- **Otros documentos**: agregar parsers para Estado de cuenta AFORE, Constancia ISSSTE, recibos de nómina implementando la interfaz `DocumentParser<T>`
-- **OCR nativo real**: activar `PdfOcrProcessor` con ML Kit en un _development build_ (`expo prebuild`)
-- **Cálculo Ley 97**: agregar módulo separado para comparación
+El código se publica para que sea **auditable**: la lógica de cálculo y las fuentes
+legales son revisables. No es un proyecto que busque contribuciones.
 
 ---
 
-*Desarrollado con ❤️ — Vieyra Labs*
+*Vieyra Labs*

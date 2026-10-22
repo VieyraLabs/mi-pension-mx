@@ -1,0 +1,52 @@
+# Architecture Decision Records
+
+Registro de decisiones de arquitectura de **Mi Pensión MX**. Cada ADR documenta el
+contexto, la decisión, sus consecuencias y las alternativas que se descartaron.
+
+**Regla de escritura:** un ADR se escribe *después* de que la decisión esté tomada y
+verificada en el código. No se escribe un ADR para planear: se escribe para que alguien
+—en seis meses— entienda por qué el código es como es, y para que no se deshaga por
+ignorancia.
+
+**Regla de estado:** un ADR nunca se borra ni se reescribe en la historia. Si una decisión
+cambia, se marca como `Sustituida` y se escribe una nueva que la reemplaza.
+
+## Índice
+
+| # | Decisión | Estado | Fecha |
+|---|---|---|---|
+| [0001](0001-motor-de-calculo-como-pipeline-de-funciones-puras.md) | El motor de cálculo es un pipeline de funciones puras | Aceptada | 2026-08-01 |
+| [0002](0002-cero-backend-todo-en-el-dispositivo.md) | Cero backend: todo el dato del usuario vive en el dispositivo | Aceptada | 2026-08-01 |
+| [0003](0003-extraccion-local-de-pdf-con-pdfjs-dist.md) | La extracción de texto del PDF es local, con pdfjs-dist | Aceptada | 2026-08-01 |
+| [0004](0004-validacion-con-zod-como-fuente-unica.md) | Zod es la fuente única de verdad de la validación | Aceptada | 2026-08-01 |
+| [0005](0005-constantes-legales-en-modulos-separados.md) | Las constantes legales viven en módulos separados del código | Aceptada | 2026-08-01 |
+| [0006](0006-el-resultado-es-un-desglose-auditable.md) | El resultado es un desglose auditable de pasos, no un número | Aceptada | 2026-08-01 |
+| [0007](0007-navegacion-con-react-navigation.md) | React Navigation v7 con Stack y Bottom Tabs | Aceptada | 2026-08-01 |
+| [0008](0008-tema-material-design-3-claro-y-oscuro.md) | Tema Material Design 3 con modo claro y oscuro | Aceptada | 2026-08-01 |
+| [0009](0009-cero-telemetria-y-cero-servicios-de-terceros.md) | Cero telemetría y cero servicios de terceros | Aceptada | 2026-08-01 |
+| [0010](0010-sbc-promedio-desde-el-historial-de-cotizaciones.md) | El SBC promedio se calcula del historial completo de cotizaciones | Aceptada | 2026-08-01 |
+
+## Formato
+
+```markdown
+# ADR-NNNN — Título en imperativo
+
+- **Estado**: Propuesta | Aceptada | Sustituida por ADR-NNNN
+- **Fecha**: AAAA-MM-DD
+- **Ámbito**: qué parte del sistema decide
+
+## Contexto
+...
+## Decisión
+...
+## Consecuencias
+### Positivas
+### Costes
+## Alternativas descartadas
+...
+```
+
+## Relación con las specs
+
+Las ADRs explican **por qué**. Las specs ([`../spec/`](../spec/)) explican **qué**: el
+comportamiento observable que el sistema debe cumplir y cómo se verifica.
