@@ -1,0 +1,79 @@
+name: Deploy staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit o rama a desplegar a staging'
+        required: true
+        default: 'main'
+      message:
+        description: 'Mensaje de la actualización OTA'
+        required: false
+        default: 'Actualización de staging'
+
+permissions:
+  contents: read
+
+jobs:
+  staging:
+    name: Build y actualización de staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # El proyecto de EAS se vincula una vez con `eas init`, que escribe
+      # `extra.eas.projectId` en app.json. Sin ese identificador los builds
+      # fallan con un error poco descriptivo, así que se comprueba antes.
+      - name: Verificar que el proyecto está vinculado a EAS
+        run: |
+          set -euo pipefail
+          if ! grep -q '"projectId"' app.json; then
+            echo "::error::app.json no tiene extra.eas.projectId. Ejecuta 'npx eas-cli init' una vez y committea el resultado."
+            exit 1
+          fi
+
+      - name: Verificar que hay credencial de EAS
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPO_TOKEN}" ]; then
+            echo "::error::Falta el secreto EXPO_TOKEN en Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - name: Build de preview (iOS y Android)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli@25.3.0 build --profile preview --platform all --non-interactive
+
+      - name: Actualización OTA al canal staging
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          MESSAGE: ${{ inputs.message }}
+        run: npx eas-cli@25.3.0 update --channel staging --message "$MESSAGE" --non-interactive
+
+      - name: Resumen
+        run: |
+          {
+            echo "### Deploy a staging"
+            echo
+            echo "- Commit: \`${{ inputs.ref }}\` (\`${GITHUB_SHA}\`)"
+            echo "- Canal OTA: \`staging\`"
+            echo "- Mensaje: ${{ inputs.message }}"
+          } >> "$GITHUB_STEP_SUMMARY"

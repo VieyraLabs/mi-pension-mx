@@ -1,0 +1,129 @@
+name: Puerta de promoción
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit o etiqueta a promover a producción'
+        required: true
+        default: 'main'
+      staging_run_id:
+        description: 'ID de la ejecución de "Deploy staging" que se quiere promover'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    name: Verificar CI y staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      sha: ${{ steps.datos.outputs.sha }}
+    steps:
+      - name: Resolver el commit candidato
+        id: datos
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          SHA=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${REF}" --jq '.sha')
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "Commit candidato: ${REF} (${SHA})"
+
+      - name: Verificar que CI está en verde
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.datos.outputs.sha }}
+        run: |
+          set -euo pipefail
+          total=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${SHA}" \
+            --jq '.workflow_runs | length')
+          ok=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${SHA}" \
+            --jq '[.workflow_runs[] | select(.conclusion == "success")] | length')
+          if [ "$ok" -eq 0 ]; then
+            echo "::error::No hay ninguna ejecución verde de CI para ${SHA} (${ok} de ${total})."
+            exit 1
+          fi
+          echo "CI en verde: ${ok} ejecución(es)"
+
+      - name: Verificar que el deploy a staging terminó bien
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.staging_run_id }}
+        run: |
+          set -euo pipefail
+          conclusion=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" --jq '.conclusion')
+          name=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" --jq '.name')
+          if [ "$conclusion" != "success" ]; then
+            echo "::error::La ejecución ${RUN_ID} (${name}) terminó como '${conclusion}', no 'success'."
+            exit 1
+          fi
+          echo "Staging verificado: ${name} (${RUN_ID})"
+
+      - name: Resumen de la verificación
+        run: |
+          {
+            echo "### Verificación previa a la promoción"
+            echo
+            echo "- Commit: \`${{ inputs.ref }}\` (\`${{ steps.datos.outputs.sha }}\`)"
+            echo "- CI: en verde"
+            echo "- Staging: \`${{ inputs.staging_run_id }}\` en verde"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  autorizar:
+    name: Autorización de producción
+    needs: verificar
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # La puerta real: con "required reviewers" configurado en este environment,
+    # el job se detiene y espera a que una persona apruebe. Sin reviewers, la
+    # aprobación es automática y la puerta pierde su sentido.
+    #
+    # Este workflow NO publica en producción: no hay un proyecto de EAS
+    # vinculado ni publicación en tiendas, así que no hay a qué desplegar. Lo
+    # que produce es la evidencia de que un commit concreto quedó autorizado:
+    # un artefacto con el commit, los identificadores de las ejecuciones
+    # verificadas y el aprobador. La publicación en sí es el procedimiento
+    # manual del runbook, que cita este artefacto.
+    environment:
+      name: production
+    steps:
+      - name: Registrar la autorización
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ inputs.ref }}
+          SHA: ${{ needs.verificar.outputs.sha }}
+          STAGING_RUN: ${{ inputs.staging_run_id }}
+        run: |
+          set -euo pipefail
+          {
+            echo "# Autorización de promoción a producción"
+            echo
+            echo "- Commit autorizado: \`${REF}\` (\`${SHA}\`)"
+            echo "- Ejecución de staging verificada: \`${STAGING_RUN}\`"
+            echo "- Ejecutado por: \`${GITHUB_ACTOR}\`"
+            echo "- Fecha: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "- Ejecución: \`${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\`"
+            echo
+            echo "Procede con el runbook de publicación: \`docs/runbooks/01-publicar-una-version.md\`."
+          } > AUTORIZACION.md
+          cat AUTORIZACION.md
+
+      - name: Publicar el artefacto de autorización
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: autorizacion-promocion-${{ needs.verificar.outputs.sha }}
+          path: AUTORIZACION.md
+          retention-days: 90
+
+      - name: Resumen
+        run: |
+          {
+            echo "### Promoción autorizada"
+            echo
+            echo "- Commit autorizado: \`${{ inputs.ref }}\` (\`${{ needs.verificar.outputs.sha }}\`)"
+            echo "- La publicación en producción sigue el runbook \`docs/runbooks/01-publicar-una-version.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"

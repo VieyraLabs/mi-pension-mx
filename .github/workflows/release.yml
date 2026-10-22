@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publicar el release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Verificar que CI está en verde en este commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          count=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${SHA}&status=completed" \
+            --jq '[.workflow_runs[] | select(.conclusion == "success")] | length')
+          if [ "$count" -eq 0 ]; then
+            echo "::error::No hay una ejecución verde de CI para ${SHA}. No se puede publicar el release."
+            exit 1
+          fi
+          echo "CI en verde para ${SHA}"
+
+      - name: Generar el changelog
+        run: |
+          set -euo pipefail
+          PREV=$(git describe --tags --abbrev=0 "${GITHUB_REF}"^ 2>/dev/null || echo "")
+          if [ -z "$PREV" ]; then
+            RANGE="${GITHUB_REF}"
+          else
+            RANGE="${PREV}..${GITHUB_REF}"
+          fi
+          {
+            echo "## Cambios en ${GITHUB_REF_NAME}"
+            echo
+            echo "### Commits"
+            echo
+            git log "${RANGE}" --no-merges --pretty=format:'- %s (%h)' || true
+            echo
+          } > CHANGELOG.md
+          cat CHANGELOG.md
+
+      - name: Crear el release de GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file CHANGELOG.md \
+            --verify-tag
