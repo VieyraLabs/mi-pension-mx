@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF6F00',
+    borderLeftColor: COLORS.accent,
   },
   infoCard: {
     borderRadius: 12,

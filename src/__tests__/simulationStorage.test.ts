@@ -1,12 +1,31 @@
 /**
  * Pruebas del almacenamiento local de simulaciones (AsyncStorage).
  *
+ * Se usa un mock propio con store en memoria (mismas semánticas que el
+ * paquete real: setItem guarda la cadena, getItem la devuelve o null) para
+ * poder inyectar fallos puntuales con mockImplementationOnce sin mutar el
+ * estado global entre tests.
+ *
  * Para ejecutar: npm test
  */
-jest.mock('@react-native-async-storage/async-storage', () =>
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories run before imports are available
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
-);
+jest.mock('@react-native-async-storage/async-storage', () => {
+  let store: Record<string, string> = {};
+  return {
+    __esModule: true,
+    default: {
+      getItem: jest.fn(async (key: string) => (key in store ? store[key] : null)),
+      setItem: jest.fn(async (key: string, value: string) => {
+        store[key] = String(value);
+      }),
+      removeItem: jest.fn(async (key: string) => {
+        delete store[key];
+      }),
+      clear: jest.fn(async () => {
+        store = {};
+      }),
+    },
+  };
+});
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -84,6 +103,57 @@ describe('getSimulations', () => {
 
     expect(all).toHaveLength(1);
     expect(all[0]?.id).toBe(valida.id);
+  });
+});
+
+// ─────────────────────────────────────────────
+// Degradación segura ante fallos y datos corruptos
+// (RNF-009 / RNF-017 — CHG-20261024-002 / US-006)
+// ─────────────────────────────────────────────
+
+describe('Degradación segura del almacenamiento', () => {
+  test('getItem que rechaza → getSimulations resuelve [] sin lanzar', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() =>
+      Promise.reject(new Error('almacenamiento corrupto')),
+    );
+
+    await expect(getSimulations()).resolves.toEqual([]);
+  });
+
+  test('getItem que lanza de forma síncrona → getSimulations resuelve [] sin lanzar', async () => {
+    (AsyncStorage.getItem as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('boom');
+    });
+
+    await expect(getSimulations()).resolves.toEqual([]);
+  });
+
+  test('entradas nulas, no-objeto o con fecha inválida se descartan y la autolimpieza persiste el arreglo filtrado', async () => {
+    const valida = await saveSimulation(buildResult(), 'Válida');
+    const actual = JSON.parse((await AsyncStorage.getItem('@mi_pension_mx:simulaciones')) ?? '[]');
+    await AsyncStorage.setItem(
+      '@mi_pension_mx:simulaciones',
+      JSON.stringify([
+        null, // entra al guard !value
+        'registro suelto', // typeof value !== 'object'
+        {
+          id: 'x',
+          name: 'Fecha inválida',
+          creationDate: 'no-es-fecha', // isNaN(new Date(...).getTime())
+          result: { monthlyPension: 1 },
+        },
+        ...actual,
+      ]),
+    );
+
+    const all = await getSimulations();
+
+    expect(all).toHaveLength(1);
+    expect(all[0]?.id).toBe(valida.id);
+    // Autolimpieza: lo persistido queda solo con las simulaciones válidas.
+    const persistido = JSON.parse((await AsyncStorage.getItem('@mi_pension_mx:simulaciones')) ?? '[]');
+    expect(persistido).toHaveLength(1);
+    expect(persistido[0]?.id).toBe(valida.id);
   });
 });
 

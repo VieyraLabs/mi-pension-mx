@@ -1,6 +1,12 @@
 /**
  * Servicio de exportación de resultados de pensión a PDF.
  * Usa expo-print y expo-sharing para generar y compartir el PDF.
+ *
+ * EXCEPCIÓN DE TEMA (CHG-20261024-002 / US-008): el HTML que genera este
+ * servicio usa colores hex fijos y NO los tokens de src/theme. El PDF es un
+ * documento de impresión con diseño propio y estable: debe verse igual siempre
+ * que se imprime o comparte, sin adaptarse al tema claro/oscuro de la app.
+ * Cambiar sus colores es un cambio de diseño del documento, no del tema.
  */
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';

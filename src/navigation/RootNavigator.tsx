@@ -109,7 +109,7 @@ export default function RootNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: theme.colors.primary },
-        headerTintColor: '#FFFFFF',
+        headerTintColor: theme.colors.onPrimary,
         headerTitleStyle: { fontWeight: 'bold' },
         contentStyle: { backgroundColor: theme.colors.background },
       }}

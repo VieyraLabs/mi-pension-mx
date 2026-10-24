@@ -27,6 +27,27 @@ export const PersonalDataSchema = z.object({
     .max(100, 'La edad máxima permitida es 100 años'),
 });
 
+/**
+ * Relación laboral reconstruida (por ejemplo, al importar una constancia del
+ * IMSS). Espeja `EmploymentRelation` de src/models/index.ts — mantener ambos
+ * en sincronía: este esquema es el contrato compartido de entrada entre
+ * formulario, motor, parser PDF e historial (RNF-007/RNF-012).
+ */
+export const EmploymentRelationSchema = z.object({
+  employerName: z.string(),
+  employerRegistrationNumber: z.string(),
+  startDate: z.date({ required_error: 'La fecha de alta es requerida' }),
+  endDate: z.date().optional(),
+  contributionBaseSalary: z
+    .number({ required_error: 'El salario base de cotización es requerido' })
+    .min(0, 'El salario base de cotización no puede ser negativo'),
+  movementType: z.string(),
+  contributedDays: z
+    .number({ required_error: 'Los días cotizados son requeridos' })
+    .int('Los días cotizados deben ser un número entero')
+    .min(0, 'Los días cotizados no pueden ser negativos'),
+});
+
 export const WorkHistorySchema = z.object({
   // El mínimo de 500 semanas (Arts. 138 y 145 LSS 1973) se valida a nivel de
   // PensionInputSchema (ver más abajo), no aquí — considera también las
@@ -38,7 +59,7 @@ export const WorkHistorySchema = z.object({
     .max(5000, 'El número de semanas parece incorrecto (máximo 5000)'),
   recognizedWeeks: z.number().int().min(0).optional(),
   deductedWeeks: z.number().int().min(0).optional(),
-  employmentRelations: z.array(z.any()).default([]),
+  employmentRelations: z.array(EmploymentRelationSchema).default([]),
 });
 
 export const AverageContributionSalarySchema = z.object({

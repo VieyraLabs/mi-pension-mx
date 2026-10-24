@@ -5,8 +5,8 @@
 > y **sin telemetría**: todo el cálculo y todos los datos del usuario viven en el
 > dispositivo. La diferencia del producto no es el formulario: es que **el resultado es
 > auditable** — cada número viene con su fórmula, su fundamento legal y la marca de si
-> es exacto o estimado. Motor de cálculo como pipeline de 8 pasos puros, **116 pruebas**
-> en 12 suites, **5 workflows de CI** con puerta de promoción.
+> es exacto o estimado. Motor de cálculo como pipeline de 8 pasos puros, **146 pruebas**
+> en 13 suites, **5 workflows de CI** con puerta de promoción.
 
 Aplicación móvil desarrollada con **React Native 0.86 + Expo SDK 57 + TypeScript** para
 estimar pensiones bajo la **Ley del Seguro Social de 1973 (Ley 73)**.
@@ -42,14 +42,14 @@ take to a government office, so it has to be explainable.
   over the last **250 *contributed* weeks** (not 250 calendar weeks).
 - **One source of truth for validation.** A Zod schema drives both the forms and the
   calculation engine, with the legal article cited in the error message.
-- **116 tests across 12 suites**, 89.1 % statement / 96.1 % function coverage on the
+- **146 tests across 13 suites**, 89.6 % statement / 96.2 % function coverage on the
   decision-making code.
 - **5 CI workflows**, including a promotion gate that requires human approval before a
   release is authorized.
 
 **Docs:** [`docs/adr/`](docs/adr/) (10 architecture decision records),
 [`docs/spec/`](docs/spec/) (9 behavioural specs),
-[`docs/runbooks/`](docs/runbooks/) (6 operational procedures), plus
+[`docs/runbooks/`](docs/runbooks/) (7 operational procedures), plus
 [`AGENTS.md`](AGENTS.md) and [`CONTEXT.md`](CONTEXT.md).
 
 ---
@@ -135,7 +135,7 @@ Cada paso:
 ## 🧪 Pruebas
 
 ```bash
-npm run test:run       # 12 suites, 116 casos
+npm run test:run       # 13 suites, 146 casos
 npm run test:coverage  # con reporte de cobertura
 npm run typecheck
 npm run lint
@@ -146,10 +146,10 @@ código que decide, no las pantallas):
 
 | Métrica | Valor |
 |---|---|
-| Sentimientos | 89.1 % |
-| Ramas | 83.3 % |
-| Funciones | 96.1 % |
-| Líneas | 91.7 % |
+| Statements | 89.6 % |
+| Ramas | 84.3 % |
+| Funciones | 96.2 % |
+| Líneas | 92.0 % |
 
 La cobertura **no** se mide sobre las pantallas: un snapshot que se actualiza a ciega no
 prueba nada. La cobertura de una pantalla es un indicador pobre; la del motor no.
@@ -224,6 +224,11 @@ autorizado y el aprobador. **La publicación en producción es un procedimiento 
 - npm 10+
 - Expo CLI: `npm install -g expo-cli`
 - Expo Go en el dispositivo (iOS/Android), o un development build
+
+**Toolchain esperada:** Expo SDK 57 · React Native 0.86.x · TypeScript ~6.0.3 ·
+Hermes (motor JS) · CocoaPods con `ios/Podfile.lock` versionado · deployment
+target iOS 16.4 · Xcode 16+ para builds locales. Detalle y procedimiento de
+auditoría: [runbook-07](docs/runbooks/07-verificar-el-toolchain.md).
 
 ### Instalación
 

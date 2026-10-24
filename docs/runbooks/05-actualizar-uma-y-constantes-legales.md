@@ -40,7 +40,18 @@ En `src/constants/ley73.ts`:
 - `MODALIDAD_40_CAP_TIMES_UMA` (tope de la Modalidad 40).
 - El mínimo de la pensión garantizada, si cambió.
 
-### 4. Revisar el uso del año en el resto del código
+### 4. Registrar la provenancia documental (obligatorio)
+
+Toda constante nueva o modificada en `src/constants/ley73.ts` y `src/constants/uma.ts`
+debe quedar con su comentario de provenancia: fuente (artículo de la Ley o del
+Reglamento; INEGI/CONASAMI para UMA/SMG), publicación de origen (DOF, con fecha)
+y vigencia o año aplicable. Si el valor es una estimación o un criterio operativo
+(no proviene del texto legal), se marca explícitamente como tal.
+
+Este registro **no es opcional**: sin él, el cambio no está completo aunque los
+tests pasen — la suite no valida la fuente; solo una revisión humana puede.
+
+### 5. Revisar el uso del año en el resto del código
 
 La app usa el año de la UMA en:
 
@@ -50,7 +61,7 @@ La app usa el año de la UMA en:
 
 Revisar que el año por omisión apunte al nuevo.
 
-### 5. Actualizar las pruebas
+### 6. Actualizar las pruebas
 
 Los casos del motor fijan valores esperados. Con una UMA nueva, esos valores cambian.
 
@@ -61,7 +72,7 @@ npm run test:run
 **Un test que falla aquí no es un test que se actualiza a ciega.** Hay que comprobar que
 el nuevo valor esperado sale de la fuente oficial, no de "lo que devuelve el código".
 
-### 6. Si cambió una regla de cálculo
+### 7. Si cambió una regla de cálculo
 
 Un cambio en las reglas no es un cambio de constantes: es un cambio de motor. En ese
 caso se sigue el [Runbook-03](03-agregar-una-etapa-al-pipeline.md) y se escribe el ADR
@@ -69,6 +80,7 @@ que lo explica.
 
 ## Verificación
 
+- [ ] Toda constante tocada lleva comentario de provenancia: fuente (DOF/INEGI/CONASAMI o artículo), fecha de publicación y vigencia/año.
 - [ ] Los valores nuevos coinciden con la fuente oficial, comprobados uno por uno.
 - [ ] La app usa el valor vigente por omisión.
 - [ ] La suite pasa.

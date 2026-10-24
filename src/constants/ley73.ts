@@ -7,6 +7,12 @@
  * NOTA LEGAL: Toda la información aquí contenida es de referencia. La resolución
  * oficial de pensiones corresponde exclusivamente al IMSS conforme a sus
  * procedimientos institucionales. Los resultados de esta aplicación son ESTIMACIONES.
+ *
+ * PROVENANCIA DOCUMENTAL (CHG-20261024-002 / US-005): cada constante exportada
+ * lleva comentario de fuente (artículo de la Ley o Reglamento, publicación DOF
+ * de origen) y vigencia aplicable. Al agregar o modificar una constante, ese
+ * registro es un paso OBLIGATORIO del procedimiento: ver
+ * docs/runbooks/05-actualizar-uma-y-constantes-legales.md (paso 4).
  */
 
 // ─────────────────────────────────────────────
@@ -187,13 +193,27 @@ export const ART167_TABLE: readonly Art167TableEntry[] = [
   },
 ] as const;
 
-/** Días promedio por mes usados por UMA/IMSS para conversión mensual. */
+/**
+ * Días promedio por mes para conversión mensual de UMA.
+ * Fuente: Ley para Determinar el Valor de la UMA, Art. 9 (el valor mensual se
+ * obtiene multiplicando el diario por 30.4).
+ * Publicación: DOF 27-ene-2016. Vigente — factor fijado por la propia ley.
+ */
 export const AVERAGE_DAYS_PER_MONTH = 30.4;
 
-/** Días por año para cálculo anual de UMA. */
+/**
+ * Días por año para cálculo anual de UMA.
+ * Fuente: Ley para Determinar el Valor de la UMA, Art. 9 (el valor anual se
+ * obtiene multiplicando el diario por 365).
+ * Publicación: DOF 27-ene-2016. Vigente — factor fijado por la propia ley.
+ */
 export const DAYS_PER_YEAR_UMA = 365;
 
-/** Meses por año para cálculo anual de pensión. */
+/**
+ * Meses por año para cálculo anual de pensión.
+ * Fuente: constante aritmética — sin fundamento normativo (conversión de la
+ * cuantía mensual a anual). Aplica para todo año de calendario.
+ */
 export const MONTHS_PER_YEAR = 12;
 
 // ─────────────────────────────────────────────
@@ -217,29 +237,59 @@ export const CESANTIA_AGE_FACTORS: Readonly<Record<number, number>> = {
   65: 1.0, // Pensión de vejez = 100%
 } as const;
 
-/** Edad mínima para Cesantía en Edad Avanzada (Art. 138 LSS 1973) */
+/**
+ * Edad mínima para Cesantía en Edad Avanzada.
+ * Fuente: Art. 138 LSS 1973. Publicación: DOF 12-mar-1973 (LSS 1973 y reformas).
+ * Vigencia: régimen de transición (asegurados en el régimen Ley 73 — alcance
+ * explícito de esta app).
+ */
 export const MINIMUM_CESANTIA_AGE = 60;
 
-/** Edad para Pensión de Vejez (Art. 145 LSS 1973) */
+/**
+ * Edad para Pensión de Vejez.
+ * Fuente: Art. 145 LSS 1973. Publicación: DOF 12-mar-1973 (LSS 1973 y reformas).
+ * Vigencia: régimen de transición (alcance de esta app).
+ */
 export const VEJEZ_AGE = 65;
 
 // ─────────────────────────────────────────────
 // Semanas mínimas de cotización
 // ─────────────────────────────────────────────
 
-/** Semanas mínimas para Vejez (Art. 145 LSS 1973) */
+/**
+ * Semanas mínimas de cotización para Pensión de Vejez.
+ * Fuente: Art. 145 LSS 1973. Publicación: DOF 12-mar-1973 (y reformas).
+ * Vigencia: régimen de transición (alcance de esta app).
+ */
 export const MINIMUM_WEEKS_VEJEZ = 500;
 
-/** Semanas mínimas para Cesantía en Edad Avanzada (Art. 138 LSS 1973) */
+/**
+ * Semanas mínimas de cotización para Cesantía en Edad Avanzada.
+ * Fuente: Art. 138 LSS 1973. Publicación: DOF 12-mar-1973 (y reformas).
+ * Vigencia: régimen de transición (alcance de esta app).
+ */
 export const MINIMUM_WEEKS_CESANTIA = 500;
 
-/** Semanas consideradas para el promedio del SBC (Art. 167 LSS 1973) */
+/**
+ * Semanas consideradas para el promedio del SBC (últimas 250 semanas cotizadas
+ * dentro de los 5 años anteriores a la fecha de referencia).
+ * Fuente: Art. 167 LSS 1973. Publicación: DOF 12-mar-1973 (y reformas).
+ */
 export const SBC_AVERAGE_WEEKS = 250;
 
-/** Semanas que representan un año cotizado (para incrementos anuales) */
+/**
+ * Semanas que representan un año cotizado (base de los incrementos anuales).
+ * Fuente: Art. 167 LSS 1973 — el incremento procede "por cada año completo"
+ * de cotización excedente, entendido como 52 semanas (criterio operativo IMSS).
+ * Publicación: DOF 12-mar-1973 (y reformas).
+ */
 export const WEEKS_PER_YEAR = 52;
 
-/** Semanas promedio por mes (52 ÷ 12), para proyectar meses de Modalidad 40 a semanas. */
+/**
+ * Semanas promedio por mes (52 ÷ 12), para proyectar meses de Modalidad 40 a semanas.
+ * Fuente: derivada de WEEKS_PER_YEAR (52 semanas/año, criterio operativo IMSS,
+ * Art. 167 LSS 1973). No es un valor normativo independiente.
+ */
 export const WEEKS_PER_MONTH = WEEKS_PER_YEAR / 12;
 
 // ─────────────────────────────────────────────
@@ -248,34 +298,42 @@ export const WEEKS_PER_MONTH = WEEKS_PER_YEAR / 12;
 // ─────────────────────────────────────────────
 
 /**
- * Asignación familiar por cónyuge o concubina/o.
- * Art. 164, fracción I, LSS 1973.
+ * Asignación familiar por cónyuge o concubina/o (15% de la cuantía).
+ * Fuente: Art. 164, fracción I, LSS 1973.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const SPOUSE_ALLOWANCE_PCT = 0.15;
 
 /**
- * Asignación familiar por cada hijo menor (hasta 16 años, o sin límite si incapacitado).
- * Art. 164, fracción II, LSS 1973.
+ * Asignación familiar por cada hijo menor (hasta 16 años, o sin límite si incapacitado)
+ * — 10% de la cuantía por hijo.
+ * Fuente: Art. 164, fracción II, LSS 1973.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const CHILD_ALLOWANCE_PCT = 0.10;
 
 /**
- * Asignación familiar por cada ascendiente dependiente económico
- * (cuando no hay cónyuge ni hijos).
- * Art. 164, fracción III, LSS 1973.
+ * Asignación familiar por cada ascendiente dependiente económico (10% de la
+ * cuantía por ascendiente, cuando no hay cónyuge ni hijos).
+ * Fuente: Art. 164, fracción III, LSS 1973.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const PARENT_ALLOWANCE_PCT = 0.10;
 
 /**
- * Ayuda asistencial cuando no hay beneficiarios con derecho a asignación familiar.
- * Art. 165 LSS 1973.
+ * Ayuda asistencial (15% de la cuantía) cuando no hay beneficiarios con derecho
+ * a asignación familiar.
+ * Fuente: Art. 165 LSS 1973.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const ASSISTANCE_AID_NO_BENEFICIARIES_PCT = 0.15;
 
 /**
- * Ayuda asistencial cuando el pensionado tiene cónyuge pero no hijos.
- * Art. 165 LSS 1973.
- * Nota: Esta ayuda aplica en ausencia de los beneficiarios mencionados en Art. 164.
+ * Ayuda asistencial (10% de la cuantía) cuando el pensionado tiene cónyuge pero
+ * no hijos.
+ * Fuente: Art. 165 LSS 1973. Nota: aplica en ausencia de los beneficiarios
+ * mencionados en Art. 164.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const ASSISTANCE_AID_SPOUSE_NO_CHILDREN_PCT = 0.10;
 
@@ -293,6 +351,7 @@ export const SBC_CAP_TIMES_UMA = 25;
 /**
  * La pensión mínima garantizada equivale al salario mínimo general vigente.
  * Art. 170 LSS 1973. Se actualiza conforme al SMG en vigor.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  *
  * NOTA: El IMSS usa el SMG de la zona del trabajador.
  * Para efectos de estimación se usa el SMG de CDMX (más alto).
@@ -310,9 +369,12 @@ export const PMG_EQUALS_SMG = true;
  * Máximo: 60 semanas (salvo disposición específica).
  *
  * Este cálculo aplica para determinar vigencia de la pensión.
+ * Publicación: DOF 12-mar-1973 (y reformas). Vigencia: régimen de transición.
  */
 export const RIGHTS_PRESERVATION_FRACTION = 0.25;
-export const RIGHTS_PRESERVATION_MAX_WEEKS = 60; // (según criterio IMSS)
+// 60 semanas — criterio operativo IMSS de referencia (el Art. 182 fija la
+// fórmula; el tope práctico de 60 semanas no proviene de un texto legal directo).
+export const RIGHTS_PRESERVATION_MAX_WEEKS = 60;
 
 // ─────────────────────────────────────────────
 // Incremento del 11% (Decreto DOF 2001/2004)
@@ -335,15 +397,25 @@ export const DECREE_11_INCREMENT = 0.11;
 // ─────────────────────────────────────────────
 
 /**
- * Artículo 218 del Reglamento de la LSS 1973 (antes Art. 218, actualmente en
- * el Reglamento de Incorporación y Recaudación del IMSS).
+ * Artículo 218 del Reglamento de la LSS 1973, hoy ubicado en el Reglamento de
+ * Incorporación y Recaudación del IMSS.
  * Permite al asegurado inscribirse voluntariamente con un SBC mayor al último
  * registrado, para incrementar su promedio de las últimas 250 semanas.
+ * Publicación: DOF 21-nov-2002 (Reglamento de Incorporación y Recaudación, y
+ * reformas). Vigente.
  */
 export const MODALIDAD_40_ARTICLE = 'Art. 218 Reglamento LSS 1973';
 
-/** El SBC de Modalidad 40 no puede ser menor al último SBC en el régimen obligatorio. */
+/**
+ * El SBC de Modalidad 40 no puede ser menor al último SBC en el régimen obligatorio.
+ * Fuente: Art. 218 del Reglamento de Incorporación y Recaudación del IMSS
+ * (DOF 21-nov-2002, y reformas). Vigente.
+ */
 export const MODALIDAD_40_MINIMUM_SBC_EQUALS_LAST_MANDATORY = true;
 
-/** Tope máximo de Modalidad 40: 25 UMA diarias (igual que el régimen obligatorio). */
+/**
+ * Tope máximo de Modalidad 40: 25 UMA diarias (igual que el régimen obligatorio).
+ * Fuente: tope de cotización del Art. 28 LSS vigente (reforma DOF 27-ene-2016),
+ * aplicable también a la inscripción voluntaria.
+ */
 export const MODALIDAD_40_CAP_TIMES_UMA = 25;

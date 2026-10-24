@@ -1,6 +1,7 @@
 /**
  * Tabla histórica de UMA (Unidad de Medida y Actualización) y SMG (Salario Mínimo General).
  * Fuente: INEGI (UMA), CONASAMI (SMG), publicados en DOF.
+ * Cada registro lleva su campo `source` con la publicación DOF de origen y año de vigencia.
  * Los valores marcados como esEstimacion:true son proyecciones y deben verificarse.
  *
  * NOTA LEGAL: Los valores de UMA y SMG son utilizados únicamente como referencia
@@ -8,6 +9,15 @@
  */
 import type { UMARecord } from '../models';
 import { DAYS_PER_YEAR_UMA, AVERAGE_DAYS_PER_MONTH } from './ley73';
+
+/**
+ * Tabla histórica UMA/SMG 2017–2026.
+ * Provenancia por registro: campo `source` de cada entrada.
+ * - UMA: publicación anual de INEGI en DOF (a más tardar el 10 de enero),
+ *   vigente desde el 1 de enero del año correspondiente (Ley para Determinar
+ *   el Valor de la UMA, DOF 27-ene-2016).
+ * - SMG (ZSMG/CDMX): resolución anual de CONASAMI, vigente desde el 1 de enero.
+ */
 
 export const TABLA_UMA_SMG: readonly UMARecord[] = [
   {
@@ -106,7 +116,11 @@ export const TABLA_UMA_SMG: readonly UMARecord[] = [
   },
 ] as const;
 
-/** UMA vigente para el año actual (2026). Verificar con DOF. */
+/**
+ * UMA vigente por defecto — último registro de TABLA_UMA_SMG. Fuente y vigencia
+ * heredadas del campo `source` de ese registro. Para 2026 es una ESTIMACIÓN:
+ * verificar contra la publicación DOF de enero 2026 (INEGI) al actualizar.
+ */
 export const UMA_ACTUAL: UMARecord = TABLA_UMA_SMG[TABLA_UMA_SMG.length - 1]!;
 
 /** Obtiene el registro UMA/SMG para un año específico. */
@@ -121,7 +135,7 @@ export function getMostRecentUMA(): UMARecord {
 
 /**
  * Calcula los valores de UMA mensual y anual a partir del valor diario.
- * Art. 9 de la Ley para Determinar el Valor de la UMA:
+ * Fuente: Ley para Determinar el Valor de la UMA, Art. 9 (DOF 27-ene-2016):
  * - Mensual = Diario × 30.4
  * - Anual = Diario × 365
  */

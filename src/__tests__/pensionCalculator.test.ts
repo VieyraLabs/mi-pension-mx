@@ -503,8 +503,62 @@ describe('calculatePension — Incremento del 11% (Decreto DOF 2001/2004)', () =
 });
 
 // ─────────────────────────────────────────────
-// calculateSimpleScenario
+// Invariante de explicabilidad (RNF-006)
+// CHG-20261024-002 / US-006: todo paso del desglose conserva fórmula,
+// fundamento legal y marca de estimación. Si un step real viola este
+// invariante, se corrige el step — no el test.
 // ─────────────────────────────────────────────
+
+describe('calculatePension — Invariante de explicabilidad del desglose', () => {
+  const escenarios: Array<[string, ReturnType<typeof buildInput>]> = [
+    ['vejez estándar', buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 65 })],
+    [
+      'cesantía a los 60 con factor reducido',
+      buildInput({ semanas: 1200, salarioDiario: UMA_2025 * 10, edadRetiro: 60 }),
+    ],
+    [
+      'salario alto que activa el tope de 25 UMA',
+      buildInput({ semanas: 800, salarioDiario: UMA_2025 * 30, edadRetiro: 65 }),
+    ],
+    ['salario mínimo que activa la PMG', buildInput({ semanas: 500, salarioDiario: 1, edadRetiro: 65 })],
+    [
+      'con beneficiarios (asignaciones familiares)',
+      buildInput({
+        semanas: 800,
+        salarioDiario: 300,
+        edadRetiro: 65,
+        tieneConyuge: true,
+        tieneHijosMenores: true,
+        numeroHijos: 2,
+      }),
+    ],
+    [
+      'con Modalidad 40 planeada',
+      buildInput({ semanas: 500, salarioDiario: 200, modalidad40Activa: true, m40Salario: 300, m40Meses: 24 }),
+    ],
+  ];
+
+  test.each(escenarios)(
+    'cada paso conserva title/description, fórmula, fundamento legal y marca de estimación (%s)',
+    (_nombre, input) => {
+      const result = calculatePension(input);
+      expect(result.steps.length).toBeGreaterThan(0);
+
+      for (const step of result.steps) {
+        expect(typeof step.title).toBe('string');
+        expect(step.title.trim().length).toBeGreaterThan(0);
+        expect(typeof step.description).toBe('string');
+        expect(step.description.trim().length).toBeGreaterThan(0);
+        expect(typeof step.formula).toBe('string');
+        expect(step.formula!.trim().length).toBeGreaterThan(0);
+        expect(typeof step.legalBasis).toBe('string');
+        expect(step.legalBasis!.trim().length).toBeGreaterThan(0);
+        expect(typeof step.isEstimate).toBe('boolean');
+      }
+    },
+  );
+});
+
 
 describe('calculateSimpleScenario', () => {
   test('devuelve 0 con semanas insuficientes', () => {

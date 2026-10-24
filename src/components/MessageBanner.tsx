@@ -1,7 +1,8 @@
 /**
  * Banner de mensaje reutilizable (aviso/éxito/error/info).
- * Reemplaza los bloques `<Card style={{backgroundColor: '#FFF8E1'}}>` que
- * cada pantalla repetía a mano, con emoji y colores inconsistentes entre sí.
+ * Reemplaza los bloques `<Card style={{backgroundColor: ...}}>` con hex
+ * hardcodeado que cada pantalla repetía a mano, con emoji y colores
+ * inconsistentes entre sí.
  *
  * Soporta modo oscuro: el color de fondo y de texto se adaptan al `theme.dark`.
  */
