@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, type LinkingOptions } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import RootNavigator from './src/navigation/RootNavigator';
+import type { RootStackParamList } from './src/navigation/RootNavigator';
 import { useAppTheme } from './src/theme/useAppTheme';
 
 /** ErrorBoundary para mostrar errores de render en lugar de pantalla en blanco */
@@ -41,6 +42,22 @@ class ErrorBoundary extends React.Component<
 }
 
 /**
+ * Configuración de deep links: permite abrir pantallas por URL.
+ * En web: http://<host>/validation?extractedText=<texto codificado>.
+ * En nativo: mipension://validation?extractedText=<texto codificado>.
+ * Facilita la verificación E2E de ValidationScreen sin pasar por el
+ * file-picker nativo del PDF (los params de query llegan como strings).
+ */
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['mipension://'],
+  config: {
+    screens: {
+      Validation: 'validation',
+    },
+  },
+};
+
+/**
  * Punto de entrada principal de la aplicación.
  * Configura los providers globales: SafeArea, Paper (MD3), Navigation.
  */
@@ -53,7 +70,7 @@ export default function App(): React.JSX.Element {
         <GestureHandlerRootView style={{ flex: 1 }}>
           <SafeAreaProvider>
             <PaperProvider theme={theme}>
-              <NavigationContainer theme={theme as any}>
+              <NavigationContainer theme={theme as any} linking={linking}>
                 <StatusBar style={isDark ? 'light' : 'dark'} />
                 <RootNavigator />
               </NavigationContainer>

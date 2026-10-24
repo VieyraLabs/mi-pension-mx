@@ -145,3 +145,10 @@ coverage/
 
 expo-env.d.ts
 # @end expo-cli
+
+# =========================
+# QOPA DevSpace (especs, changes, estado local — no versionar)
+# =========================
+
+.agent/
+.devspace/

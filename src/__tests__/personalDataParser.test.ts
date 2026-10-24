@@ -370,3 +370,80 @@ REINGRESO 01/01/2010 $ 300.0
     ).toBe(true);
   });
 });
+
+// ─────────────────────────────────────────────
+// Exposición del detalle SBC en ExtractedData (CHG-20261024-001 / US-001)
+// ─────────────────────────────────────────────
+//
+// El parser ya calculaba los periodos y el ContributionSummary internamente;
+// ahora los expone en data.sbcPeriods / data.contributionSummary para que la
+// UI los muestre sin recalcular (una sola fuente de verdad).
+
+// Historial detallado completo: un patrón vigente con 2 movimientos →
+// 2 periodos (el último termina "hoy"), más de 250 semanas cotizadas,
+// sin huecos. Determinista: el alta de 2018 ya cubre las 250 semanas.
+const TEXTO_DETALLE_COMPLETO = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+Vigente
+DISTRITO FEDERAL
+Fecha de alta 01/07/2018 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 999.0
+Nombre del patrón EMPRESA DE PRUEBA SA DE CV
+Registro Patronal Y584460910
+Tipo de movimiento Fecha de movimiento Salario Base
+MODIFICACION DE SALARIO 01/01/2021 $ 148.1
+REINGRESO 01/07/2018 $ 103.23
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:1048||`;
+
+describe('ConstanciaIMSSParser — exposición del detalle SBC (CHG-20261024-001)', () => {
+  test('expone sbcPeriods y contributionSummary cuando la constancia trae historial detallado', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_DETALLE_COMPLETO);
+
+    const periods = result.data?.sbcPeriods;
+    expect(Array.isArray(periods)).toBe(true);
+    expect(periods).toHaveLength(2);
+    // Periodos derivados de los movimientos, en orden cronológico.
+    expect(periods?.[0]?.startDate.toISOString().split('T')[0]).toBe('2018-07-01');
+    expect(periods?.[0]?.endDate.toISOString().split('T')[0]).toBe('2020-12-31');
+    expect(periods?.[0]?.sbc).toBe(103.23);
+    expect(periods?.[1]?.startDate.toISOString().split('T')[0]).toBe('2021-01-01');
+    expect(periods?.[1]?.sbc).toBe(148.1);
+
+    const summary = result.data?.contributionSummary;
+    expect(summary).toBeDefined();
+    // Ventana completa de 250 semanas cotizadas, sin huecos (patrón continuo).
+    expect(summary?.selectedWeeks).toBe(250);
+    expect(summary?.isComplete).toBe(true);
+    expect(summary?.skippedWeeks).toBe(0);
+    expect(summary?.contributedWeeks).toBeGreaterThanOrEqual(250);
+    // Misma fuente de verdad: el promedio expuesto es el del resumen.
+    expect(summary?.averageSalary).toBe(result.data?.averageSBC);
+    expect(summary?.firstWeekUsed.getTime()).toBeLessThanOrEqual(summary?.lastWeekUsed.getTime() ?? Infinity);
+
+    expect(result.missingFields).not.toContain('SBC promedio (250 semanas)');
+    // El detalle extra no debe activar el aviso de "PDF escaneado".
+    expect(result.warnings.some((a) => /escaneado/i.test(a))).toBe(false);
+  });
+
+  test('sin historial detallado: sbcPeriods y contributionSummary quedan undefined y se conserva la degradación', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
+
+    expect(result.data?.sbcPeriods).toBeUndefined();
+    expect(result.data?.contributionSummary).toBeUndefined();
+    expect(result.data?.averageSBC).toBeUndefined();
+    expect(result.missingFields).toContain('SBC promedio (250 semanas)');
+    expect(
+      result.warnings.some((a) =>
+        a.includes('Constancia de Semanas Cotizadas e Historial de Registros Afiliatorios'),
+      ),
+    ).toBe(true);
+  });
+});

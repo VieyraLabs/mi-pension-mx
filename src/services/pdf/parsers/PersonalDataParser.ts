@@ -141,6 +141,9 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
       );
     }
     if (workHistoryResult.usedDetailedData) {
+      // Exponer el detalle ya reconstruido: la UI lo muestra tal cual, sin
+      // recalcularlo (una sola fuente de verdad — RNF-013, ADR-0010).
+      data.sbcPeriods = workHistoryResult.periods;
       // Últimas 250 semanas COTIZADAS (Art. 167 LSS 1973): los periodos sin
       // cotización se saltan y el recorrido sigue hacia atrás, en vez de
       // tomar las últimas 250 semanas calendario.
@@ -150,6 +153,7 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
       );
       if (summary) {
         data.averageSBC = summary.averageSalary;
+        data.contributionSummary = summary;
         warnings.push(
           `SBC promedio de las últimas 250 semanas cotizadas: $${data.averageSBC.toFixed(2)} (calculado a partir del historial detallado de modificaciones salariales de tus patrones). Verifica este valor.` +
             (summary.isComplete

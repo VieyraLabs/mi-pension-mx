@@ -3,6 +3,8 @@
  * Todos los tipos están estrictamente tipados con TypeScript.
  */
 
+import type { ContributionSummary, SBCPeriod } from '../services/pension/history/types';
+
 // ─────────────────────────────────────────────
 // Enums
 // ─────────────────────────────────────────────
@@ -262,6 +264,10 @@ export interface ExtractedData {
   lastSBC?: number;
   employmentRelations: EmploymentRelation[];
   averageSBC?: number;
+  /** Periodos SBC por patrón reconstruidos del historial de movimientos. Solo presente si la constancia incluye el historial detallado. */
+  sbcPeriods?: SBCPeriod[];
+  /** Desglose de la ventana de las últimas 250 semanas cotizadas usada para calcular averageSBC. */
+  contributionSummary?: ContributionSummary;
 }
 
 export interface ParseResult<T> {

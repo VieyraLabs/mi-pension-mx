@@ -4,11 +4,14 @@
  */
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, Button, TextInput, useTheme, Divider, Chip } from 'react-native-paper';
+import { Text, Card, Button, TextInput, useTheme, Divider, Chip, List } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { ConstanciaIMSSParser } from '../services/pdf/parsers/PersonalDataParser';
+import { DataRow } from '../components/DataRow';
+import { formatCurrency, formatDateShort } from '../utils/format';
+import type { ContributionSummary, SBCPeriod } from '../services/pension/history/types';
 import { showAlert } from '../utils/alert';
 import { getBannerColors } from '../theme';
 
@@ -33,6 +36,8 @@ export default function ValidationScreen() {
   });
   const [warnings, setWarnings] = useState<string[]>([]);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  /** Detalle del SBC promedio reconstruido por el parser; null si la constancia no trae historial detallado. */
+  const [sbcDetail, setSbcDetail] = useState<{ periods: SBCPeriod[]; summary: ContributionSummary } | null>(null);
 
   const warningColors = getBannerColors('warning', theme.dark);
   const errorColors = getBannerColors('error', theme.dark);
@@ -53,6 +58,13 @@ export default function ValidationScreen() {
       });
       setWarnings(result.warnings);
       setMissingFields(result.missingFields);
+      // Se muestra tal cual lo calculó el parser (misma fuente de verdad que averageSBC);
+      // la UI nunca recalcula el promedio.
+      setSbcDetail(
+        d.sbcPeriods && d.sbcPeriods.length > 0 && d.contributionSummary
+          ? { periods: d.sbcPeriods, summary: d.contributionSummary }
+          : null,
+      );
     }
   }, [extractedText]);
 
@@ -174,6 +186,11 @@ export default function ValidationScreen() {
               Persona Asegurada" desde los servicios digitales del IMSS, o complétalo manualmente.
             </Text>
           )}
+          {sbcDetail && (
+            <Text variant="bodySmall" style={{ color: theme.colors.primary, marginTop: -4, marginBottom: 12 }}>
+              ↓ Despliega «Cómo se calculó tu SBC promedio» para auditar cómo se obtuvo este valor. Puedes corregirlo manualmente si lo deseas.
+            </Text>
+          )}
           <TextInput
             label="Último SBC registrado (solo referencia, no es el promedio)"
             value={data.lastSBC}
@@ -184,6 +201,63 @@ export default function ValidationScreen() {
           />
         </Card.Content>
       </Card>
+
+      {/* Desglose auditable del SBC promedio reconstruido (solo con historial detallado) */}
+      {sbcDetail && (
+        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
+          <List.Accordion
+            title={`Cómo se calculó tu SBC promedio (${sbcDetail.periods.length} ${sbcDetail.periods.length === 1 ? 'periodo' : 'periodos'})`}
+            description={`${formatCurrency(sbcDetail.summary.averageSalary)}/día · ${sbcDetail.summary.selectedWeeks} de 250 semanas`}
+          >
+            <List.Subheader style={styles.sectionLabel}>Periodos SBC por patrón</List.Subheader>
+            {sbcDetail.periods.map((period, i) => (
+              <DataRow
+                key={`${period.startDate.getTime()}-${i}`}
+                label={`${formatDateShort(period.startDate)} – ${formatDateShort(period.endDate)}`}
+                value={`${formatCurrency(period.sbc)}/día`}
+                theme={theme}
+              />
+            ))}
+            <Divider style={styles.innerDivider} />
+            <List.Subheader style={styles.sectionLabel}>Resumen de las últimas 250 semanas cotizadas</List.Subheader>
+            <DataRow
+              label="Semanas usadas en el promedio"
+              value={`${sbcDetail.summary.selectedWeeks} de 250`}
+              theme={theme}
+              highlight
+            />
+            <DataRow
+              label="Semanas cotizadas del historial"
+              value={String(sbcDetail.summary.contributedWeeks)}
+              theme={theme}
+            />
+            <DataRow
+              label="Semanas omitidas (huecos sin patrón)"
+              value={String(sbcDetail.summary.skippedWeeks)}
+              theme={theme}
+            />
+            <DataRow
+              label="Ventana de fechas usada"
+              value={`${formatDateShort(sbcDetail.summary.firstWeekUsed)} – ${formatDateShort(sbcDetail.summary.lastWeekUsed)}`}
+              theme={theme}
+            />
+            {(!sbcDetail.summary.isComplete || sbcDetail.summary.skippedWeeks > 0) && (
+              <View style={[styles.partialBanner, { backgroundColor: warningColors.background }]}>
+                {!sbcDetail.summary.isComplete && (
+                  <Text variant="bodySmall" style={{ color: warningColors.text, lineHeight: 18 }}>
+                    ⚠️ Reconstrucción parcial: tu historial solo registra {sbcDetail.summary.contributedWeeks} semanas cotizadas de las 250 que exige el cálculo; el promedio se obtuvo con las disponibles.
+                  </Text>
+                )}
+                {sbcDetail.summary.skippedWeeks > 0 && (
+                  <Text variant="bodySmall" style={{ color: warningColors.text, lineHeight: 18 }}>
+                    Se omitieron {sbcDetail.summary.skippedWeeks} semanas sin cotización (periodos sin patrón); no cuentan para el promedio.
+                  </Text>
+                )}
+              </View>
+            )}
+          </List.Accordion>
+        </Card>
+      )}
 
       <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16, lineHeight: 18 }}>
         ✏️ Revisa y corrige los datos extraídos. Los datos marcados con * son requeridos para el cálculo de la pensión.
@@ -203,6 +277,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   card: { borderRadius: 12, marginBottom: 16 },
+  sectionLabel: { marginTop: 4 },
+  innerDivider: { marginVertical: 8 },
+  partialBanner: { borderRadius: 8, padding: 12, marginTop: 8, gap: 4 },
   input: { marginBottom: 12 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   btn: { marginBottom: 12, borderRadius: 8 },
