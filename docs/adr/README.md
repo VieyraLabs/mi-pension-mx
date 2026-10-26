@@ -22,9 +22,10 @@ cambia, se marca como `Sustituida` y se escribe una nueva que la reemplaza.
 | [0005](0005-constantes-legales-en-modulos-separados.md) | Las constantes legales viven en módulos separados del código | Aceptada | 2026-08-01 |
 | [0006](0006-el-resultado-es-un-desglose-auditable.md) | El resultado es un desglose auditable de pasos, no un número | Aceptada | 2026-08-01 |
 | [0007](0007-navegacion-con-react-navigation.md) | React Navigation v7 con Stack y Bottom Tabs | Aceptada | 2026-08-01 |
-| [0008](0008-tema-material-design-3-claro-y-oscuro.md) | Tema Material Design 3 con modo claro y oscuro | Aceptada | 2026-08-01 |
+| [0008](0008-tema-material-design-3-claro-y-oscuro.md) | Tema Material Design 3 con modo claro y oscuro | Aceptada (paleta sustituida por [0011](0011-sistema-de-diseno-esmeralda-y-superficies-degradadas.md)) | 2026-08-01 |
 | [0009](0009-cero-telemetria-y-cero-servicios-de-terceros.md) | Cero telemetría y cero servicios de terceros | Aceptada | 2026-08-01 |
 | [0010](0010-sbc-promedio-desde-el-historial-de-cotizaciones.md) | El SBC promedio se calcula del historial completo de cotizaciones | Aceptada | 2026-08-01 |
+| [0011](0011-sistema-de-diseno-esmeralda-y-superficies-degradadas.md) | Sistema de diseño esmeralda con superficies degradadas | Aceptada | 2026-10-26 |
 
 ## Formato
 
