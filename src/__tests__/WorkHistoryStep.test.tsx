@@ -42,7 +42,9 @@ describe('WorkHistoryStep — mensaje de semanas al jubilarse', () => {
     expect(
       screen.getByText(
         '✓ Al jubilarte tendrás 1920 semanas (100 cotizadas + 1820 proyectadas hasta los 65 años). ' +
-          'Cumples el mínimo de 500 semanas (Arts. 138 y 145 LSS 1973).',
+          'Cumples el mínimo de 500 semanas (Arts. 138 y 145 LSS 1973). ' +
+          'La proyección asume que sigues cotizando hasta los 65 años ' +
+          '(puedes ajustarlo en el paso «Edad de retiro»).',
       ),
     ).toBeTruthy();
   });
@@ -62,7 +64,9 @@ describe('WorkHistoryStep — mensaje de semanas al jubilarse', () => {
     expect(
       screen.getByText(
         '⚠️ Mínimo requerido: 500 semanas (Arts. 138 y 145 LSS 1973). ' +
-          'Te faltan 398 semanas para jubilarte: hoy tienes 50 y se proyectan 52 hasta los 65 años.',
+          'Te faltan 398 semanas para jubilarte: hoy tienes 50 y se proyectan 52 hasta los 65 años. ' +
+          'La proyección asume que sigues cotizando hasta los 65 años ' +
+          '(puedes ajustarlo en el paso «Edad de retiro»).',
       ),
     ).toBeTruthy();
   });

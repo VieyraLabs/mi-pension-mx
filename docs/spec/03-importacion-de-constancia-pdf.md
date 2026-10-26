@@ -52,6 +52,15 @@ El flujo tiene cuatro etapas:
   completo, que es lo que permite saltar los huecos laborales y alcanzar las 250 semanas
   cotizadas (ver [Spec-07](07-historial-de-cotizacion-y-promedio-sbc.md) y
   [ADR-0010](../adr/0010-sbc-promedio-desde-el-historial-de-cotizaciones.md)).
+- **El detalle SBC que se expone son periodos con SBC EFECTIVO, no periodos por patrón.**
+  `data.sbcPeriods` entrega `SBCPeriodSegment`: cada elemento es un intervalo en el que el
+  conjunto de patrones concurrentes es el mismo, y su `sbc` es la **suma** de los SBC de esos
+  patrones (integración de salarios por empleo simultáneo). Los patrones concurrentes se
+  nombran en `employerNames`. El parser construye los segmentos con
+  `buildContributionSegments` y los acota con `selectSegmentsInAverageWindow`; el promedio
+  se calcula con el mismo barrido por intervalos sobre esos segmentos, así que el número
+  que se muestra es el número que se promedia. No cambia la cifra del promedio: solo cambia
+  cómo se desglosa.
 
 ## Fuera de alcance
 
@@ -69,6 +78,9 @@ El flujo tiene cuatro etapas:
 - `src/__tests__/personalDataParser.test.ts` — extracción de cada campo, incluyendo los
   casos en que el formato del documento cambió (los casos que motivaron los commits
   `683b3b2`, `5d39f60`, `cd5786a`); orden de los periodos SBC expuestos y acotación de la
-  lista a la ventana del promedio, sin que el promedio cambie.
+  lista a la ventana del promedio, sin que el promedio cambie; **periodos con SBC efectivo**:
+  el periodo común a dos patrones vale la suma de sus SBC y los nombra, y el promedio no
+  cambia por desglosar en periodos.
 - `src/__tests__/ValidationScreen.test.tsx` — presentación y confirmación de los datos
-  extraídos; lista de los periodos SBC CONSIDERADOS en el promedio.
+  extraídos; lista de los periodos SBC CONSIDERADOS en el promedio; el periodo traslapado
+  se muestra con el SBC **sumado** y con los dos patrones, y una nota explica la regla.

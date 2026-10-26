@@ -17,6 +17,7 @@ import type {
   ContributionHistory,
   ContributionSummary,
   SBCPeriod,
+  SBCPeriodSegment,
   WeeklyContribution,
 } from './types';
 
@@ -36,47 +37,113 @@ function isContributedWeek(week: WeeklyContribution): week is ContributedWeek {
 }
 
 /**
- * Suma del SBC ponderada por días dentro de la ventana `[windowStart, windowEnd)`.
+ * Tramos del historial: intervalos en los que el conjunto de patrones
+ * concurrentes es el MISMO.
+ *
+ * El SBC de un tramo es la SUMA de los SBC de los patrones concurrentes
+ * (integración de salarios por empleo simultáneo) y las semanas siguen
+ * contando UNA sola vez. Esta función es la ÚNICA fuente de verdad: el
+ * cálculo del promedio y el desglose que ve la persona usuaria salen de
+ * aquí, así que la cifra mostrada ES la cifra que se promedia.
+ *
+ * Los tramos se entregan de MÁS RECIENTE A MÁS ANTIGUA (igual que el resto
+ * del desglose de la interfaz).
+ */
+export function buildContributionSegments(
+  periods: readonly SBCPeriod[],
+): SBCPeriodSegment[] {
+  if (periods.length === 0) return [];
+
+  // Límites de cada periodo: el fin es EXCLUSIVO (+1 día, porque `endDate`
+  // es inclusiva).
+  const limites = periods.map((period) => ({
+    inicio: period.startDate.getTime(),
+    fin: period.endDate.getTime() + MS_PER_DAY,
+    sbc: period.sbc,
+    nombre: period.employerName?.trim() ?? '',
+  }));
+
+  // Barrido de intervalos: la historia se parte en tramos por cada frontera
+  // de inicio/fin, y en cada tramo se suman los SBC de los patrones activos.
+  const fronteras = [...new Set(limites.flatMap((l) => [l.inicio, l.fin]))].sort((a, b) => a - b);
+
+  const tramos: SBCPeriodSegment[] = [];
+
+  for (let i = 0; i < fronteras.length - 1; i++) {
+    const inicio = fronteras[i]!;
+    const fin = fronteras[i + 1]!;
+
+    const activos = limites.filter((l) => l.inicio < fin && l.fin > inicio);
+    if (activos.length === 0) continue; // hueco sin cotización
+
+    const sbc = activos.reduce((sum, l) => sum + l.sbc, 0);
+    const employerNames = [...new Set(activos.map((l) => l.nombre).filter((n) => n.length > 0))].sort();
+
+    const anterior = tramos[tramos.length - 1];
+    // Tramos contiguos con el MISMO conjunto de patrones y el mismo SBC
+    // efectivo se funden en uno solo: el cambio de patrón sin cambio de SBC
+    // no es un corte real del desglose.
+    if (
+      anterior &&
+      anterior.sbc === sbc &&
+      anterior.endDate.getTime() + MS_PER_DAY === inicio &&
+      sonElMismoConjunto(anterior.employerNames, employerNames)
+    ) {
+      anterior.endDate = new Date(fin - MS_PER_DAY);
+      continue;
+    }
+
+    tramos.push({
+      startDate: new Date(inicio),
+      endDate: new Date(fin - MS_PER_DAY),
+      sbc,
+      employerNames,
+    });
+  }
+
+  tramos.sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
+  return tramos;
+}
+
+/** Compara dos conjuntos de nombres de patrón por contenido, no por orden. */
+function sonElMismoConjunto(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((nombre, i) => nombre === b[i]);
+}
+
+/**
+ * Suma del SBC ponderada por días dentro de la ventana `[windowStart, windowEnd)`
+ * calculada a partir de los TRAMOS del historial.
  *
  * Los días con más de un patrón simultáneo suman los SBC de todos los
  * patrones activos ese día (integración de salarios por empleo simultáneo),
  * pero se cuentan UNA sola vez: las semanas cotizadas no se duplican por
  * tener varios patrones a la vez.
+ *
+ * Se calcula a partir de los MISMOS TRAMOS que el desglose muestra, para que
+ * el promedio que ve la persona usuaria sea exactamente la suma que aparece
+ * en la lista.
  */
-function accumulateDailySBC(
-  periods: readonly SBCPeriod[],
+function accumulateSegmentSBC(
+  segments: readonly SBCPeriodSegment[],
   windowStart: number,
   windowEnd: number,
 ): { days: number; weightedSum: number } {
-  // Recorta cada periodo a la ventana (+1 día porque endDate es inclusiva).
-  const clipped = periods
-    .map((period) => ({
-      start: Math.max(period.startDate.getTime(), windowStart),
-      end: Math.min(period.endDate.getTime() + MS_PER_DAY, windowEnd),
-      sbc: period.sbc,
-    }))
-    .filter((p) => p.end > p.start);
-
-  if (clipped.length === 0) return { days: 0, weightedSum: 0 };
-
-  // Barrido de intervalos: se parte la ventana en tramos por cada frontera
-  // de inicio/fin, y en cada tramo se suman los SBC de los patrones activos.
-  const boundaries = [...new Set(clipped.flatMap((p) => [p.start, p.end]))].sort((a, b) => a - b);
-
   let days = 0;
   let weightedSum = 0;
 
-  for (let i = 0; i < boundaries.length - 1; i++) {
-    const segmentStart = boundaries[i]!;
-    const segmentEnd = boundaries[i + 1]!;
-    const activeSBCs = clipped
-      .filter((p) => p.start <= segmentStart && p.end >= segmentEnd)
-      .map((p) => p.sbc);
-    if (activeSBCs.length === 0) continue;
+  // Los tramos llegan de más reciente a más antigua; se recorren en orden
+  // cronológico ascendente para acumular igual que antes.
+  for (let i = segments.length - 1; i >= 0; i--) {
+    const tramo = segments[i]!;
+    // Recorta el tramo a la ventana (+1 día porque el fin es inclusiva).
+    const inicio = Math.max(tramo.startDate.getTime(), windowStart);
+    const fin = Math.min(tramo.endDate.getTime() + MS_PER_DAY, windowEnd);
+    if (fin <= inicio) continue;
 
-    const segmentDays = (segmentEnd - segmentStart) / MS_PER_DAY;
-    days += segmentDays;
-    weightedSum += segmentDays * activeSBCs.reduce((sum, sbc) => sum + sbc, 0);
+    const dias = (fin - inicio) / MS_PER_DAY;
+    days += dias;
+    weightedSum += dias * tramo.sbc;
   }
 
   return { days, weightedSum };
@@ -102,9 +169,12 @@ export function buildContributionHistory(
   if (historyEnd <= earliestStart) return { weeks: [] };
 
   const weeks: WeeklyContribution[] = [];
+  // Los tramos son la ÚNICA fuente de verdad: el SBC de cada semana sale de
+  // ellos, igual que el desglose que ve la persona usuaria.
+  const tramos = buildContributionSegments(periods);
   for (let weekEnd = historyEnd; weekEnd > earliestStart; weekEnd -= MS_PER_WEEK) {
     const weekStart = weekEnd - MS_PER_WEEK;
-    const { days, weightedSum } = accumulateDailySBC(periods, weekStart, weekEnd);
+    const { days, weightedSum } = accumulateSegmentSBC(tramos, weekStart, weekEnd);
     weeks.push(
       days > 0
         ? {
@@ -241,5 +311,26 @@ export function selectPeriodsInAverageWindow(
   return periods.filter(
     (period) =>
       period.endDate.getTime() >= windowStart && period.startDate.getTime() < windowEnd,
+  );
+}
+
+/**
+ * Tramos que SOLAPAN la ventana de semanas usada en el promedio.
+ *
+ * Misma semántica que `selectPeriodsInAverageWindow`, pero para los TRAMOS
+ * (intervalos con SBC efectivo) que se muestran en el desglose: la ventana
+ * va de `firstWeekUsed` hasta `lastWeekUsed + 7 días` y la comparación es por
+ * DÍA COMPLETO.
+ */
+export function selectSegmentsInAverageWindow(
+  segments: readonly SBCPeriodSegment[],
+  summary: ContributionSummary,
+): SBCPeriodSegment[] {
+  const windowStart = startOfDay(summary.firstWeekUsed);
+  const windowEnd = startOfDayPlusDays(summary.lastWeekUsed, DAYS_PER_WEEK + 1);
+
+  return segments.filter(
+    (segment) =>
+      segment.endDate.getTime() >= windowStart && segment.startDate.getTime() < windowEnd,
   );
 }

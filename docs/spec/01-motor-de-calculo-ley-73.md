@@ -90,6 +90,20 @@ Reglas transversales:
   huecos laborales, cambios de salario ni cotizaciones por debajo del salario mínimo: solo
   proyecta un horizonte de cotización continua. La resolución oficial corresponde al IMSS.
 - No se resuelve ningún trámite ante el IMSS.
+- **La cuantía no se topa al 100 % del salario promedio** (Art. 169 LSS 1973): solo se
+  aplican el tope de cotización de 25 UMA (Art. 28 LSS vigente), el tope de pensión de 25 UMA
+  mensuales y la pensión mínima garantizada (Art. 170 LSS 1973). Ver el ítem 1 de
+  [`docs/deuda-tecnica.md`](../deuda-tecnica.md).
+- **Los incrementos anuales solo se otorgan por años completos** (`floor((semanas − 500) /
+  52)`): las fracciones de semanas excedentes que la ley reconoce con el 50 % del
+  incremento no se otorgan. Ver el ítem 2 de
+  [`docs/deuda-tecnica.md`](../deuda-tecnica.md).
+- **La proyección de semanas es un supuesto, no una predicción**, y no tiene una prueba de
+  sensibilidad que mida cuánto se mueve el resultado al cambiar el horizonte. Ver el ítem 3
+  de [`docs/deuda-tecnica.md`](../deuda-tecnica.md).
+- **La ponderación de Modalidad 40 sobre las 250 semanas de referencia puede saturar** con
+  horizontes largos: el SBC capturado por el usuario puede quedar fuera del promedio
+  ponderado. Ver el ítem 4 de [`docs/deuda-tecnica.md`](../deuda-tecnica.md).
 
 ## Verificación
 

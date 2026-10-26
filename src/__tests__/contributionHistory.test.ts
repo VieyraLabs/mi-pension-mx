@@ -8,6 +8,7 @@
  */
 import {
   buildContributionHistory,
+  buildContributionSegments,
   calculateAverageSalary,
   calculateContributionSummary,
   getContributedWeeks,
@@ -255,5 +256,146 @@ describe('patrones simultáneos', () => {
     // (c) El historial no crece por tener dos patrones simultáneos.
     expect(conB.totalWeeksInHistory).toBe(soloA.totalWeeksInHistory);
     expect(conB.totalWeeksInHistory).toBe(250);
+  });
+});
+
+// ─────────────────────────────────────────────
+// Tramos con SBC efectivo
+// ─────────────────────────────────────────────
+//
+// Un TRAMO es un intervalo en el que el conjunto de patrones concurrentes es el
+// mismo. El SBC del tramo es el SUMA de los SBC de esos patrones (integración
+// de salarios por empleo simultáneo) y las semanas siguen contando una sola
+// vez. Es la MISMA cifra que ve la persona usuaria en el desglose.
+
+describe('buildContributionSegments', () => {
+  test('un solo patrón con dos cambios de salario produce dos tramos con el SBC de cada uno', () => {
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 5, 30),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 6, 1),
+        endDate: new Date(2024, 11, 31),
+        sbc: 200,
+        employerName: 'EMPRESA A',
+      },
+    ];
+
+    const tramos = buildContributionSegments(periodos);
+
+    expect(tramos).toHaveLength(2);
+    // De más reciente a más antigua.
+    expect(tramos[0]!.startDate).toEqual(new Date(2024, 6, 1));
+    expect(tramos[0]!.endDate).toEqual(new Date(2024, 11, 31));
+    expect(tramos[0]!.sbc).toBe(200);
+    expect(tramos[0]!.employerNames).toEqual(['EMPRESA A']);
+
+    expect(tramos[1]!.startDate).toEqual(new Date(2024, 0, 1));
+    expect(tramos[1]!.endDate).toEqual(new Date(2024, 5, 30));
+    expect(tramos[1]!.sbc).toBe(100);
+    expect(tramos[1]!.employerNames).toEqual(['EMPRESA A']);
+  });
+
+  test('dos patrones traslapados parcialmente: el tramo común suma los SBC y nombra ambos patrones', () => {
+    // Patrón A: todo el año a $100. Patrón B: 3 semanas a $500 dentro de A.
+    // Las semanas del tramo común valen $600, pero NO se duplican.
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2024, 0, 3),
+        endDate: new Date(2024, 11, 24),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 6, 3),
+        endDate: new Date(2024, 6, 23),
+        sbc: 500,
+        employerName: 'EMPRESA B',
+      },
+    ];
+
+    const tramos = buildContributionSegments(periodos);
+
+    // Tres tramos: antes del traslape, el tramo común y después.
+    expect(tramos).toHaveLength(3);
+
+    // Tramo reciente: solo A.
+    expect(tramos[0]!.employerNames).toEqual(['EMPRESA A']);
+    expect(tramos[0]!.sbc).toBe(100);
+    expect(tramos[0]!.startDate).toEqual(new Date(2024, 6, 24));
+    expect(tramos[0]!.endDate).toEqual(new Date(2024, 11, 24));
+
+    // Tramo común: A + B, con el SBC SUMADO.
+    expect(tramos[1]!.employerNames).toEqual(['EMPRESA A', 'EMPRESA B']);
+    expect(tramos[1]!.sbc).toBe(600);
+    expect(tramos[1]!.startDate).toEqual(new Date(2024, 6, 3));
+    expect(tramos[1]!.endDate).toEqual(new Date(2024, 6, 23));
+
+    // Tramo antiguo: solo A (hasta el día anterior al inicio de B).
+    expect(tramos[2]!.employerNames).toEqual(['EMPRESA A']);
+    expect(tramos[2]!.sbc).toBe(100);
+    expect(tramos[2]!.startDate).toEqual(new Date(2024, 0, 3));
+    expect(tramos[2]!.endDate).toEqual(new Date(2024, 6, 2));
+  });
+
+  test('dos patrones NO traslapados producen dos tramos, cada uno con su patrón', () => {
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 5, 30),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 6, 1),
+        endDate: new Date(2024, 11, 31),
+        sbc: 200,
+        employerName: 'EMPRESA B',
+      },
+    ];
+
+    const tramos = buildContributionSegments(periodos);
+
+    expect(tramos).toHaveLength(2);
+    expect(tramos[0]!.employerNames).toEqual(['EMPRESA B']);
+    expect(tramos[0]!.sbc).toBe(200);
+    expect(tramos[0]!.startDate).toEqual(new Date(2024, 6, 1));
+    expect(tramos[0]!.endDate).toEqual(new Date(2024, 11, 31));
+
+    expect(tramos[1]!.employerNames).toEqual(['EMPRESA A']);
+    expect(tramos[1]!.sbc).toBe(100);
+  });
+
+  test('el promedio NO cambia al desglosar en tramos: el tramo común vale la suma', () => {
+    // 51 semanas cotizadas: 48 a $100 y 3 a $600 (el tramo común A+B).
+    // (48 × 100 + 3 × 600) / 51 = 129.41
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2024, 0, 3),
+        endDate: new Date(2024, 11, 24),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 6, 3),
+        endDate: new Date(2024, 6, 23),
+        sbc: 500,
+        employerName: 'EMPRESA B',
+      },
+    ];
+
+    const summary = summarizeLastContributedWeeks(periodos, new Date(2025, 0, 1))!;
+
+    expect(summary.contributedWeeks).toBe(51);
+    expect(summary.averageSalary).toBe(129.41);
+
+    // El tramo común muestra exactamente la misma suma que el motor promedia.
+    const tramos = buildContributionSegments(periodos);
+    const comun = tramos.find((tramo) => tramo.employerNames.length === 2)!;
+    expect(comun.sbc).toBe(600);
   });
 });

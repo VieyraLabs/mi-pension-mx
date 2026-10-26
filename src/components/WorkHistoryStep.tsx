@@ -1,5 +1,6 @@
 /**
  * Paso 2 del formulario de nueva simulación: historial laboral.
+ * Comparte paso con el salario base de cotización (SBC).
  *
  * Los mensajes de semanas narran las MISMAS cifras que usa el motor: las
  * semanas ya cotizadas más las proyectadas hasta la edad de retiro (el total
@@ -39,14 +40,22 @@ export function WorkHistoryStep({
     describeWeeksProjection(weeksProjection, retirementAge);
   const meetsMinimum = targetWeeks >= MINIMUM_WEEKS_VEJEZ;
 
+  // La edad de retiro se captura en el paso 3: aquí se declara cuál está en
+  // uso AHORA (por defecto 65) para que la proyección no se lea como
+  // definitiva.
+  const notaProyeccion =
+    `La proyección asume que sigues cotizando hasta los ${retirementAge} años ` +
+    `(puedes ajustarlo en el paso «Edad de retiro»).`;
+
   const mensaje = meetsMinimum
     ? `✓ Al jubilarte tendrás ${targetWeeks} semanas (${parts.join(' + ')}). ` +
-      `Cumples el mínimo de ${MINIMUM_WEEKS_VEJEZ} semanas (Arts. 138 y 145 LSS 1973).`
+      `Cumples el mínimo de ${MINIMUM_WEEKS_VEJEZ} semanas (Arts. 138 y 145 LSS 1973). ` +
+      notaProyeccion
     : `⚠️ Mínimo requerido: ${MINIMUM_WEEKS_VEJEZ} semanas (Arts. 138 y 145 LSS 1973). ` +
       `Te faltan ${MINIMUM_WEEKS_VEJEZ - targetWeeks} semanas para jubilarte: hoy tienes ${currentWeeks} ` +
       `y se proyectan ${projectedWeeks} hasta los ${retirementAge} años` +
       (m40ExtraWeeks > 0 ? ` y ${m40ExtraWeeks} planeadas en Modalidad 40` : '') +
-      '.';
+      `. ${notaProyeccion}`;
 
   return (
     <Card style={styles.card} elevation={1}>

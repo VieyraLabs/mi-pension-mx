@@ -3,7 +3,7 @@
  * Todos los tipos están estrictamente tipados con TypeScript.
  */
 
-import type { ContributionSummary, SBCPeriod } from '../services/pension/history/types';
+import type { ContributionSummary, SBCPeriodSegment } from '../services/pension/history/types';
 import type { WeeksProjection } from '../utils/weeksProjection';
 
 // ─────────────────────────────────────────────
@@ -272,10 +272,14 @@ export interface ExtractedData {
   employmentRelations: EmploymentRelation[];
   averageSBC?: number;
   /**
-   * Periodos SBC por patrón reconstruidos del historial de movimientos, de MÁS
+   * TRAMOS del SBC reconstruidos del historial de movimientos, de MÁS
    * RECIENTE A MÁS ANTIGUA. Solo presente si la constancia incluye el historial detallado.
    *
-   * CONTRATO: la lista está ACOTADA a los periodos que SOLAPAN la ventana de las
+   * Cada tramo es un intervalo en el que coexisten uno o más patrones: su `sbc`
+   * es el SBC EFECTIVO (la suma de los patrones concurrentes) y `employerNames`
+   * indica qué patrones coexistían. Las semanas siguen contando una sola vez.
+   *
+   * CONTRATO: la lista está ACOTADA a los tramos que SOLAPAN la ventana de las
    * últimas 250 semanas cotizadas usada para el promedio (`contributionSummary`:
    * de `firstWeekUsed` hasta `lastWeekUsed` + 7 días). Un empleo anterior a esa
    * ventana no pesa en el cálculo y por eso no se expone.
@@ -285,7 +289,7 @@ export interface ExtractedData {
    * (Art. 167 LSS 1973, ADR-0010). El filtro acota lo que se MUESTRA, no lo que se
    * promedia.
    */
-  sbcPeriods?: SBCPeriod[];
+  sbcPeriods?: SBCPeriodSegment[];
   /** Desglose de la ventana de las últimas 250 semanas cotizadas usada para calcular averageSBC. */
   contributionSummary?: ContributionSummary;
 }

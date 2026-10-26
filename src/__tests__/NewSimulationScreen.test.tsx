@@ -2,6 +2,9 @@
  * Prueba de humo de NewSimulationScreen: renderiza el primer paso del
  * stepper sin crashear y permite avanzar de paso.
  *
+ * También fija la estructura de los pasos: el historial laboral y el SBC
+ * viven en el mismo paso 2, y la edad de retiro en el paso 3.
+ *
  * Para ejecutar: npm test
  */
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -21,7 +24,8 @@ import React from 'react';
 import { screen, fireEvent } from '@testing-library/react-native';
 import { renderScreen } from '../test-utils/renderScreen';
 import NewSimulationScreen from '../screens/NewSimulationScreen';
-import { calculateAge } from '../utils/date';
+import { calculateAge, calculateRetirementDate } from '../utils/date';
+import { formatDateLong } from '../utils/format';
 import { estimateMonthsToRetirement } from '../utils/weeksProjection';
 
 beforeEach(() => {
@@ -49,6 +53,57 @@ describe('NewSimulationScreen', () => {
     renderScreen(<NewSimulationScreen />);
 
     expect(screen.getByText('Anterior')).toBeDisabled();
+  });
+
+  test('el paso 1 ya NO pide la edad de retiro', () => {
+    renderScreen(<NewSimulationScreen />);
+
+    expect(screen.getByText('Paso 1 de 6: Datos personales')).toBeTruthy();
+    expect(screen.queryAllByText(/Edad de retiro/)).toHaveLength(0);
+    expect(screen.queryAllByDisplayValue('65')).toHaveLength(0);
+  });
+
+  test('el paso 2 reúne el historial laboral y el SBC', () => {
+    renderScreen(<NewSimulationScreen />);
+
+    fireEvent.press(screen.getByText('Siguiente'));
+
+    expect(screen.getByText('Paso 2 de 6: Historial laboral')).toBeTruthy();
+    // Semanas cotizadas (tarjeta de historial laboral).
+    expect(screen.getAllByText(/Total de semanas cotizadas/).length).toBeGreaterThan(0);
+    // SBC (tarjeta de salario, en la MISMA pantalla).
+    expect(screen.getAllByText(/Salario diario promedio/).length).toBeGreaterThan(0);
+  });
+
+  test('el paso 3 pide la edad de retiro y muestra la fecha estimada', () => {
+    renderScreen(<NewSimulationScreen />);
+
+    fireEvent.press(screen.getByText('Siguiente'));
+    fireEvent.press(screen.getByText('Siguiente'));
+
+    expect(screen.getByText('Paso 3 de 6: Edad de retiro')).toBeTruthy();
+    expect(screen.getAllByText(/Edad de retiro \(60–100 años\)/).length).toBeGreaterThan(0);
+    expect(screen.getByDisplayValue('65')).toBeTruthy();
+    // La fecha estimada la calcula el formulario: la UI solo la muestra.
+    const fechaEsperada = formatDateLong(calculateRetirementDate(new Date(1965, 0, 1), 65));
+    expect(
+      screen.getAllByText(new RegExp(`Fecha estimada de retiro: ${fechaEsperada}`)).length,
+    ).toBeGreaterThan(0);
+  });
+
+  test('cambiar la edad de retiro en el paso 3 actualiza la fecha estimada', () => {
+    renderScreen(<NewSimulationScreen />);
+
+    fireEvent.press(screen.getByText('Siguiente'));
+    fireEvent.press(screen.getByText('Siguiente'));
+
+    fireEvent.changeText(screen.getByDisplayValue('65'), '60');
+
+    // La fecha estimada la recalcula el formulario con la nueva edad.
+    const fechaEsperada = formatDateLong(calculateRetirementDate(new Date(1965, 0, 1), 60));
+    expect(
+      screen.getAllByText(new RegExp(`Fecha estimada de retiro: ${fechaEsperada}`)).length,
+    ).toBeGreaterThan(0);
   });
 
   test('los meses de Modalidad 40 son de solo lectura y muestran el valor derivado', () => {

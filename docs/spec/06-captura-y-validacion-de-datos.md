@@ -13,16 +13,20 @@ llega al motor cumple las reglas de la ley.
 La captura se organiza como un **flujo por pasos** (`NewSimulationScreen`), en lugar de un
 formulario largo:
 
-1. Datos personales (nombre, sexo, fecha de nacimiento, edad de retiro).
-2. Historial laboral (semanas cotizadas).
-3. Salario (salario diario o promedio).
+1. Datos personales (nombre, sexo, fecha de nacimiento).
+2. Historial laboral (semanas cotizadas **y** salario base de cotización, en el mismo paso).
+3. Edad de retiro (edad de retiro y fecha estimada de retiro).
 4. UMA (valor por año o personalizado).
 5. Modalidad 40 (activa o no, con sus meses y su salario de aportación).
 6. Beneficiarios (cónyuge, hijos menores, padres dependientes).
 
-Cada paso tiene su componente (`PersonalDataStep`, `SalaryStep`, `UMAStep`,
-`Modalidad40Step`, `BeneficiariesStep`), y los componentes de fila (`DataRow`, `CompRow`,
-`SummaryRow`) dan consistencia visual a todos ellos.
+Cada paso tiene su componente (`PersonalDataStep`, `WorkHistoryStep`, `SalaryStep`,
+`RetirementAgeStep`, `UMAStep`, `Modalidad40Step`, `BeneficiariesStep`), y los componentes de
+fila (`DataRow`, `CompRow`, `SummaryRow`) dan consistencia visual a todos ellos.
+
+El paso 2 puede mostrar dos tarjetas (`WorkHistoryStep` y `SalaryStep`): el historial
+laboral y el SBC son las dos caras del mismo dato de entrada —las semanas cotizadas y el
+salario con el que se cotizaron—, así que se capturan juntos.
 
 La edad actual se deriva de la fecha de nacimiento, no se captura. La fecha de retiro se
 recalcula cuando cambia la fecha de nacimiento o la edad de retiro.
@@ -39,10 +43,16 @@ recalcula cuando cambia la fecha de nacimiento o la edad de retiro.
   (480 cotizadas + 20 planeadas en Modalidad 40 = 500)". La misma proyección usa el motor
   (ver [Spec-01](01-motor-de-calculo-ley-73.md) y
   [ADR-0012](../adr/0012-proyeccion-de-semanas-hasta-la-edad-de-retiro.md)).
+- **La edad de retiro NO es un dato personal: es una decisión sobre cuándo se jubila la
+  persona usuaria.** Por eso vive en su propio paso (el 3) y no en «Datos personales»:
+  el paso 1 se llama «Datos personales» y solo lleva nombre, sexo y fecha de nacimiento. El
+  paso «Edad de retiro» muestra además la **fecha estimada de retiro**, que el formulario
+  calcula (`usePensionForm`) y la UI solo muestra, sin recalcular (RNF-013).
 - **El paso de historial laboral muestra las semanas actuales frente a las objetivo.** Ya no
   dice "te faltan N semanas" contra lo cotizado hoy, sino contra lo que el asegurado
   tendrá al jubilarse, mostrando las tres cifras: las cotizadas hoy, las proyectadas hasta
-  la edad de retiro y el total objetivo.
+  la edad de retiro y el total objetivo. El mensaje declara el supuesto de la proyección y
+  remite al paso «Edad de retiro» para ajustarlo.
 - **El campo «Meses cotizando en M40 (estimado)» es derivado y de solo lectura.** Su valor
   se precarga al activar Modalidad 40 con los meses que hay entre hoy y la fecha de retiro,
   y se recalcula si cambian la fecha de nacimiento o la edad de retiro. No es editable: si
@@ -74,6 +84,9 @@ recalcula cuando cambia la fecha de nacimiento o la edad de retiro.
 - `src/__tests__/ValidationScreen.test.tsx` — pantalla de validación tras la
   importación de un PDF.
 - `src/__tests__/NewSimulationScreen.test.tsx` — el campo de meses de Modalidad 40 se
-  muestra con el valor derivado del horizonte y no es editable.
+  muestra con el valor derivado del horizonte y no es editable; **la estructura de los
+  pasos**: el paso 1 ya no pide la edad de retiro, el paso 2 reúne el historial laboral y
+  el SBC, y el paso 3 pide la edad de retiro, muestra la fecha estimada y la recalcula al
+  cambiarla.
 - `src/__tests__/WorkHistoryStep.test.tsx` — el mensaje de semanas contrasta las
-  cotizadas hoy con las objetivo al jubilarse.
+  cotizadas hoy con las objetivo al jubilarse, y declara el supuesto de la proyección.

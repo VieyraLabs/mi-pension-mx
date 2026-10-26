@@ -17,6 +17,7 @@ import { MessageBanner } from '../components/MessageBanner';
 import { PersonalDataStep } from '../components/PersonalDataStep';
 import { WorkHistoryStep } from '../components/WorkHistoryStep';
 import { SalaryStep } from '../components/SalaryStep';
+import { RetirementAgeStep } from '../components/RetirementAgeStep';
 import { UMAStep } from '../components/UMAStep';
 import { Modalidad40Step } from '../components/Modalidad40Step';
 import { BeneficiariesStep } from '../components/BeneficiariesStep';
@@ -27,7 +28,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'NewSimulation'>;
 const STEPS = [
   'Datos personales',
   'Historial laboral',
-  'Salario (SBC)',
+  'Edad de retiro',
   'UMA',
   'Modalidad 40',
   'Beneficiarios',
@@ -104,22 +105,29 @@ export default function NewSimulationScreen() {
         return <PersonalDataStep personalData={input.personalData} onChange={updatePersonalData} theme={theme} />;
       case 1:
         return (
-          <WorkHistoryStep
-            workHistory={input.workHistory}
-            weeksProjection={weeksProjection}
-            retirementAge={input.personalData.retirementAge}
-            onChange={updateWorkHistory}
-            theme={theme}
-          />
+          <View style={styles.stepStack}>
+            <WorkHistoryStep
+              workHistory={input.workHistory}
+              weeksProjection={weeksProjection}
+              retirementAge={input.personalData.retirementAge}
+              onChange={updateWorkHistory}
+              theme={theme}
+            />
+            <SalaryStep
+              averageSalary={input.averageSalary}
+              onChangeDaily={updateDailySalary}
+              onChangeMonthly={updateMonthlySalary}
+              monthlyMode={monthlySalaryMode}
+              setMonthlyMode={setMonthlySalaryMode}
+              theme={theme}
+            />
+          </View>
         );
       case 2:
         return (
-          <SalaryStep
-            averageSalary={input.averageSalary}
-            onChangeDaily={updateDailySalary}
-            onChangeMonthly={updateMonthlySalary}
-            monthlyMode={monthlySalaryMode}
-            setMonthlyMode={setMonthlySalaryMode}
+          <RetirementAgeStep
+            personalData={input.personalData}
+            onChange={updatePersonalData}
             theme={theme}
           />
         );
@@ -196,6 +204,8 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 20 },
   card: { borderRadius: 16 },
+  /** Separación entre las tarjetas que comparten un mismo paso. */
+  stepStack: { gap: 16 },
   footer: {
     flexDirection: 'row',
     padding: 16,

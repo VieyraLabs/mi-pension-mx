@@ -99,6 +99,13 @@ App.tsx                     Raíz de la app
 - **Cobertura**: 89.1 % de sentencias, 96.1 % de funciones, 91.7 % de líneas, medida
   sobre `src/services/**`, `src/hooks/**` y `src/storage/**`.
 - **10 ADRs, 9 specs, 6 runbooks** en `docs/`.
+- **Deuda técnica del motor documentada** en [`docs/deuda-tecnica.md`](docs/deuda-tecnica.md):
+  los huecos conocidos entre lo que calcula la app y lo que resuelve el IMSS (techo del
+  100 % del salario promedio, fracción de los incrementos anuales, supuestos de la
+  proyección de semanas y saturación de la ponderación de Modalidad 40). No es trabajo
+  pendiente de la iteración: es el inventario de lo que la app **no** hace, publicado para
+  que quien compare su resultado con la respuesta oficial sepa dónde puede haber
+  diferencia.
 - **5 workflows de CI**: tipos y lint, pruebas fragmentadas en tres shards, cobertura,
   empaquetado web, CodeQL, release por etiqueta, deploy a staging y **puerta de
   promoción** que exige aprobación humana antes de autorizar un release a producción.

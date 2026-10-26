@@ -6,7 +6,12 @@
  * en los patrones comunes observados en constancias digitales (no escaneadas).
  */
 import type { ExtractedData, ParseResult, DocumentType, EmploymentRelation } from '../../../models';
-import { summarizeLastContributedWeeks, selectPeriodsInAverageWindow, type SBCPeriod } from '../../pension/history';
+import {
+  buildContributionSegments,
+  selectSegmentsInAverageWindow,
+  summarizeLastContributedWeeks,
+  type SBCPeriod,
+} from '../../pension/history';
 
 /** Interfaz común para todos los parsers de documentos. */
 export interface DocumentParser<T> {
@@ -144,14 +149,15 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
       // Exponer el detalle ya reconstruido: la UI lo muestra tal cual, sin
       // recalcularlo (una sola fuente de verdad — RNF-013, ADR-0010).
       //
-      // CONTRATO de `data.sbcPeriods`: expone SOLO los periodos que entran al
-      // promedio de las últimas 250 semanas cotizadas, de MÁS RECIENTE A MÁS
-      // ANTIGUA. Un empleo anterior a esa ventana (p. ej. uno de 2000) no
-      // pesa en el cálculo y por eso no se muestra. El CÁLCULO, en cambio,
-      // sigue usando TODOS los periodos reconstruidos: el historial completo
-      // es lo que permite saltar los huecos laborales y alcanzar las 250
-      // semanas cotizadas.
-      data.sbcPeriods = workHistoryResult.periods;
+      // CONTRATO de `data.sbcPeriods`: expone los TRAMOS del desglose (cada
+      // uno con el SBC EFECTIVO: la suma de los patrones concurrentes) que
+      // entran al promedio de las últimas 250 semanas cotizadas, de MÁS
+      // RECIENTE A MÁS ANTIGUA. Un empleo anterior a esa ventana (p. ej. uno
+      // de 2000) no pesa en el cálculo y por eso no se muestra. El CÁLCULO, en
+      // cambio, sigue usando TODOS los periodos reconstruidos: el historial
+      // completo es lo que permite saltar los huecos laborales y alcanzar las
+      // 250 semanas cotizadas.
+      data.sbcPeriods = buildContributionSegments(workHistoryResult.periods);
       // Últimas 250 semanas COTIZADAS (Art. 167 LSS 1973): los periodos sin
       // cotización se saltan y el recorrido sigue hacia atrás, en vez de
       // tomar las últimas 250 semanas calendario.
@@ -160,7 +166,7 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
         workHistoryResult.referenceDate,
       );
       if (summary) {
-        data.sbcPeriods = selectPeriodsInAverageWindow(workHistoryResult.periods, summary);
+        data.sbcPeriods = selectSegmentsInAverageWindow(data.sbcPeriods, summary);
         data.averageSBC = summary.averageSalary;
         data.contributionSummary = summary;
         warnings.push(
@@ -509,6 +515,7 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
     const hireDate = hireDateOf(hireMatch);
     const isActive = i === 0 && isCurrentlyActiveGlobal;
     const sbcHeader = parseFloat((sbcMatch[1] as string).replace(',', '.'));
+    const employerName = employerMatch[1]?.trim() ?? '';
 
     const detailedPeriods = periodsFromMovements(movementsByEmployer[i] ?? [], isActive, today);
 
@@ -534,11 +541,15 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
       employerPeriods = [{ startDate: hireDate, endDate: terminationDate, sbc: sbcHeader }];
     }
 
+    // Cada periodo se etiqueta con el patrón al que pertenece: es lo que
+    // permite mostrar en el desglose qué patrones coexistían en cada tramo.
+    employerPeriods = employerPeriods.map((period) => ({ ...period, employerName }));
+
     periods.push(...employerPeriods);
 
     const registrationMatch = registrationNumbers[i];
     relations.push({
-      employerName: employerMatch[1]?.trim() ?? '',
+      employerName,
       employerRegistrationNumber: registrationMatch?.[1] ?? '',
       startDate: hireDate,
       endDate: terminationDate,

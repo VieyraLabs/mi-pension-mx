@@ -11,7 +11,7 @@ import type { RootStackParamList } from '../navigation/RootNavigator';
 import { ConstanciaIMSSParser } from '../services/pdf/parsers/PersonalDataParser';
 import { DataRow } from '../components/DataRow';
 import { formatCurrency, formatDateShort } from '../utils/format';
-import type { ContributionSummary, SBCPeriod } from '../services/pension/history/types';
+import type { ContributionSummary, SBCPeriodSegment } from '../services/pension/history/types';
 import { showAlert } from '../utils/alert';
 import { getBannerColors } from '../theme';
 
@@ -37,7 +37,7 @@ export default function ValidationScreen() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   /** Detalle del SBC promedio reconstruido por el parser; null si la constancia no trae historial detallado. */
-  const [sbcDetail, setSbcDetail] = useState<{ periods: SBCPeriod[]; summary: ContributionSummary } | null>(null);
+  const [sbcDetail, setSbcDetail] = useState<{ segments: SBCPeriodSegment[]; summary: ContributionSummary } | null>(null);
 
   const warningColors = getBannerColors('warning', theme.dark);
   const errorColors = getBannerColors('error', theme.dark);
@@ -62,7 +62,7 @@ export default function ValidationScreen() {
       // la UI nunca recalcula el promedio.
       setSbcDetail(
         d.sbcPeriods && d.sbcPeriods.length > 0 && d.contributionSummary
-          ? { periods: d.sbcPeriods, summary: d.contributionSummary }
+          ? { segments: d.sbcPeriods, summary: d.contributionSummary }
           : null,
       );
     }
@@ -206,17 +206,27 @@ export default function ValidationScreen() {
       {sbcDetail && (
         <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
           <List.Accordion
-            title={`Cómo se calculó tu SBC promedio (${sbcDetail.periods.length} ${sbcDetail.periods.length === 1 ? 'periodo' : 'periodos'})`}
+            title={`Cómo se calculó tu SBC promedio (${sbcDetail.segments.length} ${sbcDetail.segments.length === 1 ? 'periodo' : 'periodos'})`}
             description={`${formatCurrency(sbcDetail.summary.averageSalary)}/día · ${sbcDetail.summary.selectedWeeks} de 250 semanas`}
           >
             <List.Subheader style={styles.sectionLabel}>Periodos SBC considerados en el promedio</List.Subheader>
-            {sbcDetail.periods.map((period, i) => (
-              <DataRow
-                key={`${period.startDate.getTime()}-${i}`}
-                label={`${formatDateShort(period.startDate)} – ${formatDateShort(period.endDate)}`}
-                value={`${formatCurrency(period.sbc)}/día`}
-                theme={theme}
-              />
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 8, lineHeight: 18 }}>
+              Cuando tuviste más de un patrón a la vez, el SBC del periodo es la suma de ambos, pero las semanas cuentan una sola vez.
+            </Text>
+            {sbcDetail.segments.map((segment, i) => (
+              <View key={`${segment.startDate.getTime()}-${i}`}>
+                <DataRow
+                  label={`${formatDateShort(segment.startDate)} – ${formatDateShort(segment.endDate)}`}
+                  value={`${formatCurrency(segment.sbc)}/día`}
+                  theme={theme}
+                  highlight={segment.employerNames.length > 1}
+                />
+                {segment.employerNames.length > 0 && (
+                  <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 8 }}>
+                    {segment.employerNames.join(' + ')}
+                  </Text>
+                )}
+              </View>
             ))}
             <Divider style={styles.innerDivider} />
             <List.Subheader style={styles.sectionLabel}>Resumen de las últimas 250 semanas cotizadas</List.Subheader>

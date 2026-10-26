@@ -17,6 +17,26 @@ export interface SBCPeriod {
   endDate: Date;
   /** Salario Base de Cotización diario vigente durante este periodo. */
   sbc: number;
+  /** Nombre del patrón al que pertenece este periodo (opcional). */
+  employerName?: string;
+}
+
+/**
+ * Tramo del historial en el que coexisten uno o más patrones, con el SBC efectivo del tramo.
+ *
+ * Un TRAMO es un intervalo en el que el conjunto de patrones concurrentes es el
+ * mismo: el SBC efectivo del tramo es la SUMA de los SBC de esos patrones
+ * (integración de salarios por empleo simultáneo) y las semanas siguen
+ * contando UNA sola vez.
+ */
+export interface SBCPeriodSegment {
+  startDate: Date;
+  /** Fin del tramo (inclusive). */
+  endDate: Date;
+  /** SBC diario efectivo del tramo: la suma de los SBC de los patrones concurrentes. */
+  sbc: number;
+  /** Patrones que concurren en el tramo (pueden ser varios). */
+  employerNames: string[];
 }
 
 /**

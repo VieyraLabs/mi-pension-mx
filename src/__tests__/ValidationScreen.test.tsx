@@ -145,6 +145,42 @@ REINGRESO 01/01/2000 $ 100.0
 
 |||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:400||`;
 
+// Dos patrones que SE TRASLAPAN (un trabajo temporal mientras sigue el
+// principal): el periodo común debe mostrar el SBC SUMADO y los dos patrones.
+// No hay "Vigente": la fecha de referencia del motor es la baja más reciente
+// (31/12/2023), así que el resultado no depende del día en que corra la prueba.
+const TEXTO_TRASLAPADOS = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+DISTRITO FEDERAL
+Fecha de alta 01/01/2018 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 600.0
+Nombre del patrón EMPRESA A SA DE CV
+Registro Patronal Y500000001
+Tipo de movimiento Fecha de movimiento Salario Base
+BAJA 31/12/2023 $ 600.0
+REINGRESO 01/01/2018 $ 600.0
+* Valor del último salario base de cotización diario en pesos.
+01/01/2022
+DISTRITO FEDERAL
+Fecha de alta 01/01/2022 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 300.0
+Nombre del patrón EMPRESA B SA DE CV
+Registro Patronal Y500000002
+Tipo de movimiento Fecha de movimiento Salario Base
+BAJA 30/06/2023 $ 300.0
+REINGRESO 01/01/2022 $ 300.0
+* Valor del último salario base de cotización diario en pesos.
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:600||`;
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -174,7 +210,7 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
 
     // Colapsada por defecto: el título está visible, el contenido no.
     // El recuento es el de los periodos CONSIDERADOS en el promedio: la
-    // ventana son las últimas 250 semanas cotizadas, así que el tramo de
+    // ventana son las últimas 250 semanas cotizadas, así que el periodo de
     // 2018-2020 queda fuera y no se cuenta.
     expect(screen.getByText('Cómo se calculó tu SBC promedio (1 periodo)')).toBeTruthy();
     expect(screen.queryByText('Periodos SBC considerados en el promedio')).toBeNull();
@@ -278,6 +314,36 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     // El empleo de 2000 NO aparece.
     expect(screen.queryByText('01/01/2000 – 01/06/2001')).toBeNull();
     expect(screen.queryByText('$100.00/día')).toBeNull();
+  });
+
+  test('muestra el periodo traslapado con el SBC SUMADO y los dos patrones', () => {
+    mockExtractedText = TEXTO_TRASLAPADOS;
+    renderScreen(<ValidationScreen />);
+
+    // El título cuenta los PERIODOS del desglose (no los periodos por patrón).
+    expect(screen.getByText('Cómo se calculó tu SBC promedio (3 periodos)')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Cómo se calculó tu SBC promedio (3 periodos)'));
+
+    // El periodo común (2022-2023) muestra el SBC EFECTIVO: la suma de los dos
+    // patrones concurrentes ($600 + $300 = $900).
+    expect(screen.getByText('01/01/2022 – 30/06/2023')).toBeTruthy();
+    expect(screen.getByText('$900.00/día')).toBeTruthy();
+    // Y los DOS patrones quedan visibles.
+    expect(screen.getByText(/EMPRESA A SA DE CV \+ EMPRESA B SA DE CV/)).toBeTruthy();
+
+    // Los periodos con un solo patrón muestran el SBC de ese patrón (los dos
+    // periodos de EMPRESA A: antes y después del trabajo temporal).
+    expect(screen.getAllByText('$600.00/día')).toHaveLength(2);
+
+    // La nota que explica la regla aparece UNA sola vez y usa el mismo
+    // vocabulario que el resto de la sección: "periodo" (nunca "tramo").
+    expect(
+      screen.getAllByText(
+        'Cuando tuviste más de un patrón a la vez, el SBC del periodo es la suma de ambos, pero las semanas cuentan una sola vez.',
+      ),
+    ).toHaveLength(1);
+    expect(screen.queryByText(/tramo/i)).toBeNull();
   });
 
   test('sin historial detallado: la sección no se muestra y se conserva el aviso de captura manual', () => {

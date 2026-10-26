@@ -57,21 +57,6 @@ export function PersonalDataStep({ personalData, onChange, theme }: PersonalData
             Edad actual: {calculateAge(personalData.birthDate)} años
           </HelperText>
         )}
-        <TextInput
-          label="Edad de retiro (60–65 años) *"
-          value={String(personalData.retirementAge)}
-          onChangeText={(v) => {
-            const n = parseInt(v);
-            if (!isNaN(n)) onChange({ retirementAge: n });
-          }}
-          mode="outlined"
-          keyboardType="numeric"
-          style={styles.input}
-          right={<TextInput.Affix text="años" />}
-        />
-        <HelperText type="info">
-          60–64 = Cesantía en Edad Avanzada (con reducción). 65+ = Vejez (sin reducción).
-        </HelperText>
       </Card.Content>
     </Card>
   );
