@@ -108,6 +108,43 @@ REINGRESO 01/01/2000 $ 200.0
 
 |||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:312||`;
 
+// Historial detallado con un empleo ANTIGUO (2000-2001) y otro posterior
+// (2010-2016). Las 250 semanas cotizadas del promedio caen íntegras dentro
+// del empleo posterior: el de 2000 queda FUERA de la ventana y no debe
+// mostrarse. Determinista: no hay "Vigente", así que la fecha de referencia
+// es la baja más reciente (01/01/2016), no la fecha de hoy.
+const TEXTO_FUERA_DE_VENTANA = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+DISTRITO FEDERAL
+Fecha de alta 01/01/2010 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 300.0
+Nombre del patrón PATRON POSTERIOR SA DE CV
+Registro Patronal Y500000001
+Tipo de movimiento Fecha de movimiento Salario Base
+BAJA 01/01/2016 $ 300.0
+REINGRESO 01/01/2010 $ 300.0
+* Valor del último salario base de cotización diario en pesos.
+01/01/2000
+DISTRITO FEDERAL
+Fecha de alta 01/01/2000 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 100.0
+Nombre del patrón PATRON ANTIGUO SA DE CV
+Registro Patronal Y500000002
+Tipo de movimiento Fecha de movimiento Salario Base
+BAJA 01/06/2001 $ 100.0
+REINGRESO 01/01/2000 $ 100.0
+* Valor del último salario base de cotización diario en pesos.
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:400||`;
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -136,21 +173,25 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     renderScreen(<ValidationScreen />);
 
     // Colapsada por defecto: el título está visible, el contenido no.
-    expect(screen.getByText('Cómo se calculó tu SBC promedio (2 periodos)')).toBeTruthy();
-    expect(screen.queryByText('Periodos SBC por patrón')).toBeNull();
+    // El recuento es el de los periodos CONSIDERADOS en el promedio: la
+    // ventana son las últimas 250 semanas cotizadas, así que el tramo de
+    // 2018-2020 queda fuera y no se cuenta.
+    expect(screen.getByText('Cómo se calculó tu SBC promedio (1 periodo)')).toBeTruthy();
+    expect(screen.queryByText('Periodos SBC considerados en el promedio')).toBeNull();
     // Resumen de una línea bajo el título (mismo promedio que el parser).
     expect(screen.getByText(/\$148\.10\/día · 250 de 250 semanas/)).toBeTruthy();
     // Hint bajo el input del SBC promedio apuntando a la sección.
     expect(screen.getByText(/Despliega «Cómo se calculó tu SBC promedio»/)).toBeTruthy();
 
-    fireEvent.press(screen.getByText('Cómo se calculó tu SBC promedio (2 periodos)'));
+    fireEvent.press(screen.getByText('Cómo se calculó tu SBC promedio (1 periodo)'));
 
-    // Periodos SBC por patrón (fechas es-MX + $SBC/día).
-    expect(screen.getByText('Periodos SBC por patrón')).toBeTruthy();
-    expect(screen.getByText('01/07/2018 – 31/12/2020')).toBeTruthy();
-    expect(screen.getByText('$103.23/día')).toBeTruthy();
-    // El periodo vigente termina "hoy" (fecha no determinista): solo el rango.
+    // Periodos SBC considerados (fechas es-MX + $SBC/día).
+    expect(screen.getByText('Periodos SBC considerados en el promedio')).toBeTruthy();
+    // El periodo vigente (2021 → hoy) entra al promedio; el de 2018-2020 no.
     expect(screen.getByText(/01\/01\/2021 – \d{2}\/\d{2}\/\d{4}/)).toBeTruthy();
+    expect(screen.getByText('$148.10/día')).toBeTruthy();
+    expect(screen.queryByText('01/07/2018 – 31/12/2020')).toBeNull();
+    expect(screen.queryByText('$103.23/día')).toBeNull();
 
     // Resumen de las últimas 250 semanas cotizadas.
     expect(screen.getByText('Resumen de las últimas 250 semanas cotizadas')).toBeTruthy();
@@ -190,6 +231,53 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     // Las 250 semanas sí se completaron: sin marca de parcialidad.
     expect(screen.queryByText(/Reconstrucción parcial/)).toBeNull();
     expect(screen.getByText('250 de 250')).toBeTruthy();
+  });
+
+  test('lista los periodos SBC de más reciente a más antigua', () => {
+    // Los dos periodos de este historial caen dentro de la ventana de las 250
+    // semanas cotizadas, así que ambos se listan.
+    mockExtractedText = TEXTO_HUECOS;
+    renderScreen(<ValidationScreen />);
+
+    fireEvent.press(screen.getByText('Cómo se calculó tu SBC promedio (2 periodos)'));
+
+    // La lista de periodos se lee como una línea de tiempo: el periodo
+    // reciente (2005) va antes que el de 2000. Se compara la posición
+    // relativa de ambos, y no la de un índice fijo: la fila «Ventana de
+    // fechas usada» del resumen también es un rango de fechas.
+    const rangos = screen
+      .getAllByText(/^\d{2}\/\d{2}\/\d{4} – \d{2}\/\d{2}\/\d{4}$/)
+      .map((n) => String(n.props.children));
+    const posReciente = rangos.findIndex((r) => r.startsWith('01/01/2005 – '));
+    const posAntiguo = rangos.findIndex((r) => r.startsWith('01/01/2000 – '));
+
+    expect(posReciente).toBeGreaterThanOrEqual(0);
+    expect(posAntiguo).toBeGreaterThanOrEqual(0);
+    expect(posReciente).toBeLessThan(posAntiguo);
+    expect(rangos[posAntiguo]).toBe('01/01/2000 – 01/06/2004');
+  });
+
+  test('muestra solo los periodos considerados en el promedio (N en el título)', () => {
+    mockExtractedText = TEXTO_FUERA_DE_VENTANA;
+    renderScreen(<ValidationScreen />);
+
+    // El recuento del título es el de los periodos CONSIDERADOS: el empleo de
+    // 2000 queda fuera de la ventana de las 250 semanas y no se cuenta.
+    expect(screen.getByText('Cómo se calculó tu SBC promedio (1 periodo)')).toBeTruthy();
+    expect(screen.queryByText('Cómo se calculó tu SBC promedio (2 periodos)')).toBeNull();
+
+    fireEvent.press(screen.getByText('Cómo se calculó tu SBC promedio (1 periodo)'));
+
+    // El subtítulo describe la lista como una línea de tiempo de periodos
+    // considerados.
+    expect(screen.getByText('Periodos SBC considerados en el promedio')).toBeTruthy();
+
+    // Solo se lista el periodo que entra al promedio.
+    expect(screen.getByText('01/01/2010 – 01/01/2016')).toBeTruthy();
+    expect(screen.getByText('$300.00/día')).toBeTruthy();
+    // El empleo de 2000 NO aparece.
+    expect(screen.queryByText('01/01/2000 – 01/06/2001')).toBeNull();
+    expect(screen.queryByText('$100.00/día')).toBeNull();
   });
 
   test('sin historial detallado: la sección no se muestra y se conserva el aviso de captura manual', () => {

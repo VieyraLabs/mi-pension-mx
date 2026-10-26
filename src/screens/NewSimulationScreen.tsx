@@ -39,6 +39,7 @@ export default function NewSimulationScreen() {
   const route = useRoute<Props['route']>();
   const {
     input,
+    weeksProjection,
     updatePersonalData,
     updateWorkHistory,
     updateDailySalary,
@@ -102,7 +103,15 @@ export default function NewSimulationScreen() {
       case 0:
         return <PersonalDataStep personalData={input.personalData} onChange={updatePersonalData} theme={theme} />;
       case 1:
-        return <WorkHistoryStep workHistory={input.workHistory} onChange={updateWorkHistory} theme={theme} />;
+        return (
+          <WorkHistoryStep
+            workHistory={input.workHistory}
+            weeksProjection={weeksProjection}
+            retirementAge={input.personalData.retirementAge}
+            onChange={updateWorkHistory}
+            theme={theme}
+          />
+        );
       case 2:
         return (
           <SalaryStep
@@ -126,7 +135,14 @@ export default function NewSimulationScreen() {
           />
         );
       case 4:
-        return <Modalidad40Step modalidad40={input.modalidad40} onChange={updateModalidad40} theme={theme} />;
+        return (
+          <Modalidad40Step
+            modalidad40={input.modalidad40}
+            personalData={input.personalData}
+            onChange={updateModalidad40}
+            theme={theme}
+          />
+        );
       case 5:
         return <BeneficiariesStep beneficiaries={input.beneficiaries} onChange={updateBeneficiaries} theme={theme} />;
       default:

@@ -26,13 +26,13 @@ const mockPrintAsync = Print.printAsync as jest.Mock;
 const mockIsAvailableAsync = Sharing.isAvailableAsync as jest.Mock;
 const mockShareAsync = Sharing.shareAsync as jest.Mock;
 
-function buildResult() {
+function buildResult(age = 65) {
   const input: PensionInput = {
     personalData: {
       name: 'Juan Pérez',
       sex: 'masculino',
       birthDate: new Date(1960, 0, 1),
-      age: 65,
+      age,
       estimatedRetirementDate: new Date(2025, 0, 1),
       retirementAge: 65,
     },
@@ -90,5 +90,21 @@ describe('exportPensionResultToPdf', () => {
     const html = mockPrintToFileAsync.mock.calls[0][0].html as string;
     expect(html).toContain(formatCurrency(result.monthlyPension));
     expect(html).toContain('AVISO LEGAL');
+  });
+
+  test('el HTML separa las semanas cotizadas actuales de las objetivo al jubilarte', async () => {
+    mockIsAvailableAsync.mockResolvedValue(false);
+    // 500 semanas cotizadas, edad actual 45 → 20 años hasta el retiro (65).
+    const result = buildResult(45);
+
+    await exportPensionResultToPdf(result);
+
+    const html = mockPrintToFileAsync.mock.calls[0][0].html as string;
+    expect(html).toContain('Semanas cotizadas actuales');
+    expect(html).toContain('Semanas cotizadas objetivo (al jubilarte)');
+    // 500 actuales + 20 años × 52 semanas = 1040 proyectadas → 1540 objetivo.
+    expect(html).toContain(
+      '1,540 sem. (500 cotizadas + 1,040 proyectadas hasta los 65 años)',
+    );
   });
 });

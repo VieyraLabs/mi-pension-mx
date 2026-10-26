@@ -5,6 +5,7 @@
 import { z } from 'zod';
 import { MINIMUM_WEEKS_VEJEZ } from '../constants/ley73';
 import { calculateM40PlannedWeeks } from '../utils/modalidad40';
+import { calculateWeeksProjection, describeWeeksProjection } from '../utils/weeksProjection';
 
 // ─────────────────────────────────────────────
 // Esquemas base
@@ -122,20 +123,28 @@ export const PensionInputSchema = z
     beneficiaries: BeneficiariesSchema,
   })
   .superRefine((data, ctx) => {
-    // El mínimo de 500 semanas considera tanto las ya cotizadas como las
-    // proyectadas por los meses de Modalidad 40 que el usuario planea
-    // contratar a futuro (no incluidas en workHistory.totalWeeks).
-    const m40PlannedWeeks = calculateM40PlannedWeeks(data.modalidad40);
-    const effectiveWeeks = data.workHistory.totalWeeks + m40PlannedWeeks;
-    if (effectiveWeeks < MINIMUM_WEEKS_VEJEZ) {
-      const detail =
-        m40PlannedWeeks > 0
-          ? ` (${data.workHistory.totalWeeks} cotizadas + ${m40PlannedWeeks} planeadas en Modalidad 40 = ${effectiveWeeks})`
-          : '';
+    // El mínimo de 500 semanas (Arts. 138 y 145 LSS 1973) se evalúa contra
+    // las semanas con las que el asegurado se jubilaría: las ya cotizadas más
+    // las proyectadas hasta la edad de retiro (y las planeadas por Modalidad
+    // 40, que caen dentro de ese horizonte).
+    const projection = calculateWeeksProjection({
+      currentWeeks: data.workHistory.totalWeeks,
+      age: data.personalData.age,
+      retirementAge: data.personalData.retirementAge,
+      m40PlannedWeeks: calculateM40PlannedWeeks(data.modalidad40),
+    });
+    if (projection.targetWeeks < MINIMUM_WEEKS_VEJEZ) {
+      const faltantes = MINIMUM_WEEKS_VEJEZ - projection.targetWeeks;
+      // El desglose es el MISMO que narra el motor (Art. 167 LSS 1973):
+      // semanas cotizadas + proyectadas hasta la edad de retiro = total con
+      // el que se jubila el asegurado.
+      const { breakdown } = describeWeeksProjection(projection);
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['workHistory', 'totalWeeks'],
-        message: `Se requieren mínimo ${MINIMUM_WEEKS_VEJEZ} semanas cotizadas (Arts. 138 y 145 LSS 1973)${detail}.`,
+        message:
+          `Se requieren mínimo ${MINIMUM_WEEKS_VEJEZ} semanas cotizadas (Arts. 138 y 145 LSS 1973)` +
+          ` (${breakdown}). Te faltan ${faltantes} semanas para al jubilarse.`,
       });
     }
   });

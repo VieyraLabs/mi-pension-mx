@@ -146,7 +146,7 @@ describe('PensionInputSchema — contrato completo con historial reconstruido', 
   });
 });
 
-describe('PensionInputSchema — mínimo de 500 semanas (comportamiento previo intacto)', () => {
+describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubilarse)', () => {
   test('rechaza un sexo no soportado con el mensaje del errorMap (enum SexSchema)', () => {
     const input = buildValidInput();
     input.personalData.sex = 'otro' as typeof input.personalData.sex;
@@ -178,6 +178,83 @@ describe('PensionInputSchema — mínimo de 500 semanas (comportamiento previo i
       expect(
         result.error.issues.some((i) => i.message.includes('mínimo 500 semanas')),
       ).toBe(true);
+    }
+  });
+
+  test('el mensaje dice cuántas semanas faltan PARA AL JUBILARSE', () => {
+    const input = { ...buildValidInput() };
+    input.workHistory = { totalWeeks: 100, employmentRelations: [] };
+    // El asegurado está en su edad de retiro: no hay horizonte a futuro.
+    const result = PensionInputSchema.safeParse(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const mensaje = result.error.issues
+        .map((i) => i.message)
+        .find((m) => m.includes('mínimo 500 semanas'));
+      expect(mensaje).toBeDefined();
+      // 500 − 100 = 400 semanas faltantes, expresadas como faltan "al jubilarse".
+      expect(mensaje).toMatch(/400/);
+      expect(mensaje).toMatch(/al jubilarse/i);
+    }
+  });
+
+  test('acepta pocas semanas si la proyección hasta el retiro alcanza las 500', () => {
+    // 100 semanas cotizadas a los 30 años + 35 años proyectados (1820
+    // semanas) = 1920 al jubilarse: se cumple el mínimo legal (Arts. 138 y 145).
+    const input = { ...buildValidInput() };
+    input.personalData = { ...input.personalData, age: 30, retirementAge: 65 };
+    input.workHistory = { totalWeeks: 100, employmentRelations: [] };
+    const result = PensionInputSchema.safeParse(input);
+    expect(result.success).toBe(true);
+  });
+
+  test('quien no cumple hoy pero sí al jubilarse NO recibe el error de semanas', () => {
+    // 100 semanas cotizadas a los 30 años: hoy NO cumple el mínimo, pero
+    // al jubilarse tendrá 1920 (100 + 1820 proyectadas) y sí cumple.
+    const input = { ...buildValidInput() };
+    input.personalData = { ...input.personalData, age: 30, retirementAge: 65 };
+    input.workHistory = { totalWeeks: 100, employmentRelations: [] };
+    const result = PensionInputSchema.safeParse(input);
+    expect(result.success).toBe(true);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((i) => i.message.includes('mínimo 500 semanas')),
+      ).toBe(false);
+    }
+  });
+
+  test('rechaza cuando ni con la proyección se alcanza el mínimo de 500', () => {
+    // 50 semanas cotizadas a los 64 años + 1 año proyectado (52) = 102.
+    const input = { ...buildValidInput() };
+    input.personalData = { ...input.personalData, age: 64, retirementAge: 65 };
+    input.workHistory = { totalWeeks: 50, employmentRelations: [] };
+    const result = PensionInputSchema.safeParse(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((i) => i.message.includes('mínimo 500 semanas')),
+      ).toBe(true);
+    }
+  });
+
+  test('el mensaje del mínimo de 500 narra las cifras de la proyección', () => {
+    // 50 cotizadas + 52 proyectadas hasta los 65 años = 102 al jubilarse:
+    // faltan 398 semanas.
+    const input = { ...buildValidInput() };
+    input.personalData = { ...input.personalData, age: 64, retirementAge: 65 };
+    input.workHistory = { totalWeeks: 50, employmentRelations: [] };
+    const result = PensionInputSchema.safeParse(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const mensaje = result.error.issues
+        .map((i) => i.message)
+        .find((m) => m.includes('mínimo 500 semanas'));
+      expect(mensaje).toBeDefined();
+      // Cifras de la proyección: actuales, proyectadas y objetivo.
+      expect(mensaje).toMatch(/50 cotizadas/);
+      expect(mensaje).toMatch(/52 proyectadas hasta la edad de retiro/);
+      expect(mensaje).toMatch(/= 102/);
+      expect(mensaje).toMatch(/Te faltan 398 semanas/);
     }
   });
 

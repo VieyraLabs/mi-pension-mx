@@ -13,7 +13,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import type { PensionResult } from '../../models';
-import { formatCurrency, formatPercent, formatDateLong } from '../../utils/format';
+import { formatCurrency, formatPercent, formatDateLong, formatInteger, formatWeeksTargetText } from '../../utils/format';
 
 /**
  * Genera el contenido HTML del reporte de pensión.
@@ -21,6 +21,17 @@ import { formatCurrency, formatPercent, formatDateLong } from '../../utils/forma
 function generateHtml(result: PensionResult): string {
   const { input } = result;
   const calculationDate = new Date(result.calculationDate);
+
+  // Semanas cotizadas: las actuales y las objetivo al jubilarse. La
+  // proyección la produce el motor; el PDF muestra las mismas cifras y el
+  // mismo texto que la pantalla, para que ambos no puedan divergir.
+  // Las simulaciones guardadas antes de existir la proyección no la traen:
+  // en ese caso se muestran las semanas cotizadas capturadas.
+  const weeksProjection = result.weeksProjection;
+  const currentWeeks = weeksProjection?.currentWeeks ?? input.workHistory.totalWeeks;
+  const targetWeeksText = weeksProjection
+    ? formatWeeksTargetText(weeksProjection, input.personalData.retirementAge)
+    : `${formatInteger(currentWeeks)} sem.`;
 
   const stepsHtml = result.steps
     .map(
@@ -81,7 +92,8 @@ function generateHtml(result: PensionResult): string {
     <tr><td>Sexo</td><td>${input.personalData.sex === 'masculino' ? 'Masculino' : 'Femenino'}</td></tr>
     <tr><td>Edad de retiro</td><td>${input.personalData.retirementAge} años</td></tr>
     <tr><td>Tipo de pensión</td><td>${result.pensionType === 'vejez' ? 'Vejez (Art. 145 LSS 1973)' : 'Cesantía en Edad Avanzada (Art. 138 LSS 1973)'}</td></tr>
-    <tr><td>Semanas cotizadas</td><td>${input.workHistory.totalWeeks}</td></tr>
+    <tr><td>Semanas cotizadas actuales</td><td>${formatInteger(currentWeeks)} sem.</td></tr>
+    <tr><td>Semanas cotizadas objetivo (al jubilarte)</td><td>${targetWeeksText}</td></tr>
     <tr><td>Salario diario promedio (SBC)</td><td>${formatCurrency(input.averageSalary.dailySalary)}</td></tr>
     <tr><td>UMA utilizada</td><td>${formatCurrency(input.uma.dailyUMA)}/día (${input.uma.year}${input.uma.isCustom ? ', personalizada' : ''})</td></tr>
     ${input.modalidad40.active ? `<tr><td>Modalidad 40</td><td>Activa — $${input.modalidad40.contributionSalary}/día</td></tr>` : ''}

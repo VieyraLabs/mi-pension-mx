@@ -4,6 +4,7 @@
  */
 
 import type { ContributionSummary, SBCPeriod } from '../services/pension/history/types';
+import type { WeeksProjection } from '../utils/weeksProjection';
 
 // ─────────────────────────────────────────────
 // Enums
@@ -183,6 +184,12 @@ export interface PensionResult {
   pmgApplied: boolean;
   /** Desglose paso a paso */
   steps: CalculationStepResult[];
+  /**
+   * Proyección de semanas hasta la edad de retiro (ya cotizadas + proyectadas).
+   * Opcional a propósito: las simulaciones ya guardadas en el dispositivo
+   * (versiones anteriores de la app) no la tienen.
+   */
+  weeksProjection?: WeeksProjection;
   /** Advertencias legales o de estimación */
   warnings: string[];
   /** El resultado es una estimación */
@@ -264,7 +271,20 @@ export interface ExtractedData {
   lastSBC?: number;
   employmentRelations: EmploymentRelation[];
   averageSBC?: number;
-  /** Periodos SBC por patrón reconstruidos del historial de movimientos. Solo presente si la constancia incluye el historial detallado. */
+  /**
+   * Periodos SBC por patrón reconstruidos del historial de movimientos, de MÁS
+   * RECIENTE A MÁS ANTIGUA. Solo presente si la constancia incluye el historial detallado.
+   *
+   * CONTRATO: la lista está ACOTADA a los periodos que SOLAPAN la ventana de las
+   * últimas 250 semanas cotizadas usada para el promedio (`contributionSummary`:
+   * de `firstWeekUsed` hasta `lastWeekUsed` + 7 días). Un empleo anterior a esa
+   * ventana no pesa en el cálculo y por eso no se expone.
+   *
+   * El CÁLCULO del promedio, en cambio, sigue usando el historial COMPLETO: es lo
+   * que permite saltar los huecos laborales y alcanzar las 250 semanas cotizadas
+   * (Art. 167 LSS 1973, ADR-0010). El filtro acota lo que se MUESTRA, no lo que se
+   * promedia.
+   */
   sbcPeriods?: SBCPeriod[];
   /** Desglose de la ventana de las últimas 250 semanas cotizadas usada para calcular averageSBC. */
   contributionSummary?: ContributionSummary;

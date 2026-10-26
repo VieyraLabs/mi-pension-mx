@@ -1,7 +1,7 @@
 # Spec-01 — Motor de cálculo Ley 73
 
 - **Estado**: Vigente
-- **Ámbito**: `src/services/pension/`, `src/constants/ley73.ts`
+- **Ámbito**: `src/services/pension/`, `src/constants/ley73.ts`, `src/utils/weeksProjection.ts`
 
 ## Propósito
 
@@ -19,6 +19,11 @@ devuelve:
 - El desglose: `steps[]`, un elemento por regla aplicada más el paso de resultado final.
 - `warnings[]`, con el aviso legal siempre presente al final.
 - `isEstimate: true`, siempre.
+- `weeksProjection`, con la proyección de semanas hasta la edad de retiro:
+  `currentWeeks` (las ya cotizadas), `projectedWeeks` (las del horizonte hasta la edad de
+  retiro), `targetWeeks` (con las que se jubila el asegurado) y `yearsToRetirement`. Es
+  opcional a propósito: las simulaciones guardadas antes de existir la proyección no lo
+  traen, y en ese caso la interfaz muestra las semanas cotizadas capturadas.
 
 El pipeline tiene ocho pasos, en este orden:
 
@@ -49,6 +54,24 @@ El pipeline tiene ocho pasos, en este orden:
 
 Reglas transversales:
 
+- **El motor evalúa el mínimo legal y los incrementos contra las semanas con las que se
+  jubilaría el asegurado, no solo contra las ya cotizadas.** El total de referencia es
+  `weeksProjection.targetWeeks`:
+  - `yearsToRetirement = max(0, edad de retiro − edad actual)`.
+  - `projectedWeeks = yearsToRetirement × 52`.
+  - `targetWeeks = semanas ya cotizadas + max(projectedWeeks, semanas planeadas en
+    Modalidad 40)`. Las semanas de Modalidad 40 caen **dentro** del horizonte hasta la
+    edad de retiro, así que se toma el mayor de los dos y nunca la suma: no se cuentan
+    dos veces.
+  - `targetWeeks` es el que se compara contra las 500 semanas mínimas (Arts. 138 y 145
+    LSS 1973) y el que produce los años excedentes de los incrementos anuales del
+    Art. 167 LSS 1973.
+  - La edad actual se toma del dato de entrada (`personalData.age`), nunca de la fecha del
+    sistema: el motor sigue siendo determinista (mismo input → mismo resultado).
+- **La proyección es una estimación.** Asume que el asegurado sigue cotizando de forma
+  continua hasta la edad de retiro. Por eso el paso de incrementos anuales del Art. 167 se
+  marca como estimado (`isEstimate`) cuando hay proyección, declara el supuesto en su
+  `assumption`, y el resultado completo lleva la marca de estimación y el aviso legal.
 - **El orden del pipeline es normativo.** Cada paso consume el resultado del anterior.
 - **Todo resultado es una estimación.** El campo `isEstimate` es `true` siempre, y las
   advertencias incluyen el aviso legal.
@@ -63,12 +86,18 @@ Reglas transversales:
 - No se calculan Zackarias por viudez, orfandad o Accidente de trabajo.
 - No se calcula la pensión de invalidez ni la de cesantía en edad avanzada como
   tipos separados: el factor por edad cubre el caso de edad avanzada.
+- **La proyección de semanas no modela el futuro real del asegurado.** No contempla ceses,
+  huecos laborales, cambios de salario ni cotizaciones por debajo del salario mínimo: solo
+  proyecta un horizonte de cotización continua. La resolución oficial corresponde al IMSS.
 - No se resuelve ningún trámite ante el IMSS.
 
 ## Verificación
 
 - `src/__tests__/pensionCalculator.test.ts` — cadena completa, orden de los pasos,
   topes, Modalidad 40,UMO personalizada y validación de entrada.
+- `src/__tests__/weeksProjection.test.ts` — cálculo de la proyección (`yearsToRetirement`,
+  `projectedWeeks`, `targetWeeks`), el tratamiento de Modalidad 40 dentro del horizonte
+  (nunca sumando dos veces) y el texto del desglose que comparten el motor y la validación.
 - `src/services/pension/steps/` — cada paso tiene su propia cobertura de rama dentro
   del mismo archivo de pruebas del motor.
 - Cobertura del área de cálculo (`src/services/pension/**`): **96 % de sentencias,

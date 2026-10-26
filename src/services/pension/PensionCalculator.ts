@@ -21,6 +21,7 @@ import { LimitsStep } from './steps/LimitsStep';
 import { DAYS_PER_YEAR_UMA, AVERAGE_DAYS_PER_MONTH, MONTHS_PER_YEAR, MINIMUM_WEEKS_VEJEZ } from '../../constants/ley73';
 import { round2 } from '../../utils/format';
 import { calculateM40PlannedWeeks } from '../../utils/modalidad40';
+import { calculateWeeksProjection } from '../../utils/weeksProjection';
 import { PensionInputSchema } from '../../validation/pensionSchema';
 
 /** Resultado de validación previa al cálculo. */
@@ -41,8 +42,16 @@ export function validateInput(input: PensionInput): ValidationResult {
   const parseResult = PensionInputSchema.safeParse(input);
   const errors = parseResult.success ? [] : parseResult.error.issues.map((issue) => issue.message);
 
-  const weeks = input.workHistory.totalWeeks + calculateM40PlannedWeeks(input.modalidad40);
-  if (weeks >= MINIMUM_WEEKS_VEJEZ && weeks < 520) {
+  // La proyección de semanas (ya cotizadas + semanas hasta la edad de retiro)
+  // es la misma que usa el motor: el mínimo legal y los incrementos se
+  // evalúan contra el total con el que se jubilaría el asegurado.
+  const { targetWeeks } = calculateWeeksProjection({
+    currentWeeks: input.workHistory.totalWeeks,
+    age: input.personalData.age,
+    retirementAge: input.personalData.retirementAge,
+    m40PlannedWeeks: calculateM40PlannedWeeks(input.modalidad40),
+  });
+  if (targetWeeks >= MINIMUM_WEEKS_VEJEZ && targetWeeks < 520) {
     warnings.push(
       'Tienes justo el mínimo de semanas. Considera cotizar más para incrementar tu pensión.',
     );
@@ -65,6 +74,12 @@ export function validateInput(input: PensionInput): ValidationResult {
 function createInitialContext(input: PensionInput): CalculationContext {
   return {
     input,
+    weeksProjection: calculateWeeksProjection({
+      currentWeeks: input.workHistory.totalWeeks,
+      age: input.personalData.age,
+      retirementAge: input.personalData.retirementAge,
+      m40PlannedWeeks: calculateM40PlannedWeeks(input.modalidad40),
+    }),
     effectiveDailySalary: input.averageSalary.dailySalary,
     salaryInTimesMinimumWage: 0,
     basicQuantityPct: 0,
@@ -147,6 +162,7 @@ export function calculatePension(input: PensionInput): PensionResult {
     capApplied: finalContext.capApplied,
     pmgApplied: finalContext.pmgApplied,
     steps: stepsWithSummary,
+    weeksProjection: finalContext.weeksProjection,
     warnings: [
       ...finalContext.warnings,
       '⚠️ AVISO LEGAL: Este resultado es una estimación con fines informativos únicamente. ' +

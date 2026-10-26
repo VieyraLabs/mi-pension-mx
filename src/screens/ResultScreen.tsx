@@ -11,7 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
 import { exportPensionResultToPdf } from '../services/export/pdfExport';
-import { formatCurrency, formatPercent, formatInteger } from '../utils/format';
+import { formatCurrency, formatPercent, formatInteger, formatWeeksTargetText } from '../utils/format';
 import { showAlert } from '../utils/alert';
 import { calculateM40Summary } from '../utils/modalidad40';
 import { getBannerColors, getBrandGradient, BRAND_ON_COLOR } from '../theme';
@@ -48,6 +48,18 @@ export default function ResultScreen() {
   const warningColors = getBannerColors('warning', theme.dark);
   const successColors = getBannerColors('success', theme.dark);
   const infoColors = getBannerColors('info', theme.dark);
+
+  // Semanas cotizadas: las que ya están cotizadas y las que se tendrá al
+  // jubilarse. La proyección la produce el motor (`weeksProjection`); aquí
+  // solo se muestra, con el mismo texto y el mismo formato que usan el PDF y
+  // el historial, para que el resumen y el desglose no puedan contradecirse.
+  // Las simulaciones guardadas antes de existir la proyección no la traen: en
+  // ese caso se muestran las semanas cotizadas capturadas.
+  const weeksProjection = result.weeksProjection;
+  const currentWeeks = weeksProjection?.currentWeeks ?? result.input.workHistory.totalWeeks;
+  const targetWeeksText = weeksProjection
+    ? formatWeeksTargetText(weeksProjection, result.input.personalData.retirementAge)
+    : `${formatInteger(currentWeeks)} sem.`;
 
   const exportPdf = async () => {
     setExporting(true);
@@ -150,7 +162,8 @@ export default function ResultScreen() {
           )}
           <SummaryRow label="Edad de retiro" value={`${result.input.personalData.retirementAge} años`} theme={theme} />
           <SummaryRow label="Tipo de pensión" value={result.pensionType === 'vejez' ? 'Vejez (Art. 145)' : 'Cesantía Edad Avanzada (Art. 138)'} theme={theme} />
-          <SummaryRow label="Semanas cotizadas" value={formatInteger(result.input.workHistory.totalWeeks)} theme={theme} />
+          <SummaryRow label="Semanas cotizadas actuales" value={`${formatInteger(currentWeeks)} sem.`} theme={theme} />
+          <SummaryRow label="Semanas cotizadas objetivo (al jubilarte)" value={targetWeeksText} theme={theme} />
           <SummaryRow label="Salario diario promedio" value={formatCurrency(result.input.averageSalary.dailySalary)} theme={theme} />
           <SummaryRow label="UMA utilizada" value={`$${result.input.uma.dailyUMA}/día (${result.input.uma.year}${result.input.uma.isCustom ? ', personalizada' : ''})`} theme={theme} />
           {result.input.modalidad40.active && (() => {
@@ -186,16 +199,19 @@ export default function ResultScreen() {
                 />
                 <SummaryRow
                   label="Semanas M40 (de las 250)"
-                  value={`${summary.referenceWeeks} sem.`}
+                  value={`${formatInteger(summary.referenceWeeks)} sem.`}
                   theme={theme}
                 />
                 <SummaryRow
                   label="Semanas previas al M40"
-                  value={`${summary.baseWeeks} sem.`}
+                  value={`${formatInteger(summary.baseWeeks)} sem.`}
                   theme={theme}
                 />
+                {/* NO es el total de semanas del cálculo (ese es el objetivo de
+                    la fila "Semanas cotizadas objetivo (al jubilarte)"): son las
+                    semanas ya cotizadas más las que se planean cotizar en M40. */}
                 <SummaryRow
-                  label="Total de semanas cotizadas"
+                  label="Semanas cotizadas + semanas M40 planeadas"
                   value={`${formatInteger(summary.estimatedTotalWeeks)} sem.`}
                   theme={theme}
                 />

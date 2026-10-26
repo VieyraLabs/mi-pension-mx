@@ -24,14 +24,32 @@ Cada paso tiene su componente (`PersonalDataStep`, `SalaryStep`, `UMAStep`,
 `Modalidad40Step`, `BeneficiariesStep`), y los componentes de fila (`DataRow`, `CompRow`,
 `SummaryRow`) dan consistencia visual a todos ellos.
 
+La edad actual se deriva de la fecha de nacimiento, no se captura. La fecha de retiro se
+recalcula cuando cambia la fecha de nacimiento o la edad de retiro.
+
 ## Reglas de negocio
 
 - **La validación es la de Zod**, y es la misma que usa el motor
   ([ADR-0004](../adr/0004-validacion-con-zod-como-fuente-unica.md)). Los mensajes de
   error citan el artículo legal cuando la regla tiene uno.
-- **El mínimo de 500 semanas considera las semanas planeadas en Modalidad 40.** El
-  mensaje de error muestra el desglose: "500 semanas cotizadas (480 cotizadas + 20
-  planeadas en Modalidad 40 = 500)".
+- **El mínimo de 500 semanas se evalúa contra las semanas con las que se jubilaría el
+  asegurado**, no solo contra las ya cotizadas: las semanas actuales más las proyectadas
+  hasta la edad de retiro (las planeadas en Modalidad 40 caen dentro de ese horizonte y no
+  se cuentan dos veces). El mensaje de error muestra el desglose: "500 semanas cotizadas
+  (480 cotizadas + 20 planeadas en Modalidad 40 = 500)". La misma proyección usa el motor
+  (ver [Spec-01](01-motor-de-calculo-ley-73.md) y
+  [ADR-0012](../adr/0012-proyeccion-de-semanas-hasta-la-edad-de-retiro.md)).
+- **El paso de historial laboral muestra las semanas actuales frente a las objetivo.** Ya no
+  dice "te faltan N semanas" contra lo cotizado hoy, sino contra lo que el asegurado
+  tendrá al jubilarse, mostrando las tres cifras: las cotizadas hoy, las proyectadas hasta
+  la edad de retiro y el total objetivo.
+- **El campo «Meses cotizando en M40 (estimado)» es derivado y de solo lectura.** Su valor
+  se precarga al activar Modalidad 40 con los meses que hay entre hoy y la fecha de retiro,
+  y se recalcula si cambian la fecha de nacimiento o la edad de retiro. No es editable: si
+  fuera editable, sus semanas se sumarían a un horizonte que ya las contiene. Un texto
+  auxiliar explica de dónde sale el valor. El horizonte se acota al rango que admite el
+  esquema (1 a 600 meses): si el asegurado ya está en la edad de retiro el valor es 1, y
+  si el horizonte supera los 50 años se acota a 600.
 - **La edad de retiro va de 60 a 100 años**, con el mínimo justificado por la cesantía en
   edad avanzada.
 - **Los mensajes están en español y son accionables.** No dicen "valor inválido": dicen
@@ -51,6 +69,11 @@ Cada paso tiene su componente (`PersonalDataStep`, `SalaryStep`, `UMAStep`,
 ## Verificación
 
 - `src/__tests__/usePensionForm.test.ts` — reglas del schema, incluidos los casos
-  límite de semanas y de edad.
+  límite de semanas y de edad; derivación de la edad desde la fecha de nacimiento y
+  recálculo de la fecha de retiro.
 - `src/__tests__/ValidationScreen.test.tsx` — pantalla de validación tras la
   importación de un PDF.
+- `src/__tests__/NewSimulationScreen.test.tsx` — el campo de meses de Modalidad 40 se
+  muestra con el valor derivado del horizonte y no es editable.
+- `src/__tests__/WorkHistoryStep.test.tsx` — el mensaje de semanas contrasta las
+  cotizadas hoy con las objetivo al jubilarse.

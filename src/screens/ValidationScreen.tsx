@@ -209,7 +209,7 @@ export default function ValidationScreen() {
             title={`Cómo se calculó tu SBC promedio (${sbcDetail.periods.length} ${sbcDetail.periods.length === 1 ? 'periodo' : 'periodos'})`}
             description={`${formatCurrency(sbcDetail.summary.averageSalary)}/día · ${sbcDetail.summary.selectedWeeks} de 250 semanas`}
           >
-            <List.Subheader style={styles.sectionLabel}>Periodos SBC por patrón</List.Subheader>
+            <List.Subheader style={styles.sectionLabel}>Periodos SBC considerados en el promedio</List.Subheader>
             {sbcDetail.periods.map((period, i) => (
               <DataRow
                 key={`${period.startDate.getTime()}-${i}`}

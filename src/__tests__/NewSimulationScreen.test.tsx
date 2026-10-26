@@ -21,6 +21,8 @@ import React from 'react';
 import { screen, fireEvent } from '@testing-library/react-native';
 import { renderScreen } from '../test-utils/renderScreen';
 import NewSimulationScreen from '../screens/NewSimulationScreen';
+import { calculateAge } from '../utils/date';
+import { estimateMonthsToRetirement } from '../utils/weeksProjection';
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -47,5 +49,34 @@ describe('NewSimulationScreen', () => {
     renderScreen(<NewSimulationScreen />);
 
     expect(screen.getByText('Anterior')).toBeDisabled();
+  });
+
+  test('los meses de Modalidad 40 son de solo lectura y muestran el valor derivado', () => {
+    renderScreen(<NewSimulationScreen />);
+
+    // Ir al paso de Modalidad 40 (paso 5 de 6).
+    for (let i = 0; i < 4; i++) {
+      fireEvent.press(screen.getByText('Siguiente'));
+    }
+    expect(screen.getByText('Paso 5 de 6: Modalidad 40')).toBeTruthy();
+
+    // Activar Modalidad 40.
+    fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 40? Toca aquí'));
+
+    // El valor viene del horizonte: los meses entre hoy y la fecha de retiro.
+    const age = calculateAge(new Date(1965, 0, 1));
+    const retirementAge = 65;
+    const mesesEsperados = estimateMonthsToRetirement(age, retirementAge);
+
+    const inputMeses = screen.getByDisplayValue(String(mesesEsperados));
+    expect(inputMeses.props.editable).toBe(false);
+    expect(inputMeses).toBeDisabled();
+
+    // El helper explica de dónde sale el valor.
+    expect(
+      screen.getByText(
+        `Se calcula automáticamente: los meses entre hoy y tu fecha de retiro (edad ${age}, retiro a los ${retirementAge} años).`,
+      ),
+    ).toBeTruthy();
   });
 });

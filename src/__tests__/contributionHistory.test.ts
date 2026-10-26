@@ -12,6 +12,7 @@ import {
   calculateContributionSummary,
   getContributedWeeks,
   getLastContributionWeeks,
+  selectPeriodsInAverageWindow,
   summarizeLastContributedWeeks,
   type SBCPeriod,
 } from '../services/pension/history';
@@ -165,6 +166,50 @@ describe('últimas 250 semanas cotizadas (Art. 167 LSS 1973)', () => {
   });
 });
 
+describe('selectPeriodsInAverageWindow', () => {
+  test('incluye un periodo que termina a medianoche el mismo día de firstWeekUsed', () => {
+    // Referencia con hora (no a medianoche): las semanas del historial quedan
+    // ancladas a las 13:03:06, mientras que las fechas de los periodos son
+    // de medianoche.
+    const referenciaConHora = new Date(2026, 0, 15, 13, 3, 6);
+
+    // Periodo reciente: termina a medianoche del 8 de enero, el MISMO día
+    // calendario en que arranca la semana usada en el promedio.
+    const reciente: SBCPeriod = {
+      startDate: new Date(2025, 0, 1),
+      endDate: new Date(2026, 0, 8),
+      sbc: 300,
+    };
+    // Periodo antiguo: fuera de la ventana, no debe aparecer en la lista.
+    const antiguo: SBCPeriod = {
+      startDate: new Date(2024, 0, 1),
+      endDate: new Date(2024, 5, 30),
+      sbc: 100,
+    };
+
+    const summary = summarizeLastContributedWeeks(
+      [reciente, antiguo],
+      referenciaConHora,
+      1,
+    )!;
+
+    // La semana usada arranca el 8 de enero a las 13:03:06 (hereda la hora
+    // de la referencia) y el periodo termina a medianoche de ese mismo día.
+    expect(summary.firstWeekUsed.getDate()).toBe(8);
+    expect(summary.firstWeekUsed.getHours()).toBe(13);
+    // El SBC del periodo SÍ cuenta en el promedio.
+    expect(summary.averageSalary).toBe(300);
+
+    const seleccion = selectPeriodsInAverageWindow([reciente, antiguo], summary);
+
+    // El periodo reciente aparece en la lista: sus días están en la semana
+    // usada y por lo tanto sí se consideran en el promedio.
+    expect(seleccion).toEqual([reciente]);
+    // El promedio no cambia por el filtro: sigue siendo el del periodo.
+    expect(seleccion[0]!.sbc).toBe(summary.averageSalary);
+  });
+});
+
 describe('patrones simultáneos', () => {
   test('suma los SBC de los patrones traslapados sin duplicar las semanas', () => {
     // Patrón A cubre 250 semanas a $100; patrón B se traslapa las últimas
@@ -178,5 +223,37 @@ describe('patrones simultáneos', () => {
     expect(summary.contributedWeeks).toBe(250);
     // (200 × 100 + 50 × 600) / 250 = 200
     expect(summary.averageSalary).toBe(200);
+  });
+
+  test('traslape parcial: el segundo empleo suma su salario y NO duplica las semanas', () => {
+    // Patrón A: 250 semanas a $100. Patrón B: un segundo empleo temporal de
+    // 50 semanas que EMPIEZA Y TERMINA dentro de A (no está contenido en él):
+    // es el caso real de un trabajo temporal mientras sigue el principal.
+    const periodos = [periodoPorSemanas(0, 250, 100), periodoPorSemanas(50, 100, 500)];
+
+    const soloA = summarizeLastContributedWeeks([periodoPorSemanas(0, 250, 100)], REFERENCIA)!;
+    const conB = summarizeLastContributedWeeks(periodos, REFERENCIA)!;
+
+    // (a) El SBC del tramo solapado es la SUMA de los dos patrones:
+    // 200 semanas a $100 + 50 semanas a $600 → (20 000 + 30 000) / 250 = 200.
+    expect(conB.averageSalary).toBe(200);
+    // Con solo el patrón A el promedio sería $100: el segundo empleo pesa.
+    expect(soloA.averageSalary).toBe(100);
+
+    // La semana del tramo solapado vale la suma de los dos SBC.
+    const history = buildContributionHistory(periodos, REFERENCIA);
+    const semanaSolapada = getContributedWeeks(history).find(
+      (w) => w.date.getTime() === REFERENCIA.getTime() - 75 * MS_PER_WEEK,
+    );
+    expect(semanaSolapada?.salaryBaseContribution).toBe(600);
+
+    // (b) Las semanas NO se duplican: tener dos empleos no genera dos
+    // semanas cotizadas.
+    expect(conB.selectedWeeks).toBe(250);
+    expect(conB.contributedWeeks).toBe(250);
+
+    // (c) El historial no crece por tener dos patrones simultáneos.
+    expect(conB.totalWeeksInHistory).toBe(soloA.totalWeeksInHistory);
+    expect(conB.totalWeeksInHistory).toBe(250);
   });
 });

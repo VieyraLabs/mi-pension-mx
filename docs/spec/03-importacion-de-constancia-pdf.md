@@ -43,6 +43,15 @@ El flujo tiene cuatro etapas:
 - **Nada se descarta al confirmar.** Los datos importados que el usuario corrige se
   conservan: el flujo `Validación → Confirmar` propaga el input editado
   (commit `6ec5784`).
+- **El detalle SBC que se expone queda acotado a la ventana del promedio.** El parser
+  entrega en `data.sbcPeriods` solo los periodos que **solapan** la ventana de las
+  últimas 250 semanas cotizadas (los que el `ContributionSummary` reporta como
+  `firstWeekUsed`–`lastWeekUsed`), ordenados de más reciente a más antigua. Un empleo
+  anterior a esa ventana no pesa en el cálculo del SBC promedio y por eso no se expone.
+  El filtro acota lo que se MUESTRA: el promedio se sigue calculando con el historial
+  completo, que es lo que permite saltar los huecos laborales y alcanzar las 250 semanas
+  cotizadas (ver [Spec-07](07-historial-de-cotizacion-y-promedio-sbc.md) y
+  [ADR-0010](../adr/0010-sbc-promedio-desde-el-historial-de-cotizaciones.md)).
 
 ## Fuera de alcance
 
@@ -59,6 +68,7 @@ El flujo tiene cuatro etapas:
 - `src/__tests__/PdfTextExtractor.test.ts` — extracción nativa y su fallback.
 - `src/__tests__/personalDataParser.test.ts` — extracción de cada campo, incluyendo los
   casos en que el formato del documento cambió (los casos que motivaron los commits
-  `683b3b2`, `5d39f60`, `cd5786a`).
+  `683b3b2`, `5d39f60`, `cd5786a`); orden de los periodos SBC expuestos y acotación de la
+  lista a la ventana del promedio, sin que el promedio cambie.
 - `src/__tests__/ValidationScreen.test.tsx` — presentación y confirmación de los datos
-  extraídos.
+  extraídos; lista de los periodos SBC CONSIDERADOS en el promedio.

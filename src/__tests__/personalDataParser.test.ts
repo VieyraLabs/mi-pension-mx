@@ -11,6 +11,10 @@
  * sintéticos.
  */
 import { ConstanciaIMSSParser } from '../services/pdf/parsers/PersonalDataParser';
+import { summarizeLastContributedWeeks } from '../services/pension/history';
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const MS_PER_WEEK = 7 * MS_PER_DAY;
 
 const TEXTO_CONSTANCIA = `Instituto Mexicano del Seguro Social
 DD MM YYYY
@@ -409,16 +413,23 @@ describe('ConstanciaIMSSParser — exposición del detalle SBC (CHG-20261024-001
 
     const periods = result.data?.sbcPeriods;
     expect(Array.isArray(periods)).toBe(true);
-    expect(periods).toHaveLength(2);
-    // Periodos derivados de los movimientos, en orden cronológico.
-    expect(periods?.[0]?.startDate.toISOString().split('T')[0]).toBe('2018-07-01');
-    expect(periods?.[0]?.endDate.toISOString().split('T')[0]).toBe('2020-12-31');
-    expect(periods?.[0]?.sbc).toBe(103.23);
-    expect(periods?.[1]?.startDate.toISOString().split('T')[0]).toBe('2021-01-01');
-    expect(periods?.[1]?.sbc).toBe(148.1);
+    expect(periods?.length ?? 0).toBeGreaterThan(0);
 
     const summary = result.data?.contributionSummary;
     expect(summary).toBeDefined();
+    // Solo se exponen los periodos CONSIDERADOS en el promedio: cada uno
+    // solapa la ventana de las 250 semanas cotizadas.
+    for (const period of periods ?? []) {
+      expect(period.endDate.getTime()).toBeGreaterThanOrEqual(summary!.firstWeekUsed.getTime());
+      expect(period.startDate.getTime()).toBeLessThan(
+        summary!.lastWeekUsed.getTime() + MS_PER_WEEK,
+      );
+    }
+    // El periodo más reciente (el vigente) es el primero de la lista y
+    // siempre entra al promedio: la lista se lee hacia atrás en el tiempo.
+    expect(periods?.[0]?.startDate.toISOString().split('T')[0]).toBe('2021-01-01');
+    expect(periods?.[0]?.sbc).toBe(148.1);
+
     // Ventana completa de 250 semanas cotizadas, sin huecos (patrón continuo).
     expect(summary?.selectedWeeks).toBe(250);
     expect(summary?.isComplete).toBe(true);
@@ -445,5 +456,165 @@ describe('ConstanciaIMSSParser — exposición del detalle SBC (CHG-20261024-001
         a.includes('Constancia de Semanas Cotizadas e Historial de Registros Afiliatorios'),
       ),
     ).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────
+// Orden de los periodos SBC expuestos a la UI
+// ─────────────────────────────────────────────
+//
+// El desglose «Cómo se calculó tu SBC promedio» se lee como una línea de
+// tiempo: los periodos van de MÁS RECIENTE A MÁS ANTIGUA. El orden no se
+// hereda del texto extraído del PDF (no es confiable) ni de la agrupación por
+// patrón: se fija explícitamente en el parser.
+//
+// El fixture lista el patrón MÁS ANTIGUO primero (así lo entrega el PDF en
+// algunas constancias). Antes del orden explícito, la lista conservaba ese
+// orden y se veía desordenada: 2000 primero y 2005 al final.
+const TEXTO_ORDEN_INVERSO = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+Vigente
+DISTRITO FEDERAL
+Fecha de alta 01/01/2000 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 200.0
+Nombre del patrón PATRON B SA DE CV
+Registro Patronal Y500000002
+Tipo de movimiento Fecha de movimiento Salario Base
+BAJA 01/06/2004 $ 200.0
+REINGRESO 01/01/2000 $ 200.0
+* Valor del último salario base de cotización diario en pesos.
+01/01/2005
+DISTRITO FEDERAL
+Fecha de alta 01/01/2005 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 600.0
+Nombre del patrón PATRON A SA DE CV
+Registro Patronal Y500000001
+Tipo de movimiento Fecha de movimiento Salario Base
+BAJA 01/12/2005 $ 600.0
+REINGRESO 01/01/2005 $ 600.0
+* Valor del último salario base de cotización diario en pesos.
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:312||`;
+
+describe('ConstanciaIMSSParser — orden de los periodos SBC', () => {
+  test('los periodos se entregan de más reciente a más antigua, aunque el PDF los liste al revés', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_ORDEN_INVERSO);
+
+    const periods = result.data?.sbcPeriods;
+    expect(periods).toBeDefined();
+    expect(periods).toHaveLength(2);
+
+    // Del más reciente al más antiguo: 2005 → 2000 (el PDF los lista al revés).
+    expect(periods?.[0]?.startDate.toISOString().split('T')[0]).toBe('2005-01-01');
+    expect(periods?.[0]?.sbc).toBe(600);
+    expect(periods?.[1]?.startDate.toISOString().split('T')[0]).toBe('2000-01-01');
+    expect(periods?.[1]?.sbc).toBe(200);
+
+    // Las fechas de inicio nunca crecen al recorrer la lista.
+    for (let i = 1; i < periods!.length; i++) {
+      expect(periods![i]!.startDate.getTime()).toBeLessThanOrEqual(
+        periods![i - 1]!.startDate.getTime(),
+      );
+    }
+  });
+
+  test('el orden de la lista no altera el SBC promedio calculado', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_ORDEN_INVERSO);
+
+    // El promedio es el mismo que el del resumen (una sola fuente de verdad)
+    // y no depende del orden en que se recorren los periodos.
+    expect(result.data?.averageSBC).toBe(result.data?.contributionSummary?.averageSalary);
+    expect(result.data?.contributionSummary?.selectedWeeks).toBe(250);
+  });
+});
+
+// ─────────────────────────────────────────────
+// Periodos SBC expuestos: solo los que entran al promedio
+// ─────────────────────────────────────────────
+//
+// La ventana del promedio son las últimas 250 semanas COTIZADAS: un empleo
+// viejo que queda fuera de esa ventana no se muestra, porque no pesa en el
+// cálculo que la persona usuaria está revisando. El filtro vive en el
+// PARSER (fuente de verdad); la UI solo muestra lo que recibe.
+//
+// El fixture tiene dos|party—one: un patrón de 2000-2004 (fuera de la
+// ventana) y otro vigente desde 2005 (dentro). El primero se elimina de
+// `sbcPeriods`, pero NO del cálculo del promedio.
+const TEXTO_ANTIGUO_Y_RECIENTE = `Instituto Mexicano delSeguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+Vigente
+DISTRITO FEDERAL
+Fecha de alta 01/01/2005 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 300.0
+Nombre del patrón PATRON RECIENTE SA DE CV
+Registro Patronal Y500000001
+Tipo de movimiento Fecha de movimiento Salario Base
+REINGRESO 01/01/2005 $ 300.0
+* Valor del último salario base de cotización diario en pesos.
+01/01/2000
+DISTRITO FEDERAL
+Fecha de alta 01/01/2000 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 100.0
+Nombre del patrón PATRON ANTIGUO SA DE CV
+Registro Patronal Y500000002
+Tipo de movimiento Fecha de movimiento Salario Base
+BAJA 01/06/2004 $ 100.0
+REINGRESO 01/01/2000 $ 100.0
+* Valor del último salario base de cotización diario en pesos.
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:1200||`;
+
+describe('ConstanciaIMSSParser — periodos considerados en el promedio', () => {
+  test('solo expone los periodos que solapan la ventana de las 250 semanas', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_ANTIGUO_Y_RECIENTE);
+
+    const periods = result.data?.sbcPeriods;
+    expect(periods).toBeDefined();
+    // El patrón de 2000-2004 queda fuera de la ventana: no se expone.
+    expect(periods).toHaveLength(1);
+    expect(periods?.[0]?.startDate.toISOString().split('T')[0]).toBe('2005-01-01');
+    expect(periods?.[0]?.sbc).toBe(300);
+
+    // Y el patrón antiguo no aparece en ninguna forma.
+    const inicioDePeriodos = (periods ?? []).map((p) =>
+      p.startDate.toISOString().split('T')[0],
+    );
+    expect(inicioDePeriodos).not.toContain('2000-01-01');
+  });
+
+  test('el promedio NO cambia: se sigue calculando con el historial completo', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_ANTIGUO_Y_RECIENTE);
+
+    // El motor calcula el promedio sobre TODOS los periodos (el historial
+    // completo es lo que permite saltar los huecos y alcanzar las 250
+    // semanas); el filtro solo afecta lo que se expone.
+    const periodosCompletos = [
+      { startDate: new Date(2005, 0, 1), endDate: new Date(), sbc: 300 },
+      { startDate: new Date(2000, 0, 1), endDate: new Date(2004, 5, 1), sbc: 100 },
+    ];
+    const esperado = summarizeLastContributedWeeks(periodosCompletos, new Date())!;
+
+    expect(result.data?.contributionSummary?.averageSalary).toBe(esperado.averageSalary);
+    expect(result.data?.averageSBC).toBe(esperado.averageSalary);
+    // Las 250 semanas del promedio están todas en el patrón reciente.
+    expect(esperado.averageSalary).toBe(300);
+    expect(result.data?.contributionSummary?.selectedWeeks).toBe(250);
+    expect(result.data?.contributionSummary?.isComplete).toBe(true);
   });
 });

@@ -3,6 +3,8 @@
  * Usa Intl para formateo correcto en español mexicano (es-MX).
  */
 import { AVERAGE_DAYS_PER_MONTH } from '../constants/ley73';
+import { describeWeeksProjection } from './weeksProjection';
+import type { WeeksProjection } from './weeksProjection';
 
 const LOCALE = 'es-MX';
 
@@ -70,6 +72,35 @@ export function formatDateShort(date: Date): string {
 /** Formatea un porcentaje. Ej: 75.50% */
 export function formatPercent(value: number): string {
   return PERCENT_FORMATTER.format(value / 100);
+}
+
+/**
+ * Formatea con separador de miles las cifras numéricas de un texto narrado.
+ * Ej: "600 cotizadas + 1040 proyectadas" → "600 cotizadas + 1,040 proyectadas".
+ *
+ * Sirve para que las semanas que narra el motor (ver `weeksProjection`) se
+ * muestren en la app y en el PDF con el MISMO formato, sin recalcular nada.
+ */
+export function formatNumbersInText(text: string): string {
+  return text.replace(/\d+/g, (digits) => INTEGER_FORMATTER.format(Number(digits)));
+}
+
+/**
+ * Texto de las semanas con las que se jubila el asegurado:
+ * "1,640 sem. (600 cotizadas + 1,040 proyectadas hasta los 65 años)".
+ *
+ * Consume la proyección que produce el motor (`weeksProjection`): la UI no
+ * recalcula ni las semanas ni su desglose, solo las formatea.
+ */
+export function formatWeeksTargetText(
+  projection: WeeksProjection,
+  retirementAge?: number,
+): string {
+  const { parts } = describeWeeksProjection(projection, retirementAge);
+  if (parts.length <= 1) {
+    return `${formatInteger(projection.targetWeeks)} sem.`;
+  }
+  return `${formatInteger(projection.targetWeeks)} sem. (${parts.map(formatNumbersInText).join(' + ')})`;
 }
 
 /** Formatea un decimal como porcentaje (0.75 → 75.00%) */

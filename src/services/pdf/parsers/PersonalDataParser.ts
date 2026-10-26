@@ -6,7 +6,7 @@
  * en los patrones comunes observados en constancias digitales (no escaneadas).
  */
 import type { ExtractedData, ParseResult, DocumentType, EmploymentRelation } from '../../../models';
-import { summarizeLastContributedWeeks, type SBCPeriod } from '../../pension/history';
+import { summarizeLastContributedWeeks, selectPeriodsInAverageWindow, type SBCPeriod } from '../../pension/history';
 
 /** Interfaz común para todos los parsers de documentos. */
 export interface DocumentParser<T> {
@@ -143,6 +143,14 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
     if (workHistoryResult.usedDetailedData) {
       // Exponer el detalle ya reconstruido: la UI lo muestra tal cual, sin
       // recalcularlo (una sola fuente de verdad — RNF-013, ADR-0010).
+      //
+      // CONTRATO de `data.sbcPeriods`: expone SOLO los periodos que entran al
+      // promedio de las últimas 250 semanas cotizadas, de MÁS RECIENTE A MÁS
+      // ANTIGUA. Un empleo anterior a esa ventana (p. ej. uno de 2000) no
+      // pesa en el cálculo y por eso no se muestra. El CÁLCULO, en cambio,
+      // sigue usando TODOS los periodos reconstruidos: el historial completo
+      // es lo que permite saltar los huecos laborales y alcanzar las 250
+      // semanas cotizadas.
       data.sbcPeriods = workHistoryResult.periods;
       // Últimas 250 semanas COTIZADAS (Art. 167 LSS 1973): los periodos sin
       // cotización se saltan y el recorrido sigue hacia atrás, en vez de
@@ -152,6 +160,7 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
         workHistoryResult.referenceDate,
       );
       if (summary) {
+        data.sbcPeriods = selectPeriodsInAverageWindow(workHistoryResult.periods, summary);
         data.averageSBC = summary.averageSalary;
         data.contributionSummary = summary;
         warnings.push(
@@ -278,7 +287,7 @@ function birthDateFromCurp(curp: string): Date | null {
 
 interface WorkHistoryParseResult {
   relations: EmploymentRelation[];
-  /** Periodos (con su propio SBC) listos para calculateWeightedAverageSBC. */
+  /** Periodos (con su propio SBC) listos para calculateWeightedAverageSBC, de más reciente a más antigua. */
   periods: SBCPeriod[];
   /** Si el empleo más reciente no se pudo incluir por no saber su fecha de baja. */
   omittedMostRecent: boolean;
@@ -538,6 +547,16 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
       contributedDays: terminationDate ? Math.max(0, Math.round((terminationDate.getTime() - hireDate.getTime()) / DAY_MS)) : 0,
     });
   }
+
+  // Los periodos se entregan de MÁS RECIENTE A MÁS ANTIGUA. El recorrido
+  // anterior los agrupaba por patrón (el primero del PDF, luego el segundo)
+  // y la lista se veía desordenada: el usuario lee el desglose como una línea
+  // de tiempo, no como un índice de patrones. Además, el orden del texto
+  // extraído del PDF no es confiable (ver nota del llamador), así que el
+  // orden se fija explícitamente y no se hereda del parseo.
+  // El cálculo del promedio no depende de este orden: el barrido por
+  // intervalos trabaja con las fronteras de cada periodo.
+  periods.sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
 
   // Si el patrón más reciente no está "Vigente", el historial conocido
   // termina en la fecha de baja más reciente, no en "hoy" — de lo

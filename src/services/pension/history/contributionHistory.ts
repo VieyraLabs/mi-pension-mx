@@ -187,3 +187,59 @@ export function summarizeLastContributedWeeks(
 ): ContributionSummary | null {
   return calculateContributionSummary(buildContributionHistory(periods, referenceDate), count);
 }
+
+/**
+ * Inicio del día (medianoche local) de la fecha dada, en milisegundos.
+ * Se usa para comparar fechas por DÍA COMPLETO y no por instante.
+ */
+function startOfDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+/**
+ * Inicio del día que queda `days` días después del día de `date`.
+ * Se usa aritmética de calendario local para no desviarse por cambios de
+ * horario de verano.
+ */
+function startOfDayPlusDays(date: Date, days: number): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days).getTime();
+}
+
+/**
+ * Periodos que SOLAPAN la ventana de semanas usada en el promedio.
+ *
+ * El promedio del Art. 167 LSS 1973 se calcula sobre las últimas 250 semanas
+ * COTIZADAS: un empleo anterior a esa ventana no pesa en el resultado (p. ej.
+ * un trabajo de 2000 cuando el promedio usa 2018-2026). Esta función deja
+ * explícito qué periodos entran al cálculo, para que la interfaz pueda
+ * mostrar exactamente lo que se está considerando y no el historial completo.
+ *
+ * La ventana va de `firstWeekUsed` (inicio de la semana cotizada más antigua
+ * usada) hasta `lastWeekUsed + 7 días` (fin de la semana más reciente usada);
+ * `endDate` de un periodo es inclusiva.
+ *
+ * La comparación es por DÍA COMPLETO, no por instante: `firstWeekUsed` hereda
+ * la hora de la fecha de referencia (p. ej. 13:03:06) mientras que las fechas
+ * de los periodos son de medianoche. Un periodo que termina a medianoche del
+ * mismo día calendario en que arranca la semana usada sí aporta días al
+ * promedio, así que también debe aparecer en esta lista.
+ *
+ * NO cambia el cálculo: el promedio sigue usando el historial completo, que
+ * es lo que permite saltar los huecos laborales y alcanzar las 250 semanas.
+ */
+export function selectPeriodsInAverageWindow(
+  periods: readonly SBCPeriod[],
+  summary: ContributionSummary,
+): SBCPeriod[] {
+  // Inicio del día de la semana más antigua usada.
+  const windowStart = startOfDay(summary.firstWeekUsed);
+  // `lastWeekUsed` es el INICIO de la última semana usada: esa semana cubre
+  // 7 días, así que la ventana cierra al FINAL del día de `lastWeekUsed + 7`
+  // (límite exclusivo = inicio del día siguiente).
+  const windowEnd = startOfDayPlusDays(summary.lastWeekUsed, DAYS_PER_WEEK + 1);
+
+  return periods.filter(
+    (period) =>
+      period.endDate.getTime() >= windowStart && period.startDate.getTime() < windowEnd,
+  );
+}

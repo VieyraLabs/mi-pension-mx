@@ -3,19 +3,26 @@
  */
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
-import { Card, Text, TextInput, Switch } from 'react-native-paper';
+import { Card, Text, TextInput, Switch, HelperText } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { MD3Theme } from 'react-native-paper';
-import type { Modalidad40 } from '../models';
+import type { Modalidad40, PersonalData } from '../models';
 import { getBrandGradient, BRAND_ON_COLOR } from '../theme';
 
 export interface Modalidad40StepProps {
   modalidad40: Modalidad40;
+  /** Datos personales: solo para explicar de dónde sale el valor derivado. */
+  personalData: PersonalData;
   onChange: (data: Partial<Modalidad40>) => void;
   theme: MD3Theme;
 }
 
-export function Modalidad40Step({ modalidad40, onChange, theme }: Modalidad40StepProps) {
+export function Modalidad40Step({
+  modalidad40,
+  personalData,
+  onChange,
+  theme,
+}: Modalidad40StepProps) {
   return (
     <Card style={styles.card} elevation={1}>
       <Card.Content>
@@ -60,11 +67,14 @@ export function Modalidad40Step({ modalidad40, onChange, theme }: Modalidad40Ste
             <TextInput
               label="Meses cotizando en M40 (estimado)"
               value={String(modalidad40.expectedMonths ?? '')}
-              onChangeText={(v) => { const n = parseInt(v); if (!isNaN(n)) onChange({ expectedMonths: n }); }}
+              editable={false}
               mode="outlined"
               keyboardType="numeric"
               style={styles.input}
             />
+            <HelperText type="info" style={{ marginBottom: 12 }}>
+              {`Se calcula automáticamente: los meses entre hoy y tu fecha de retiro (edad ${personalData.age}, retiro a los ${personalData.retirementAge} años).`}
+            </HelperText>
             <TextInput
               label="Incremento salarial anual esperado (%) — opcional"
               value={String(modalidad40.annualSalaryIncrease ?? '')}
