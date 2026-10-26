@@ -52,6 +52,21 @@ describe('buildContributionHistory', () => {
   test('devuelve un historial vacío cuando no hay periodos', () => {
     expect(buildContributionHistory([], REFERENCIA).weeks).toEqual([]);
   });
+
+  test('devuelve un historial vacío cuando la referencia precede al primer periodo', () => {
+    // La referencia es anterior al inicio del historial: no hay historial que
+    // construir hacia atrás.
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2025, 0, 1),
+        endDate: new Date(2025, 11, 31),
+        sbc: 200,
+        employerName: 'EMPRESA A',
+      },
+    ];
+
+    expect(buildContributionHistory(periodos, new Date(2024, 0, 1)).weeks).toEqual([]);
+  });
 });
 
 describe('calculateAverageSalary', () => {
@@ -397,5 +412,116 @@ describe('buildContributionSegments', () => {
     const tramos = buildContributionSegments(periodos);
     const comun = tramos.find((tramo) => tramo.employerNames.length === 2)!;
     expect(comun.sbc).toBe(600);
+  });
+
+  test('sin periodos no hay tramos', () => {
+    expect(buildContributionSegments([])).toEqual([]);
+  });
+
+  test('funde tramos contiguos del mismo patrón con el mismo SBC', () => {
+    // Dos periodos del MISMO patrón, contiguos y con el mismo SBC: para el
+    // usuario es un solo periodo de trabajo, no un corte artificial.
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 5, 30),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 5, 31),
+        endDate: new Date(2024, 11, 31),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+    ];
+
+    const tramos = buildContributionSegments(periodos);
+
+    expect(tramos).toHaveLength(1);
+    expect(tramos[0]!.employerNames).toEqual(['EMPRESA A']);
+    expect(tramos[0]!.sbc).toBe(100);
+    expect(tramos[0]!.startDate).toEqual(new Date(2024, 0, 1));
+    expect(tramos[0]!.endDate).toEqual(new Date(2024, 11, 31));
+  });
+
+  test('NO funde tramos contiguos si cambia el conjunto de patrones', () => {
+    // Mismo SBC y contiguos, pero cambia el patrón: es un cambio real de
+    // patrón y debe verse como dos periodos.
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 5, 30),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 5, 31),
+        endDate: new Date(2024, 11, 31),
+        sbc: 100,
+        employerName: 'EMPRESA B',
+      },
+    ];
+
+    const tramos = buildContributionSegments(periodos);
+
+    expect(tramos).toHaveLength(2);
+    expect(tramos[0]!.employerNames).toEqual(['EMPRESA B']);
+    expect(tramos[1]!.employerNames).toEqual(['EMPRESA A']);
+  });
+
+  test('funde tramos contiguos cuando el conjunto de patrones tiene distinta longitud', () => {
+    // Un tramo con un patrón y otro con dos, pero con el MISMO SBC efectivo:
+    // no se funden porque los conjuntos difieren en tamaño.
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 5, 30),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 5, 31),
+        endDate: new Date(2024, 11, 31),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 5, 31),
+        endDate: new Date(2024, 11, 31),
+        sbc: 0,
+        employerName: 'EMPRESA B',
+      },
+    ];
+
+    const tramos = buildContributionSegments(periodos);
+
+    expect(tramos).toHaveLength(2);
+    expect(tramos[0]!.employerNames).toEqual(['EMPRESA A', 'EMPRESA B']);
+    expect(tramos[1]!.employerNames).toEqual(['EMPRESA A']);
+  });
+
+  test('los tramos ignoran los huecos sin cotización', () => {
+    // Dos periodos separados por un hueco: el hueco no genera un tramo.
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 2, 31),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 8, 1),
+        endDate: new Date(2024, 11, 31),
+        sbc: 200,
+        employerName: 'EMPRESA B',
+      },
+    ];
+
+    const tramos = buildContributionSegments(periodos);
+
+    expect(tramos).toHaveLength(2);
+    expect(tramos[0]!.startDate).toEqual(new Date(2024, 8, 1));
+    expect(tramos[1]!.endDate).toEqual(new Date(2024, 2, 31));
   });
 });
