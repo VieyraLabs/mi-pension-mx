@@ -545,9 +545,9 @@ describe('ConstanciaIMSSParser — orden de los periodos SBC', () => {
 // cálculo que la persona usuaria está revisando. El filtro vive en el
 // PARSER (fuente de verdad); la UI solo muestra lo que recibe.
 //
-// El fixture tiene dos|party—one: un patrón de 2000-2004 (fuera de la
-// ventana) y otro vigente desde 2005 (dentro). El primero se elimina de
-// `sbcPeriods`, pero NO del cálculo del promedio.
+// El fixture tiene dos patrones: uno de 2000-2004 (fuera de la ventana) y
+// otro vigente desde 2005 (dentro). El primero se elimina de `sbcPeriods`,
+// pero NO del cálculo del promedio.
 const TEXTO_ANTIGUO_Y_RECIENTE = `Instituto Mexicano delSeguro Social
 NSS:
 JUAN PEREZ LOPEZ
