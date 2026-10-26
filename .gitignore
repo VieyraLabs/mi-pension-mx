@@ -132,6 +132,8 @@ temp/
 
 coverage/
 .nyc_output/
+# Build temporal de la auditoría de contraste
+.audit-contrast-build/
 
 
 # =========================
