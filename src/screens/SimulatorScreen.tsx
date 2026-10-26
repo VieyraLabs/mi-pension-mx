@@ -50,6 +50,7 @@ export default function SimulatorScreen() {
   const percentIncrease = resultB && resultB > 0 && resultA ? ((resultA - resultB) / resultB) * 100 : 0;
   const better = (resultA ?? 0) >= (resultB ?? 0) ? 'A' : 'B';
   const winnerColors = getBannerColors('success', theme.dark);
+  const aWins = (resultA ?? 0) >= (resultB ?? 0);
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={styles.content}>
@@ -62,15 +63,15 @@ export default function SimulatorScreen() {
 
       <View style={styles.scenariosRow}>
         {/* Escenario A */}
-        <Card style={[styles.scenarioCard, { backgroundColor: theme.colors.surface }]} elevation={2}>
+        <Card style={[styles.scenarioCard, aWins && compared ? { borderColor: theme.colors.primary, borderWidth: 2 } : null]} elevation={2}>
           <Card.Title title="Escenario A" titleStyle={{ color: theme.colors.primary, fontWeight: 'bold' }} />
           <Card.Content>
             <ScenarioInputs scenario={scenarioA} onChange={setScenarioA} />
           </Card.Content>
         </Card>
 
-        {/* Escenario B */}
-        <Card style={[styles.scenarioCard, { backgroundColor: theme.colors.surface }]} elevation={2}>
+        {/* Escenario B — acento secundario (violeta) para distinguirlo de A */}
+        <Card style={[styles.scenarioCard, !aWins && compared ? { borderColor: theme.colors.secondary, borderWidth: 2 } : null]} elevation={2}>
           <Card.Title title="Escenario B" titleStyle={{ color: theme.colors.secondary, fontWeight: 'bold' }} />
           <Card.Content>
             <ScenarioInputs scenario={scenarioB} onChange={setScenarioB} />
@@ -78,7 +79,7 @@ export default function SimulatorScreen() {
         </Card>
       </View>
 
-      <Button mode="contained" onPress={calculate} style={styles.calcBtn} icon="calculator">
+      <Button mode="contained" onPress={calculate} style={[styles.calcBtn, { borderRadius: 14 }]} contentStyle={{ paddingVertical: 6 }} icon="calculator">
         Comparar escenarios
       </Button>
 
@@ -108,7 +109,7 @@ export default function SimulatorScreen() {
           </View>
 
           {/* Comparación */}
-          <Card style={[styles.compCard, { backgroundColor: theme.colors.surface }]} elevation={3}>
+          <Card style={[styles.compCard, { backgroundColor: theme.colors.surface }]} elevation={1}>
             <Card.Title title={`Escenario ${better} es mejor`} titleVariant="titleMedium" />
             <Divider />
             <Card.Content style={{ paddingTop: 12 }}>
@@ -134,9 +135,9 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
   sectionTitle: { fontWeight: 'bold', marginBottom: 4 },
   scenariosRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  scenarioCard: { flex: 1, borderRadius: 12 },
-  calcBtn: { marginBottom: 16, borderRadius: 8 },
+  scenarioCard: { flex: 1, borderRadius: 16 },
+  calcBtn: { marginBottom: 16 },
   resultsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  resultCard: { flex: 1, borderRadius: 12 },
-  compCard: { borderRadius: 12 },
+  resultCard: { flex: 1, borderRadius: 16 },
+  compCard: { borderRadius: 16 },
 });

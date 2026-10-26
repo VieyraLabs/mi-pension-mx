@@ -67,6 +67,7 @@ export function PersonalDataStep({ personalData, onChange, theme }: PersonalData
           mode="outlined"
           keyboardType="numeric"
           style={styles.input}
+          right={<TextInput.Affix text="años" />}
         />
         <HelperText type="info">
           60–64 = Cesantía en Edad Avanzada (con reducción). 65+ = Vejez (sin reducción).

@@ -2,10 +2,12 @@
  * Paso 5 del formulario de nueva simulación: Modalidad 40 (opcional).
  */
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 import { Card, Text, TextInput, Switch } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { MD3Theme } from 'react-native-paper';
 import type { Modalidad40 } from '../models';
+import { getBrandGradient, BRAND_ON_COLOR } from '../theme';
 
 export interface Modalidad40StepProps {
   modalidad40: Modalidad40;
@@ -24,15 +26,26 @@ export function Modalidad40Step({ modalidad40, onChange, theme }: Modalidad40Ste
           Art. 218 Reglamento LSS — permite cotizar voluntariamente con un SBC mayor para aumentar el promedio de las últimas 250 semanas.
         </Text>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-          <Switch
-            value={modalidad40.active}
-            onValueChange={(v) => onChange({ active: v })}
-          />
-          <Text variant="bodyMedium" style={{ marginLeft: 8, color: theme.colors.onSurface }}>
-            ¿Deseas cotizar en Modalidad 40?
-          </Text>
-        </View>
+        {/* Toda la fila es táctil: el switch solo es la tira pequeña. */}
+        <TouchableOpacity
+          onPress={() => onChange({ active: !modalidad40.active })}
+          activeOpacity={0.7}
+        >
+          <LinearGradient
+            colors={getBrandGradient(theme.dark)}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.m40Toggle, modalidad40.active ? {} : { opacity: 0.55 }]}
+          >
+            <Text variant="bodyMedium" style={{ color: BRAND_ON_COLOR, fontWeight: 'bold', flex: 1 }}>
+              {modalidad40.active ? '✓ Cotizando en Modalidad 40' : '¿Deseas cotizar en Modalidad 40? Toca aquí'}
+            </Text>
+            <Switch
+              value={modalidad40.active}
+              onValueChange={(v) => onChange({ active: v })}
+            />
+          </LinearGradient>
+        </TouchableOpacity>
 
         {modalidad40.active && (
           <>
@@ -73,4 +86,13 @@ export function Modalidad40Step({ modalidad40, onChange, theme }: Modalidad40Ste
 const styles = StyleSheet.create({
   card: { borderRadius: 12 },
   input: { marginBottom: 12 },
+  m40Toggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
 });

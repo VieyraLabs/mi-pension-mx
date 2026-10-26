@@ -9,13 +9,14 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { Text, Card, Surface, useTheme, Chip } from 'react-native-paper';
+import { Text, Card, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
-import { COLORS } from '../theme';
 import { MessageBanner } from '../components/MessageBanner';
+import { ScreenHeader } from '../components/ScreenHeader';
 import { ESTIMATION_DISCLAIMER_SHORT } from '../constants/infoLegal';
+import { BRAND_ON_COLOR } from '../theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -24,7 +25,6 @@ interface DashboardCard {
   title: string;
   description: string;
   icon: string;
-  color: string;
   onPress: () => void;
 }
 
@@ -38,7 +38,6 @@ export default function DashboardScreen() {
       title: '🧮 Nueva Simulación',
       description: 'Calcula tu pensión estimada paso a paso con todos los detalles',
       icon: '🧮',
-      color: theme.colors.primary,
       onPress: () => navigation.navigate('NewSimulation'),
     },
     {
@@ -46,7 +45,6 @@ export default function DashboardScreen() {
       title: '📄 Importar Constancia IMSS',
       description: 'Carga tu constancia de semanas cotizadas en PDF y extrae los datos automáticamente',
       icon: '📄',
-      color: COLORS.accent,
       onPress: () => navigation.navigate('PdfImport'),
     },
   ];
@@ -57,23 +55,16 @@ export default function DashboardScreen() {
       contentContainerStyle={styles.content}
     >
       {/* Header */}
-      <Surface style={[styles.header, { backgroundColor: theme.colors.primary }]} elevation={4}>
-        <Text variant="headlineMedium" style={[styles.headerTitle, { color: theme.colors.onPrimary }]}>
-          Mi Pensión MX
-        </Text>
-        <Text variant="bodyMedium" style={[styles.headerSubtitle, { color: theme.colors.onPrimary, opacity: 0.9 }]}>
-          Calculadora de Pensión IMSS Ley 73
-        </Text>
-        <View style={styles.chipContainer}>
-          <Chip
-            style={[styles.chip, { backgroundColor: theme.dark ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.2)' }]}
-            textStyle={{ color: theme.colors.onPrimary, fontSize: 11 }}
-            compact
-          >
+      <ScreenHeader
+        title="Mi Pensión MX"
+        subtitle="Calculadora de Pensión IMSS Ley 73"
+      >
+        <View style={styles.headerBadge}>
+          <Text variant="labelSmall" style={{ color: BRAND_ON_COLOR }}>
             ⚠️ {ESTIMATION_DISCLAIMER_SHORT}
-          </Chip>
+          </Text>
         </View>
-      </Surface>
+      </ScreenHeader>
 
       {/* Tarjetas principales */}
       <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
@@ -81,10 +72,13 @@ export default function DashboardScreen() {
       </Text>
 
       {cards.map((card) => (
-        <TouchableOpacity key={card.id} onPress={card.onPress} activeOpacity={0.8}>
-          <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={2}>
+        <TouchableOpacity key={card.id} onPress={card.onPress} activeOpacity={0.7}>
+          <Card
+            style={[styles.card, { backgroundColor: theme.colors.surface }]}
+            elevation={1}
+          >
             <Card.Content style={styles.cardContent}>
-              <View style={[styles.cardIconContainer, { backgroundColor: card.color + '20' }]}>
+              <View style={[styles.cardIconContainer, { backgroundColor: theme.colors.primaryContainer }]}>
                 <Text style={styles.cardIcon}>{card.icon}</Text>
               </View>
               <View style={styles.cardTextContainer}>
@@ -95,7 +89,7 @@ export default function DashboardScreen() {
                   {card.description}
                 </Text>
               </View>
-              <Text style={{ color: theme.colors.primary, fontSize: 20 }}>›</Text>
+              <Text style={{ color: theme.colors.primary, fontSize: 24 }}>›</Text>
             </Card.Content>
           </Card>
         </TouchableOpacity>
@@ -139,22 +133,12 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
-  header: {
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 20,
-    alignItems: 'center',
+  headerBadge: {
+    marginTop: 14,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  headerTitle: {
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  chipContainer: { marginTop: 12 },
-  chip: { borderRadius: 20 },
   sectionTitle: {
     fontWeight: 'bold',
     marginBottom: 12,
@@ -162,31 +146,29 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
   },
   cardIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cardIcon: { fontSize: 24 },
+  cardIcon: { fontSize: 26 },
   cardTextContainer: { flex: 1 },
   legalCard: {
     marginBottom: 20,
     marginTop: 8,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.accent,
+    borderRadius: 16,
   },
   infoCard: {
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 20,
   },
 });

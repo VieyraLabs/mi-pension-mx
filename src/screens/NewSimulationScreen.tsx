@@ -4,11 +4,12 @@
  */
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Button, useTheme } from 'react-native-paper';
+import { Button, useTheme } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { usePensionForm } from '../hooks/usePensionForm';
+import { StepProgress } from '../components/StepProgress';
 import { calculatePension, validateInput } from '../services/pension/PensionCalculator';
 import { useHistory } from '../hooks/useHistory';
 import { showAlert } from '../utils/alert';
@@ -136,22 +137,7 @@ export default function NewSimulationScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Indicador de progreso */}
-      <View style={[styles.stepIndicator, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="labelMedium" style={{ color: theme.colors.primary }}>
-          Paso {step + 1} de {STEPS.length}: {STEPS[step]}
-        </Text>
-        <View style={styles.stepDots}>
-          {STEPS.map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.stepDot,
-                { backgroundColor: i <= step ? theme.colors.primary : theme.colors.outline },
-              ]}
-            />
-          ))}
-        </View>
-      </View>
+      <StepProgress step={step} total={STEPS.length} label={STEPS[step] ?? ''} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {preloadedFromPdf && (
@@ -166,7 +152,7 @@ export default function NewSimulationScreen() {
       </ScrollView>
 
       {/* Botones de navegación */}
-      <View style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outline }]}>
+      <View style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outlineVariant }]}>
         <Button
           mode="outlined"
           onPress={() => goToStep(-1)}
@@ -176,11 +162,11 @@ export default function NewSimulationScreen() {
           Anterior
         </Button>
         {step < STEPS.length - 1 ? (
-          <Button mode="contained" onPress={() => goToStep(1)} style={styles.btn}>
+          <Button mode="contained" onPress={() => goToStep(1)} style={[styles.btn, styles.primaryBtn]} icon="arrow-right">
             Siguiente
           </Button>
         ) : (
-          <Button mode="contained" onPress={calculate} style={styles.btn} icon="calculator">
+          <Button mode="contained" onPress={calculate} style={[styles.btn, styles.primaryBtn]} icon="calculator">
             Calcular Pensión
           </Button>
         )}
@@ -191,17 +177,14 @@ export default function NewSimulationScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  stepIndicator: { padding: 16, alignItems: 'center', elevation: 2 },
-  stepDots: { flexDirection: 'row', gap: 6, marginTop: 8 },
-  stepDot: { width: 8, height: 8, borderRadius: 4 },
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 20 },
-  card: { borderRadius: 12 },
+  card: { borderRadius: 16 },
   footer: {
     flexDirection: 'row',
     padding: 16,
-    gap: 12,
     borderTopWidth: 1,
   },
   btn: { flex: 1 },
+  primaryBtn: { borderRadius: 12 },
 });

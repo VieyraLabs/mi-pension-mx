@@ -4,7 +4,8 @@
  */
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Text, Card, Button, Divider, useTheme, Chip } from 'react-native-paper';
+import { Text, Card, Button, Divider, useTheme, Chip, List } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -13,7 +14,7 @@ import { exportPensionResultToPdf } from '../services/export/pdfExport';
 import { formatCurrency, formatPercent, formatInteger } from '../utils/format';
 import { showAlert } from '../utils/alert';
 import { calculateM40Summary } from '../utils/modalidad40';
-import { getBannerColors } from '../theme';
+import { getBannerColors, getBrandGradient, BRAND_ON_COLOR } from '../theme';
 import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
 import { EmptyState } from '../components/EmptyState';
 import { SummaryRow } from '../components/SummaryRow';
@@ -67,8 +68,80 @@ export default function ResultScreen() {
     >
       <EstimationDisclaimerCard />
 
+      {/* Resultado principal — la cifra es lo primero que el usuario busca */}
+      <LinearGradient
+        colors={getBrandGradient(theme.dark)}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.mainResultCard}
+      >
+        <Text variant="titleSmall" style={{ color: BRAND_ON_COLOR, opacity: 0.85 }}>
+          Pensión mensual estimada
+        </Text>
+        <Text variant="displaySmall" style={{ color: BRAND_ON_COLOR, fontWeight: 'bold', marginVertical: 8 }}>
+          {formatCurrency(result.monthlyPension)}
+        </Text>
+        <View style={styles.subResults}>
+          <View style={styles.subResult}>
+            <Text variant="labelSmall" style={{ color: BRAND_ON_COLOR, opacity: 0.85 }}>Anual</Text>
+            <Text variant="titleSmall" style={{ color: BRAND_ON_COLOR, fontWeight: 'bold' }}>
+              {formatCurrency(result.annualPension)}
+            </Text>
+          </View>
+          <View style={[styles.subResultDivider, { backgroundColor: BRAND_ON_COLOR }]} />
+          <View style={styles.subResult}>
+            <Text variant="labelSmall" style={{ color: BRAND_ON_COLOR, opacity: 0.85 }}>Diario</Text>
+            <Text variant="titleSmall" style={{ color: BRAND_ON_COLOR, fontWeight: 'bold' }}>
+              {formatCurrency(result.dailyAmount)}
+            </Text>
+          </View>
+        </View>
+      </LinearGradient>
+
+      {/* Indicadores clave */}
+      <View style={styles.chipsRow}>
+        {result.capApplied && (
+          <Chip
+            icon="alert"
+            compact
+            style={{ backgroundColor: warningColors.background }}
+            textStyle={{ color: warningColors.text }}
+          >
+            Tope 25 UMA
+         </Chip>
+        )}
+        {result.pmgApplied && (
+          <Chip
+            icon="alert"
+            compact
+            style={{ backgroundColor: warningColors.background }}
+            textStyle={{ color: warningColors.text }}
+          >
+            PMG aplicada
+         </Chip>
+        )}
+        {result.input.modalidad40.active && (
+          <Chip
+            icon="check"
+            compact
+            style={{ backgroundColor: successColors.background }}
+            textStyle={{ color: successColors.text }}
+          >
+            Modalidad 40
+         </Chip>
+        )}
+        <Chip
+          icon="information"
+          compact
+          style={{ backgroundColor: infoColors.background }}
+          textStyle={{ color: infoColors.text }}
+        >
+          Factor edad: {formatPercent(result.ageFactor * 100)}
+        </Chip>
+      </View>
+
       {/* Resumen */}
-      <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={2}>
+      <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
         <Card.Title title="Resumen" titleVariant="titleMedium" />
         <Divider />
         <Card.Content style={{ paddingTop: 12 }}>
@@ -89,7 +162,7 @@ export default function ResultScreen() {
               result.input.uma.dailyUMA,
             );
             return (
-              <View style={[styles.m40Block, { borderTopColor: theme.colors.outline }]}>
+              <View style={[styles.m40Block, { borderTopColor: theme.colors.outlineVariant }]}>
                 <Text
                   variant="labelLarge"
                   style={{ color: theme.colors.primary, marginBottom: 6 }}
@@ -149,108 +222,32 @@ export default function ResultScreen() {
         </Card.Content>
       </Card>
 
-      {/* Resultado principal */}
-      <Card style={[styles.mainResultCard, { backgroundColor: theme.colors.primary }]} elevation={4}>
-        <Card.Content style={{ alignItems: 'center', padding: 24 }}>
-          <Text variant="titleSmall" style={{ color: theme.colors.onPrimary, opacity: 0.8 }}>
-            Pensión mensual estimada
-          </Text>
-          <Text variant="displaySmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold', marginVertical: 8 }}>
-            {formatCurrency(result.monthlyPension)}
-          </Text>
-          <Divider style={{ backgroundColor: theme.colors.onPrimary, opacity: 0.3, width: '100%', marginVertical: 8 }} />
-          <View style={styles.subResults}>
-            <View style={styles.subResult}>
-              <Text variant="labelSmall" style={{ color: theme.colors.onPrimary, opacity: 0.8 }}>Anual</Text>
-              <Text variant="titleSmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold' }}>
-                {formatCurrency(result.annualPension)}
-              </Text>
-            </View>
-            <View style={styles.subResult}>
-              <Text variant="labelSmall" style={{ color: theme.colors.onPrimary, opacity: 0.8 }}>Diario</Text>
-              <Text variant="titleSmall" style={{ color: theme.colors.onPrimary, fontWeight: 'bold' }}>
-                {formatCurrency(result.dailyAmount)}
-              </Text>
-            </View>
-          </View>
-        </Card.Content>
-      </Card>
-
-      {/* Indicadores clave */}
-      <View style={styles.chipsRow}>
-        {result.capApplied && (
-          <Chip
-            icon="alert"
-            compact
-            style={{ backgroundColor: warningColors.background }}
-            textStyle={{ color: warningColors.text }}
-          >
-            Tope 25 UMA
-         </Chip>
-        )}
-        {result.pmgApplied && (
-          <Chip
-            icon="alert"
-            compact
-            style={{ backgroundColor: warningColors.background }}
-            textStyle={{ color: warningColors.text }}
-          >
-            PMG aplicada
-         </Chip>
-        )}
-        {result.input.modalidad40.active && (
-          <Chip
-            icon="check"
-            compact
-            style={{ backgroundColor: successColors.background }}
-            textStyle={{ color: successColors.text }}
-          >
-            Modalidad 40
-         </Chip>
-        )}
-        <Chip
-          icon="information"
-          compact
-          style={{ backgroundColor: infoColors.background }}
-          textStyle={{ color: infoColors.text }}
-        >
-          Factor edad: {formatPercent(result.ageFactor * 100)}
-        </Chip>
-      </View>
-
-      {/* Desglose detallado */}
+      {/* Desglose detallado — List.Accordion: táctil completo y accesible */}
       <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={1}>
-        <Card.Title
+        <List.Accordion
           title="Desglose del cálculo"
-          titleVariant="titleMedium"
-          right={() => (
-            <Button onPress={() => setBreakdownExpanded(!breakdownExpanded)}>
-              {breakdownExpanded ? 'Ocultar' : 'Ver desglose'}
-            </Button>
-          )}
-        />
-        {breakdownExpanded && (
-          <>
-            <Divider />
-            {result.steps.map((step) => (
-              <View key={step.id} style={[styles.breakdownItem, { borderBottomColor: theme.colors.outlineVariant }]}>
-                <View style={styles.breakdownContent}>
-                  <Text variant="bodyMedium" style={styles.breakdownTitle}>
-                    {step.title}
-                  </Text>
-                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, width: '100%', fontSize: 11, lineHeight: 16 }}>
-                    {step.description}
-                    {step.legalBasis && <Text style={{ color: theme.colors.primary }}>📋 {step.legalBasis}</Text>}
-                    {step.isEstimate && <Text style={{ color: theme.colors.secondary }}>⚠️ ESTIMACIÓN</Text>}
-                  </Text>
-                </View>
-                <Text variant="labelLarge" style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 13, alignSelf: 'center' }}>
-                  {formatCurrency(step.value)}
+          titleStyle={{ fontWeight: 'bold', color: theme.colors.onSurface }}
+          expanded={breakdownExpanded}
+          onPress={() => setBreakdownExpanded(!breakdownExpanded)}
+        >
+          {result.steps.map((step) => (
+            <View key={step.id} style={[styles.breakdownItem, { borderBottomColor: theme.colors.outlineVariant }]}>
+              <View style={styles.breakdownContent}>
+                <Text variant="bodyMedium" style={styles.breakdownTitle}>
+                  {step.title}
+                </Text>
+                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, width: '100%', fontSize: 11, lineHeight: 16 }}>
+                  {step.description}
+                  {step.legalBasis && <Text style={{ color: theme.colors.primary }}> 📋 {step.legalBasis}</Text>}
+                  {step.isEstimate && <Text style={{ color: theme.colors.secondary }}> ⚠️ ESTIMACIÓN</Text>}
                 </Text>
               </View>
-            ))}
-          </>
-        )}
+              <Text variant="labelLarge" style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 13, alignSelf: 'center' }}>
+                {formatCurrency(step.value)}
+              </Text>
+            </View>
+          ))}
+        </List.Accordion>
       </Card>
 
       {/* Advertencias */}
@@ -267,33 +264,36 @@ export default function ResultScreen() {
         </Card>
       )}
 
-      {/* Acciones */}
+      {/* Acciones — la primaria arriba, sin riesgo de quedar fuera de pantalla */}
       <View style={styles.actions}>
         <Button
           mode="contained"
           icon="file-pdf-box"
           onPress={exportPdf}
           loading={exporting}
-          style={styles.actionBtn}
+          style={styles.primaryAction}
+          contentStyle={{ paddingVertical: 6 }}
         >
           Exportar PDF
         </Button>
-        <Button
-          mode="outlined"
-          icon="calculator"
-          onPress={() => navigation.navigate('NewSimulation' as never)}
-          style={styles.actionBtn}
-        >
-          Nueva simulación
-        </Button>
-        <Button
-          mode="outlined"
-          icon="home"
-          onPress={() => navigation.popToTop()}
-          style={styles.actionBtn}
-        >
-          Ir al inicio
-        </Button>
+        <View style={styles.secondaryActions}>
+          <Button
+            mode="outlined"
+            icon="calculator"
+            onPress={() => navigation.navigate('NewSimulation' as never)}
+            style={styles.actionBtn}
+          >
+            Nueva simulación
+          </Button>
+          <Button
+            mode="outlined"
+            icon="home"
+            onPress={() => navigation.popToTop()}
+            style={styles.actionBtn}
+          >
+            Ir al inicio
+          </Button>
+        </View>
       </View>
     </ScrollView>
   );
@@ -302,14 +302,22 @@ export default function ResultScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
-  card: { borderRadius: 12, marginBottom: 16 },
+  card: { borderRadius: 16, marginBottom: 16 },
   m40Block: { marginTop: 12, paddingTop: 12, borderTopWidth: 1 },
-  mainResultCard: { borderRadius: 16, marginBottom: 16 },
-  subResults: { flexDirection: 'row', justifyContent: 'space-around', width: '100%' },
+  mainResultCard: {
+    borderRadius: 20,
+    marginBottom: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  subResults: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%', marginTop: 8 },
   subResult: { alignItems: 'center' },
+  subResultDivider: { width: 1, height: 28, opacity: 0.3 },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   actions: { gap: 12, marginBottom: 20 },
-  actionBtn: { borderRadius: 8 },
+  primaryAction: { borderRadius: 14 },
+  secondaryActions: { flexDirection: 'row', gap: 12 },
+  actionBtn: { flex: 1, borderRadius: 12 },
   breakdownItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1 },
   breakdownContent: { flex: 1 },
   breakdownTitle: { fontWeight: 'bold', fontSize: 13, marginBottom: 4, width: '100%' },

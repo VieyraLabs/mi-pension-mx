@@ -2,8 +2,8 @@
  * Pantalla de historial de simulaciones guardadas.
  */
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, Modal } from 'react-native';
-import { Text, Card, Button, IconButton, useTheme, ActivityIndicator, Divider, Portal } from 'react-native-paper';
+import { View, ScrollView, StyleSheet } from 'react-native';
+import { Text, Card, Button, IconButton, useTheme, ActivityIndicator, Divider, Portal, Dialog } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -68,111 +68,101 @@ export default function HistoryScreen() {
 
       {simulations.length === 0 ? (
         <View style={styles.center}>
-          <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
-            📊 No hay simulaciones guardadas.{'\n'}Crea tu primera simulación desde el Dashboard.
+          <View style={[styles.emptyIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Text style={{ fontSize: 40 }}>📊</Text>
+          </View>
+          <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center', marginTop: 16 }}>
+            No hay simulaciones guardadas.{'\n'}Crea tu primera simulación desde el inicio.
           </Text>
           <Button
             mode="contained"
-            style={{ marginTop: 24 }}
+            style={[styles.emptyBtn, { borderRadius: 14 }]}
+            contentStyle={{ paddingVertical: 6 }}
             onPress={() => navigation.navigate('NewSimulation' as never)}
           >
             Nueva simulación
           </Button>
         </View>
       ) : (
-        <>
-          <ScrollView contentContainerStyle={styles.list}>
-            {simulations.map((sim) => (
-              <Card
-                key={sim.id}
-                style={[styles.card, { backgroundColor: theme.colors.surface }]}
-                elevation={2}
-              >
-                <Card.Content>
-                  <View style={styles.cardHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text variant="titleSmall" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>
-                        {sim.name}
-                      </Text>
-                      <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                        {formatDateShort(new Date(sim.creationDate))}
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 4 }}>
-                      <IconButton
-                        icon="eye-outline"
-                        iconColor={theme.colors.primary}
-                        size={20}
-                        onPress={() => navigation.navigate('Result', { simulationId: sim.id })}
-                      />
-                      <IconButton
-                        icon="delete-outline"
-                        iconColor={theme.colors.error}
-                        size={20}
-                        onPress={() => handleDelete(sim.id, sim.name)}
-                      />
-                    </View>
+        <ScrollView contentContainerStyle={styles.list}>
+          {simulations.map((sim) => (
+            <Card
+              key={sim.id}
+              style={[styles.card, { backgroundColor: theme.colors.surface }]}
+              elevation={1}
+            >
+              <Card.Content>
+                <View style={styles.cardHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text variant="titleSmall" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>
+                      {sim.name}
+                    </Text>
+                    <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                      {formatDateShort(new Date(sim.creationDate))}
+                    </Text>
                   </View>
-                  <Divider style={{ marginVertical: 8 }} />
-                  <View style={styles.cardData}>
-                    <DataRow label="Pensión mensual" value={formatCurrency(sim.result.monthlyPension)} theme={theme} highlight />
-                    <DataRow label="Semanas cotizadas" value={String(sim.result.input.workHistory.totalWeeks)} theme={theme} />
-                    <DataRow label="Edad de retiro" value={`${sim.result.input.personalData.retirementAge} años`} theme={theme} />
-                    <DataRow label="Tipo" value={sim.result.pensionType === 'vejez' ? 'Vejez' : 'Cesantía'} theme={theme} />
+                  <View style={{ flexDirection: 'row', gap: 4 }}>
+                    <IconButton
+                      icon="eye-outline"
+                      iconColor={theme.colors.primary}
+                      size={20}
+                      onPress={() => navigation.navigate('Result', { simulationId: sim.id })}
+                    />
+                    <IconButton
+                      icon="delete-outline"
+                      iconColor={theme.colors.error}
+                      size={20}
+                      onPress={() => handleDelete(sim.id, sim.name)}
+                    />
                   </View>
-                </Card.Content>
-              </Card>
-            ))}
-          </ScrollView>
-        </>
+                </View>
+                <View style={[styles.pensionBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+                  <Text variant="labelMedium" style={{ color: theme.colors.onPrimaryContainer }}>
+                    {formatCurrency(sim.result.monthlyPension)}/mes
+                  </Text>
+                </View>
+                <Divider style={{ marginVertical: 8 }} />
+                <View style={styles.cardData}>
+                  <DataRow label="Semanas cotizadas" value={String(sim.result.input.workHistory.totalWeeks)} theme={theme} />
+                  <DataRow label="Edad de retiro" value={`${sim.result.input.personalData.retirementAge} años`} theme={theme} />
+                  <DataRow label="Tipo" value={sim.result.pensionType === 'vejez' ? 'Vejez' : 'Cesantía'} theme={theme} />
+                </View>
+              </Card.Content>
+            </Card>
+          ))}
+        </ScrollView>
       )}
 
       {/* Dialog para eliminar simulación individual */}
       <Portal>
-        <Modal visible={deleteDialogVisible} transparent animationType="fade">
-          <View style={[styles.dialogOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
-            <View style={[styles.dialogContainer, { backgroundColor: theme.colors.surface }]}>
-              <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold', marginBottom: 16 }}>
-                Eliminar simulación
-              </Text>
-              <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, marginBottom: 24 }}>
-                ¿Deseas eliminar "{simToDelete?.name}"?
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Button onPress={() => setDeleteDialogVisible(false)} style={{ flex: 1 }}>
-                  Cancelar
-                </Button>
-                <Button onPress={confirmDelete} textColor={theme.colors.error} style={{ flex: 1 }}>
-                  Eliminar
-                </Button>
-              </View>
-            </View>
-          </View>
-        </Modal>
+        <Dialog visible={deleteDialogVisible} onDismiss={() => setDeleteDialogVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 20 }}>
+          <Dialog.Title style={{ color: theme.colors.onSurface }}>Eliminar simulación</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+              ¿Deseas eliminar "{simToDelete?.name}"?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteDialogVisible(false)}>Cancelar</Button>
+            <Button onPress={confirmDelete} textColor={theme.colors.error}>Eliminar</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
 
       {/* Dialog para limpiar todo el historial */}
       <Portal>
-        <Modal visible={clearDialogVisible} transparent animationType="fade">
-          <View style={[styles.dialogOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
-            <View style={[styles.dialogContainer, { backgroundColor: theme.colors.surface }]}>
-              <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold', marginBottom: 16 }}>
-                Limpiar historial
-              </Text>
-              <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, marginBottom: 24 }}>
-                ¿Deseas eliminar todas las simulaciones guardadas?
-              </Text>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <Button onPress={() => setClearDialogVisible(false)} style={{ flex: 1 }}>
-                  Cancelar
-                </Button>
-                <Button onPress={confirmClear} textColor={theme.colors.error} style={{ flex: 1 }}>
-                  Limpiar
-                </Button>
-              </View>
-            </View>
-          </View>
-        </Modal>
+        <Dialog visible={clearDialogVisible} onDismiss={() => setClearDialogVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 20 }}>
+          <Dialog.Title style={{ color: theme.colors.onSurface }}>Limpiar historial</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+              ¿Deseas eliminar todas las simulaciones guardadas?
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setClearDialogVisible(false)}>Cancelar</Button>
+            <Button onPress={confirmClear} textColor={theme.colors.error}>Limpiar</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );
@@ -181,11 +171,24 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  emptyIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyBtn: { marginTop: 24 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, elevation: 2 },
   list: { padding: 16, paddingBottom: 40 },
-  card: { borderRadius: 12, marginBottom: 12 },
+  card: { borderRadius: 16, marginBottom: 12 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start' },
+  pensionBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginTop: 8,
+  },
   cardData: { gap: 2 },
-  dialogOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  dialogContainer: { margin: 20, borderRadius: 12, padding: 20, elevation: 4 },
 });
