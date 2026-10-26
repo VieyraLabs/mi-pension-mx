@@ -7,6 +7,8 @@
  * documento de impresión con diseño propio y estable: debe verse igual siempre
  * que se imprime o comparte, sin adaptarse al tema claro/oscuro de la app.
  * Cambiar sus colores es un cambio de diseño del documento, no del tema.
+ * (Paleta sincronizada a mano con la de src/theme: esmeralda #059669,
+ * ámbar #D97706 y neutros slate.)
  */
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
@@ -26,10 +28,10 @@ function generateHtml(result: PensionResult): string {
     <tr>
       <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold;">${step.title}</td>
       <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 11px; color: #555;">${step.description}</td>
-      <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold; color: #1565C0; text-align: right;">${formatCurrency(step.value)}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold; color: #047857; text-align: right;">${formatCurrency(step.value)}</td>
     </tr>
     ${step.legalBasis ? `<tr><td colspan="3" style="padding: 2px 8px 8px; font-size: 10px; color: #888; font-style: italic;">📋 ${step.legalBasis}</td></tr>` : ''}
-    ${step.isEstimate ? `<tr><td colspan="3" style="padding: 2px 8px 8px; font-size: 10px; color: #FF6F00;">⚠️ ESTIMACIÓN</td></tr>` : ''}
+    ${step.isEstimate ? `<tr><td colspan="3" style="padding: 2px 8px 8px; font-size: 10px; color: #D97706;">⚠️ ESTIMACIÓN</td></tr>` : ''}
   `,
     )
     .join('');
@@ -46,25 +48,25 @@ function generateHtml(result: PensionResult): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reporte de Pensión IMSS Ley 73</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
-    h1 { color: #1565C0; border-bottom: 3px solid #1565C0; padding-bottom: 8px; font-size: 20px; }
-    h2 { color: #1565C0; font-size: 16px; margin-top: 24px; }
-    .estimacion-banner { background: #FFF8E1; border-left: 4px solid #FF6F00; padding: 12px; margin: 16px 0; border-radius: 4px; font-size: 12px; color: #795548; }
-    .resultado-principal { background: #1565C0; color: white; padding: 20px; border-radius: 8px; text-align: center; margin: 16px 0; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #0F172A; }
+    h1 { color: #065F46; border-bottom: 3px solid #059669; padding-bottom: 8px; font-size: 20px; }
+    h2 { color: #065F46; font-size: 16px; margin-top: 24px; }
+    .estimacion-banner { background: #FEF3C7; border-left: 4px solid #D97706; padding: 12px; margin: 16px 0; border-radius: 4px; font-size: 12px; color: #92400E; }
+    .resultado-principal { background: linear-gradient(135deg, #047857, #0F766E); color: white; padding: 20px; border-radius: 12px; text-align: center; margin: 16px 0; }
     .resultado-principal .monto { font-size: 32px; font-weight: bold; }
     .resultado-principal .label { font-size: 13px; opacity: 0.85; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0; }
-    .sub-monto { background: rgba(255,255,255,0.15); padding: 12px; border-radius: 6px; text-align: center; }
+    .sub-monto { background: rgba(255,255,255,0.15); padding: 12px; border-radius: 8px; text-align: center; }
     .sub-monto .valor { font-size: 18px; font-weight: bold; }
     table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-    th { background: #E3F2FD; color: #1565C0; padding: 10px 8px; text-align: left; font-size: 12px; }
-    .footer { margin-top: 32px; border-top: 2px solid #eee; padding-top: 12px; font-size: 10px; color: #888; }
-    .chip { display: inline-block; background: #E3F2FD; color: #1565C0; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin: 2px; }
+    th { background: #D1FAE5; color: #065F46; padding: 10px 8px; text-align: left; font-size: 12px; }
+    .footer { margin-top: 32px; border-top: 2px solid #eee; padding-top: 12px; font-size: 10px; color: #64748B; }
+    .chip { display: inline-block; background: #D1FAE5; color: #065F46; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin: 2px; }
   </style>
 </head>
 <body>
   <h1>🧮 Calculadora de Pensión IMSS Ley 73</h1>
-  <p style="font-size: 12px; color: #666;">Generado el ${formatDateLong(calculationDate)} | Mi Pensión MX</p>
+  <p style="font-size: 12px; color: #55637A;">Generado el ${formatDateLong(calculationDate)} | Mi Pensión MX</p>
 
   <div class="estimacion-banner">
     ⚠️ <strong>AVISO LEGAL:</strong> Este reporte contiene ESTIMACIONES con fines informativos únicamente.
@@ -121,7 +123,7 @@ function generateHtml(result: PensionResult): string {
 
   <!-- Advertencias -->
   <h2>Notas y advertencias</h2>
-  <ul style="padding-left: 16px; color: #795548;">
+  <ul style="padding-left: 16px; color: #92400E;">
     ${warningsHtml}
   </ul>
 

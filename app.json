@@ -19,7 +19,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#1565C0"
+        "backgroundColor": "#047857"
       },
       "package": "com.vieyralabs.mipensionmx"
     },
