@@ -181,6 +181,43 @@ REINGRESO 01/01/2022 $ 300.0
 
 |||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:600||`;
 
+// Dos patrones CONCURRENTES en los que NINGUNO registra baja (la constancia
+// no dice que ninguno terminó) y el documento marca "Vigente": el patrón más
+// antiguo sigue en vigor y coexiste con el más reciente, así que el periodo
+// más reciente del desglose debe mostrar el SBC SUMADO de los dos.
+// Determinista: los dos patrones cotizan desde 2018, así que el periodo
+// más reciente y el promedio no dependen de la fecha en que corra la prueba.
+const TEXTO_CONCURRENTES_SIN_BAJA = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+Vigente
+DISTRITO FEDERAL
+Fecha de alta 01/01/2018 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 300.0
+Nombre del patrón EMPRESA B SA DE CV
+Registro Patronal Y500000001
+Tipo de movimiento Fecha de movimiento Salario Base
+REINGRESO 01/01/2018 $ 300.0
+* Valor del último salario base de cotización diario en pesos.
+01/01/2018
+DISTRITO FEDERAL
+Fecha de alta 01/01/2018 Fecha de baja Salario Base de Cotización */
+Entidad federativa
+$ 600.0
+Nombre del patrón EMPRESA A SA DE CV
+Registro Patronal Y500000002
+Tipo de movimiento Fecha de movimiento Salario Base
+REINGRESO 01/01/2018 $ 600.0
+* Valor del último salario base de cotización diario en pesos.
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:600||`;
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -344,6 +381,18 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
       ),
     ).toHaveLength(1);
     expect(screen.queryByText(/tramo/i)).toBeNull();
+  });
+
+  test('el periodo más reciente con patrones simultáneos muestra el SBC SUMADO', () => {
+    mockExtractedText = TEXTO_CONCURRENTES_SIN_BAJA;
+    renderScreen(<ValidationScreen />);
+
+    fireEvent.press(screen.getByText(/^Cómo se calculó tu SBC promedio \(/));
+
+    // El periodo más reciente es el común a los dos patrones: su SBC es la
+    // suma ($600 + $300) y los DOS patrones quedan visibles.
+    expect(screen.getByText('$900.00/día')).toBeTruthy();
+    expect(screen.getByText(/EMPRESA A SA DE CV \+ EMPRESA B SA DE CV/)).toBeTruthy();
   });
 
   test('sin historial detallado: la sección no se muestra y se conserva el aviso de captura manual', () => {

@@ -517,7 +517,19 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
     const sbcHeader = parseFloat((sbcMatch[1] as string).replace(',', '.'));
     const employerName = employerMatch[1]?.trim() ?? '';
 
-    const detailedPeriods = periodsFromMovements(movementsByEmployer[i] ?? [], isActive, today);
+    const employerMovements = movementsByEmployer[i] ?? [];
+    // Un patrón cuya tabla de movimientos NO registra BAJA sigue en vigor: la
+    // constancia no dice que terminó. Si además el documento marca "Vigente",
+    // ese empleo continúa hasta hoy y puede solaparse con otro patrón
+    // (empleos simultáneos), así que el tramo común debe sumar los salarios de
+    // ambos. Antes solo el primer patrón del documento podía extenderse hasta
+    // hoy: un patrón simultáneo anterior se truncaba justo antes del alta del
+    // siguiente, el traslape se perdía y el periodo más reciente mostraba un
+    // solo salario en vez de la suma de los N patrones.
+    const hasTerminationRow = employerMovements.some((m) => m.type === 'BAJA');
+    const isInForce = isCurrentlyActiveGlobal && (i === 0 || !hasTerminationRow);
+
+    const detailedPeriods = periodsFromMovements(employerMovements, isInForce, today);
 
     let employerPeriods: SBCPeriod[];
     let terminationDate: Date | undefined;
