@@ -38,8 +38,8 @@ export const INFO_LEY73: readonly InfoSection[] = [
     title: '¿Quién puede pensionarse bajo la Ley 73?',
     content: [
       'Puedes pensionarte bajo la Ley 73 si iniciaste tu vida laboral cotizando al IMSS ANTES del 1° de julio de 1997.',
-      'Para la pensión de Vejez (Art. 145 LSS 1973): necesitas mínimo 500 semanas cotizadas y haber cumplido 65 años.',
-      'Para la pensión de Cesantía en Edad Avanzada (Art. 138 LSS 1973): necesitas mínimo 500 semanas cotizadas y haber cumplido 60 años, con reducción del beneficio hasta los 65 años.',
+      'Para la pensión de Vejez (Art. 138 LSS 1973): necesitas mínimo 500 semanas cotizadas y haber cumplido 65 años.',
+      'Para la pensión de Cesantía en Edad Avanzada (Art. 145 LSS 1973): necesitas mínimo 500 semanas cotizadas y haber cumplido 60 años, con reducción del beneficio hasta los 65 años.',
       'No es necesario haber cotizado de forma continua; lo que importa es el total de semanas acumuladas.',
     ],
     source: 'Arts. 138, 145, 150 LSS 1973',

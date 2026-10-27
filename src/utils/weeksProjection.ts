@@ -12,6 +12,7 @@
  * resultado).
  */
 import { MONTHS_PER_YEAR, WEEKS_PER_YEAR } from '../constants/ley73';
+import { formatAge } from './format';
 
 export interface WeeksProjection {
   /** Semanas ya cotizadas a la fecha. */
@@ -104,7 +105,7 @@ export function describeWeeksProjection(
 
   const horizonte =
     retirementAge !== undefined
-      ? `proyectadas hasta los ${retirementAge} años`
+      ? `proyectadas hasta los ${formatAge(retirementAge)} años`
       : 'proyectadas hasta la edad de retiro';
 
   const parts: string[] = [`${currentWeeks} cotizadas`];

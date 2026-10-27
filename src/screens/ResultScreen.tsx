@@ -11,7 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
 import { exportPensionResultToPdf } from '../services/export/pdfExport';
-import { formatCurrency, formatPercent, formatInteger, formatWeeksTargetText } from '../utils/format';
+import { formatCurrency, formatPercent, formatInteger, formatWeeksTargetText, formatAge } from '../utils/format';
 import { showAlert } from '../utils/alert';
 import { calculateM40Summary } from '../utils/modalidad40';
 import { getBannerColors, getBrandGradient, BRAND_ON_COLOR } from '../theme';
@@ -160,8 +160,8 @@ export default function ResultScreen() {
           {result.input.personalData.name && (
             <SummaryRow label="Nombre" value={result.input.personalData.name} theme={theme} />
           )}
-          <SummaryRow label="Edad de retiro" value={`${result.input.personalData.retirementAge} años`} theme={theme} />
-          <SummaryRow label="Tipo de pensión" value={result.pensionType === 'vejez' ? 'Vejez (Art. 145)' : 'Cesantía Edad Avanzada (Art. 138)'} theme={theme} />
+          <SummaryRow label="Edad de retiro" value={`${formatAge(result.input.personalData.retirementAge)} años`} theme={theme} />
+          <SummaryRow label="Tipo de pensión" value={result.pensionType === 'vejez' ? 'Vejez (Art. 138)' : 'Cesantía Edad Avanzada (Art. 145)'} theme={theme} />
           <SummaryRow label="Semanas cotizadas actuales" value={`${formatInteger(currentWeeks)} sem.`} theme={theme} />
           <SummaryRow label="Semanas cotizadas objetivo (al jubilarte)" value={targetWeeksText} theme={theme} />
           <SummaryRow label="Salario diario promedio" value={formatCurrency(result.input.averageSalary.dailySalary)} theme={theme} />

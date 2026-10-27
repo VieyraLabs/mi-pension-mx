@@ -34,6 +34,12 @@ export interface PersonalData {
   birthDate: Date;
   age: number;
   estimatedRetirementDate: Date;
+  /**
+   * Edad de retiro declarada. Admite fracciones de medio año (60.5, 64.5, ...).
+   * La EDAD LEGAL que manda para el cálculo de la cuantía la determina el motor
+   * (Art. 171 LSS 1973): seis meses o más cumplidos se computan como el año
+   * siguiente.
+   */
   retirementAge: number;
 }
 

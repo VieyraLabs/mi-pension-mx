@@ -218,15 +218,21 @@ export const MONTHS_PER_YEAR = 12;
 
 // ─────────────────────────────────────────────
 // Factores de edad — Cesantía en Edad Avanzada
-// Arts. 139–140 LSS 1973
+// Art. 171 LSS 1973
 // ─────────────────────────────────────────────
 
 /**
  * Factor de reducción por retiro anticipado (Cesantía en Edad Avanzada).
- * Art. 139 LSS 1973: El asegurado con 60 años y 500 semanas puede pensionarse
- * con un porcentaje reducido de la cuantía de vejez.
  *
- * Fuente: Art. 139 LSS 1973 (DOF 12-mar-1973 y sus reformas).
+ * Art. 171 LSS 1973: "Cuantía de la pensión expresada en % de la cuantía de la
+ * pensión de vejez que le hubiera correspondido al asegurado de haber alcanzado
+ * 65 años": 60 → 75 %, 61 → 80 %, 62 → 85 %, 63 → 90 %, 64 → 95 %.
+ *
+ * Párrafo final del mismo artículo (DOF 12-mar-1973): "Se aumentará un año a
+ * los cumplidos cuando la edad los exceda en seis meses." Esa regla la aplica
+ * el motor al calcular la EDAD LEGAL (ver `calculateLegalAge` en utils/date.ts).
+ *
+ * Fuente: Art. 171 LSS 1973 (DOF 12-mar-1973 y sus reformas).
  */
 export const CESANTIA_AGE_FACTORS: Readonly<Record<number, number>> = {
   60: 0.75,
@@ -239,7 +245,8 @@ export const CESANTIA_AGE_FACTORS: Readonly<Record<number, number>> = {
 
 /**
  * Edad mínima para Cesantía en Edad Avanzada.
- * Fuente: Art. 138 LSS 1973. Publicación: DOF 12-mar-1973 (LSS 1973 y reformas).
+ * Fuente: Art. 145 LSS 1973 (500 semanas cotizadas, 60 años cumplidos y estar
+ * privado de trabajo). Publicación: DOF 12-mar-1973 (LSS 1973 y reformas).
  * Vigencia: régimen de transición (asegurados en el régimen Ley 73 — alcance
  * explícito de esta app).
  */
@@ -247,7 +254,8 @@ export const MINIMUM_CESANTIA_AGE = 60;
 
 /**
  * Edad para Pensión de Vejez.
- * Fuente: Art. 145 LSS 1973. Publicación: DOF 12-mar-1973 (LSS 1973 y reformas).
+ * Fuente: Art. 138 LSS 1973 (500 semanas cotizadas y 65 años cumplidos).
+ * Publicación: DOF 12-mar-1973 (LSS 1973 y reformas).
  * Vigencia: régimen de transición (alcance de esta app).
  */
 export const VEJEZ_AGE = 65;
@@ -258,14 +266,14 @@ export const VEJEZ_AGE = 65;
 
 /**
  * Semanas mínimas de cotización para Pensión de Vejez.
- * Fuente: Art. 145 LSS 1973. Publicación: DOF 12-mar-1973 (y reformas).
+ * Fuente: Art. 138 LSS 1973. Publicación: DOF 12-mar-1973 (y reformas).
  * Vigencia: régimen de transición (alcance de esta app).
  */
 export const MINIMUM_WEEKS_VEJEZ = 500;
 
 /**
  * Semanas mínimas de cotización para Cesantía en Edad Avanzada.
- * Fuente: Art. 138 LSS 1973. Publicación: DOF 12-mar-1973 (y reformas).
+ * Fuente: Art. 145 LSS 1973. Publicación: DOF 12-mar-1973 (y reformas).
  * Vigencia: régimen de transición (alcance de esta app).
  */
 export const MINIMUM_WEEKS_CESANTIA = 500;

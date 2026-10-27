@@ -46,7 +46,9 @@ function buildInput(overrides: Partial<{
     edadRetiro = 65,
     // Por defecto el asegurado ya está en la edad de retiro: sin proyección
     // a futuro, el comportamiento histórico se mantiene intacto.
-    edadActual = edadRetiro,
+    // La edad ACTUAL es siempre un entero (así la exige el esquema): si la
+    // edad de retiro trae fracción (60.5), la edad actual es su parte entera.
+    edadActual = Math.floor(edadRetiro),
     fechaNacimiento = new Date(1960, 0, 1),
     tieneConyuge = false,
     tieneHijosMenores = false,
@@ -442,6 +444,79 @@ describe('calculatePension — Cesantía en Edad Avanzada', () => {
       const result = calculatePension(input);
       expect(result.ageFactor).toBe(factor);
     });
+  });
+});
+
+// ─────────────────────────────────────────────
+// Regla del Art. 171 LSS 1973 — edad legal
+// "Se aumentan un año a los cumplidos cuando la edad los exceda en seis meses."
+// ─────────────────────────────────────────────
+
+describe('calculatePension — Art. 171 LSS 1973 (edad legal por seis meses)', () => {
+  test('60 años cumplidos exactos: cesantía con factor 75 %', () => {
+    const result = calculatePension(
+      buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 60 }),
+    );
+
+    expect(result.pensionType).toBe('cesantia_edad_avanzada');
+    expect(result.ageFactor).toBe(0.75);
+
+    const paso = result.steps.find((p) => p.id === 'factor_edad');
+    expect(paso?.description).toMatch(/60 años/);
+    // La edad declarada coincide con la legal: no hay paréntesis que aclare.
+    expect(paso?.description).not.toMatch(/edad legal;/);
+    expect(paso?.legalBasis).toMatch(/Art\. 171 LSS 1973/);
+  });
+
+  test('60 años y 6 meses: la edad legal es 61 → cesantía con factor 80 %', () => {
+    const result = calculatePension(
+      buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 60.5 }),
+    );
+
+    expect(result.pensionType).toBe('cesantia_edad_avanzada');
+    expect(result.ageFactor).toBe(0.8);
+
+    // El desglose narra la EDAD LEGAL y deja auditable el salto del Art. 171.
+    const paso = result.steps.find((p) => p.id === 'factor_edad');
+    expect(paso?.description).toMatch(/61 años/);
+    expect(paso?.description).toMatch(/60\.5 años cumplidos/);
+    expect(paso?.description).toMatch(/Art\. 171/);
+    expect(paso?.legalBasis).toMatch(/Art\. 171 LSS 1973/);
+
+    const advertencia = result.warnings.find((w) => w.includes('Cesantía'));
+    expect(advertencia).toBeDefined();
+    expect(advertencia).toMatch(/61 años/);
+    expect(advertencia).toMatch(/60\.5 años cumplidos/);
+    expect(advertencia).toMatch(/Art\. 171/);
+  });
+
+  test('64 años y 6 meses: la edad legal es 65 → vejez sin reducción', () => {
+    const result = calculatePension(
+      buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 64.5 }),
+    );
+
+    expect(result.pensionType).toBe('vejez');
+    expect(result.ageFactor).toBe(1.0);
+
+    const paso = result.steps.find((p) => p.id === 'factor_edad');
+    expect(paso?.description).toMatch(/65 años/);
+    expect(paso?.description).toMatch(/64\.5 años cumplidos/);
+    expect(paso?.legalBasis).toMatch(/Art\. 138 LSS 1973/);
+  });
+
+  test('60 años y 3 meses: la edad legal sigue en 60 → cesantía con factor 75 %', () => {
+    const result = calculatePension(
+      buildInput({ semanas: 800, salarioDiario: 300, edadRetiro: 60.25 }),
+    );
+
+    expect(result.pensionType).toBe('cesantia_edad_avanzada');
+    expect(result.ageFactor).toBe(0.75);
+
+    const paso = result.steps.find((p) => p.id === 'factor_edad');
+    expect(paso?.description).toMatch(/60 años/);
+    // La edad declarada (60.25) NO coincide con la legal (60): se audita.
+    expect(paso?.description).toMatch(/60\.25 años cumplidos/);
+    expect(paso?.description).toMatch(/Art\. 171/);
   });
 });
 

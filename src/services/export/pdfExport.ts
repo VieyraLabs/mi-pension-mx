@@ -13,7 +13,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import type { PensionResult } from '../../models';
-import { formatCurrency, formatPercent, formatDateLong, formatInteger, formatWeeksTargetText } from '../../utils/format';
+import { formatCurrency, formatPercent, formatDateLong, formatInteger, formatWeeksTargetText, formatAge } from '../../utils/format';
 
 /**
  * Genera el contenido HTML del reporte de pensión.
@@ -90,8 +90,8 @@ function generateHtml(result: PensionResult): string {
     <tr><th>Campo</th><th>Valor</th></tr>
     ${input.personalData.name ? `<tr><td>Nombre</td><td>${input.personalData.name}</td></tr>` : ''}
     <tr><td>Sexo</td><td>${input.personalData.sex === 'masculino' ? 'Masculino' : 'Femenino'}</td></tr>
-    <tr><td>Edad de retiro</td><td>${input.personalData.retirementAge} años</td></tr>
-    <tr><td>Tipo de pensión</td><td>${result.pensionType === 'vejez' ? 'Vejez (Art. 145 LSS 1973)' : 'Cesantía en Edad Avanzada (Art. 138 LSS 1973)'}</td></tr>
+    <tr><td>Edad de retiro</td><td>${formatAge(input.personalData.retirementAge)} años</td></tr>
+    <tr><td>Tipo de pensión</td><td>${result.pensionType === 'vejez' ? 'Vejez (Art. 138 LSS 1973)' : 'Cesantía en Edad Avanzada (Art. 145 LSS 1973)'}</td></tr>
     <tr><td>Semanas cotizadas actuales</td><td>${formatInteger(currentWeeks)} sem.</td></tr>
     <tr><td>Semanas cotizadas objetivo (al jubilarte)</td><td>${targetWeeksText}</td></tr>
     <tr><td>Salario diario promedio (SBC)</td><td>${formatCurrency(input.averageSalary.dailySalary)}</td></tr>

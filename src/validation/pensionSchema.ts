@@ -23,9 +23,12 @@ export const PersonalDataSchema = z.object({
   estimatedRetirementDate: z.date({ required_error: 'La fecha de retiro estimada es requerida' }),
   retirementAge: z
     .number({ required_error: 'La edad de retiro es requerida' })
-    .int('La edad debe ser un número entero')
     .min(60, 'La edad mínima de retiro es 60 años (Cesantía en Edad Avanzada)')
-    .max(100, 'La edad máxima permitida es 100 años'),
+    .max(100, 'La edad máxima permitida es 100 años')
+    .refine(
+      (value) => Math.abs(value * 2 - Math.round(value * 2)) < 1e-9,
+      'La edad debe ser un número entero o medio (60, 60.5, 61, ...)',
+    ),
 });
 
 /**

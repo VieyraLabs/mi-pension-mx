@@ -1,5 +1,6 @@
 /**
- * Paso 5 del formulario de nueva simulación: Modalidad 40 (opcional).
+ * Paso 4 del formulario de nueva simulación: Modalidad 40 (opcional).
+ * Comparte paso con la UMA.
  */
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
@@ -8,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { MD3Theme } from 'react-native-paper';
 import type { Modalidad40, PersonalData } from '../models';
 import { getBrandGradient, BRAND_ON_COLOR } from '../theme';
+import { formatAge } from '../utils/format';
 
 export interface Modalidad40StepProps {
   modalidad40: Modalidad40;
@@ -73,7 +75,7 @@ export function Modalidad40Step({
               style={styles.input}
             />
             <HelperText type="info" style={{ marginBottom: 12 }}>
-              {`Se calcula automáticamente: los meses entre hoy y tu fecha de retiro (edad ${personalData.age}, retiro a los ${personalData.retirementAge} años).`}
+              {`Se calcula automáticamente: los meses entre hoy y tu fecha de retiro (edad ${personalData.age}, retiro a los ${formatAge(personalData.retirementAge)} años).`}
             </HelperText>
             <TextInput
               label="Incremento salarial anual esperado (%) — opcional"

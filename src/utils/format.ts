@@ -57,6 +57,16 @@ export function formatInteger(value: number): string {
   return INTEGER_FORMATTER.format(Math.round(value));
 }
 
+/**
+ * Formatea una edad que puede traer fracción de medio año. Ej: 60 → "60",
+ * 60.5 → "60.5". Redondea al medio año más cercano para que el ruido de coma
+ * flotante no llegue a la pantalla ("60.50000000000001").
+ */
+export function formatAge(age: number): string {
+  const redondeada = Math.round(age * 2) / 2;
+  return Number.isInteger(redondeada) ? String(redondeada) : redondeada.toFixed(1);
+}
+
 /** Formatea una fecha en formato largo. Ej: 1 de enero de 2024 */
 export function formatDateLong(date: Date): string {
   if (isNaN(date.getTime())) return 'Fecha no disponible';

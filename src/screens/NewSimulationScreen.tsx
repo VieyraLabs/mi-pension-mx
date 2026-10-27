@@ -25,13 +25,18 @@ import { BeneficiariesStep } from '../components/BeneficiariesStep';
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Props = NativeStackScreenProps<RootStackParamList, 'NewSimulation'>;
 
+/**
+ * Estructura del formulario: 4 pasos.
+ * 1. Datos personales
+ * 2. Historial laboral (+ salario base de cotización)
+ * 3. Edad de retiro (+ beneficiarios)
+ * 4. UMA (+ Modalidad 40)
+ */
 const STEPS = [
   'Datos personales',
   'Historial laboral',
   'Edad de retiro',
   'UMA',
-  'Modalidad 40',
-  'Beneficiarios',
 ];
 
 export default function NewSimulationScreen() {
@@ -40,7 +45,6 @@ export default function NewSimulationScreen() {
   const route = useRoute<Props['route']>();
   const {
     input,
-    weeksProjection,
     updatePersonalData,
     updateWorkHistory,
     updateDailySalary,
@@ -108,8 +112,6 @@ export default function NewSimulationScreen() {
           <View style={styles.stepStack}>
             <WorkHistoryStep
               workHistory={input.workHistory}
-              weeksProjection={weeksProjection}
-              retirementAge={input.personalData.retirementAge}
               onChange={updateWorkHistory}
               theme={theme}
             />
@@ -125,34 +127,38 @@ export default function NewSimulationScreen() {
         );
       case 2:
         return (
-          <RetirementAgeStep
-            personalData={input.personalData}
-            onChange={updatePersonalData}
-            theme={theme}
-          />
+          <View style={styles.stepStack}>
+            <RetirementAgeStep
+              personalData={input.personalData}
+              onChange={updatePersonalData}
+              theme={theme}
+            />
+            <BeneficiariesStep
+              beneficiaries={input.beneficiaries}
+              onChange={updateBeneficiaries}
+              theme={theme}
+            />
+          </View>
         );
       case 3:
         return (
-          <UMAStep
-            uma={input.uma}
-            onSelectYear={selectUMAByYear}
-            onCustomize={setCustomUMA}
-            isCustom={customUMA}
-            setIsCustom={setCustomUMAMode}
-            theme={theme}
-          />
+          <View style={styles.stepStack}>
+            <UMAStep
+              uma={input.uma}
+              onSelectYear={selectUMAByYear}
+              onCustomize={setCustomUMA}
+              isCustom={customUMA}
+              setIsCustom={setCustomUMAMode}
+              theme={theme}
+            />
+            <Modalidad40Step
+              modalidad40={input.modalidad40}
+              personalData={input.personalData}
+              onChange={updateModalidad40}
+              theme={theme}
+            />
+          </View>
         );
-      case 4:
-        return (
-          <Modalidad40Step
-            modalidad40={input.modalidad40}
-            personalData={input.personalData}
-            onChange={updateModalidad40}
-            theme={theme}
-          />
-        );
-      case 5:
-        return <BeneficiariesStep beneficiaries={input.beneficiaries} onChange={updateBeneficiaries} theme={theme} />;
       default:
         return null;
     }

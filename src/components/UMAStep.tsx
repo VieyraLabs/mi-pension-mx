@@ -1,5 +1,6 @@
 /**
  * Paso 4 del formulario de nueva simulación: UMA (Unidad de Medida y Actualización).
+ * Comparte paso con la Modalidad 40.
  */
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';

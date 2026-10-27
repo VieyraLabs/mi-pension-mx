@@ -1,5 +1,6 @@
 /**
- * Paso 6 del formulario de nueva simulación: beneficiarios.
+ * Paso 3 del formulario de nueva simulación: beneficiarios.
+ * Comparte paso con la edad de retiro.
  */
 import React from 'react';
 import { View, StyleSheet } from 'react-native';

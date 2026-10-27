@@ -169,6 +169,28 @@ describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubi
     }
   });
 
+  test('acepta una edad de retiro con fracción de medio año (60.5)', () => {
+    // La edad con medios años es la que el motor necesita para aplicar la
+    // regla del Art. 171 LSS 1973 ("se aumentará un año a los cumplidos
+    // cuando la edad los exceda en seis meses").
+    const input = buildValidInput();
+    input.personalData.retirementAge = 60.5;
+    const result = PensionInputSchema.safeParse(input);
+    expect(result.success).toBe(true);
+  });
+
+  test('rechaza una edad de retiro que no es múltiplo de medio año', () => {
+    const input = buildValidInput();
+    input.personalData.retirementAge = 60.3;
+    const result = PensionInputSchema.safeParse(input);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.some((i) => i.message.includes('entero o medio')),
+      ).toBe(true);
+    }
+  });
+
   test('rechaza 499 semanas sin Modalidad 40', () => {
     const input = { ...buildValidInput() };
     input.workHistory = { totalWeeks: 499, employmentRelations: [buildValidRelation()] };
