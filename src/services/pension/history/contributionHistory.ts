@@ -237,7 +237,12 @@ export function calculateContributionSummary(
   return {
     totalWeeksInHistory: history.weeks.length,
     contributedWeeks: contributedWeeks.length,
-    skippedWeeks: history.weeks.length - contributedWeeks.length,
+    skippedWeeks: history.weeks.filter(
+      (week) =>
+        !week.contributed &&
+        week.date.getTime() >= firstWeekUsed.getTime() &&
+        week.date.getTime() <= lastWeekUsed.getTime(),
+    ).length,
     selectedWeeks: selected.length,
     averageSalary: calculateAverageSalary(selected),
     firstWeekUsed,

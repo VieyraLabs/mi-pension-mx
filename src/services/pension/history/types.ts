@@ -68,7 +68,7 @@ export interface ContributionSummary {
   totalWeeksInHistory: number;
   /** Semanas del historial con cotización válida. */
   contributedWeeks: number;
-  /** Semanas del historial sin cotización (huecos), excluidas del promedio. */
+  /** Semanas sin cotización entre la primera y última semana usadas en el promedio. */
   skippedWeeks: number;
   /** Semanas que entraron al promedio (250, o menos si el historial no alcanza). */
   selectedWeeks: number;

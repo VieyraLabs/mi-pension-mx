@@ -222,9 +222,13 @@ export default function ValidationScreen() {
                   highlight={segment.employerNames.length > 1}
                 />
                 {segment.employerNames.length > 0 && (
-                  <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 8 }}>
-                    {segment.employerNames.join(' + ')}
-                  </Text>
+                  <View style={{ marginBottom: 8 }}>
+                    {segment.employerNames.map((employerName, employerIndex) => (
+                      <Text key={`${employerName}-${employerIndex}`} variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                        {segment.employerNames.length > 1 ? '• ' : ''}{employerName}
+                      </Text>
+                    ))}
+                  </View>
                 )}
               </View>
             ))}
@@ -242,7 +246,7 @@ export default function ValidationScreen() {
               theme={theme}
             />
             <DataRow
-              label="Semanas omitidas (huecos sin patrón)"
+              label="Semanas sin cotización en la ventana del promedio"
               value={String(sbcDetail.summary.skippedWeeks)}
               theme={theme}
             />
@@ -260,7 +264,7 @@ export default function ValidationScreen() {
                 )}
                 {sbcDetail.summary.skippedWeeks > 0 && (
                   <Text variant="bodySmall" style={{ color: warningColors.text, lineHeight: 18 }}>
-                    Se omitieron {sbcDetail.summary.skippedWeeks} semanas sin cotización (periodos sin patrón); no cuentan para el promedio.
+                    Se omitieron {sbcDetail.summary.skippedWeeks} semanas sin cotización dentro de la ventana del promedio; no cuentan para el promedio.
                   </Text>
                 )}
               </View>

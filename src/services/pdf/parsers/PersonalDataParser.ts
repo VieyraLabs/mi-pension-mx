@@ -515,7 +515,8 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
     const hireDate = hireDateOf(hireMatch);
     const isActive = i === 0 && isCurrentlyActiveGlobal;
     const sbcHeader = parseFloat((sbcMatch[1] as string).replace(',', '.'));
-    const employerName = employerMatch[1]?.trim() ?? '';
+    const employerName =
+      employerMatch[1]?.split(/\s+(?=registro\s+patronal\b|registro\s+patr\s*$|tipo\s+de\s+movimiento\b|fecha\s+de\s+movimi)/i)[0]?.trim() ?? '';
 
     const employerMovements = movementsByEmployer[i] ?? [];
     // Un patrón cuya tabla de movimientos NO registra BAJA sigue en vigor: la

@@ -686,6 +686,37 @@ describe('ConstanciaIMSSParser — tramos con SBC efectivo', () => {
     }
   });
 
+  test('conserva un nombre empresarial que contiene REGISTRO PATRIMONIAL', () => {
+    const nombreEmpresa = 'OPERADORA REGISTRO PATRIMONIAL DEL CENTRO SA DE CV';
+    const texto = TEXTO_PATRONES_CONCURRENTES_SIN_BAJA.replace(
+      'Nombre del patrón EMPRESA A SA DE CV',
+      `Nombre del patrón ${nombreEmpresa}`,
+    );
+    const result = ConstanciaIMSSParser.parse(texto);
+
+    expect(result.data?.employmentRelations?.map((relation) => relation.employerName)).toContain(
+      nombreEmpresa,
+    );
+  });
+
+  test('limpia un encabezado Registro Patr truncado al límite de 80 caracteres', () => {
+    const nombreLargo = `EMPRESA ${'N'.repeat(58)}`;
+    expect(`${nombreLargo} Registro Patr`).toHaveLength(80);
+
+    const texto = TEXTO_PATRONES_TRASLAPADOS.replace(
+      'Nombre del patrón EMPRESA B SA DE CV\nRegistro Patronal Y500000002\nTipo de movimiento Fecha de movimiento Salario Base',
+      `Nombre del patrón ${nombreLargo} Registro Patronal Y500000002 Tipo de movimiento Fecha de movimiento Salario Base`,
+    );
+    const result = ConstanciaIMSSParser.parse(texto);
+    const comun = result.data?.sbcPeriods?.find((period) => period.employerNames.length === 2);
+
+    expect(comun?.employerNames).toContain(nombreLargo);
+    expect(comun?.employerNames.some((name) => name.includes('Registro Patr'))).toBe(false);
+    expect(comun?.sbc).toBe(900);
+    expect(comun?.startDate.toISOString().split('T')[0]).toBe('2022-01-01');
+    expect(comun?.endDate.toISOString().split('T')[0]).toBe('2023-06-30');
+  });
+
   test('un patrón sin baja registrada sigue en vigor: el tramo más reciente suma los N patrones', () => {
     // Ninguno de los dos patrones registra BAJA (la constancia no dice que
     // ninguno terminó) y el documento marca "Vigente": el patrón más antiguo

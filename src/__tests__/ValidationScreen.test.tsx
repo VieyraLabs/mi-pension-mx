@@ -271,12 +271,27 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     expect(screen.getByText('Semanas usadas en el promedio')).toBeTruthy();
     expect(screen.getByText('250 de 250')).toBeTruthy();
     expect(screen.getByText('Semanas cotizadas del historial')).toBeTruthy();
-    expect(screen.getByText('Semanas omitidas (huecos sin patrón)')).toBeTruthy();
+    expect(screen.getByText('Semanas sin cotización en la ventana del promedio')).toBeTruthy();
     expect(screen.getByText('Ventana de fechas usada')).toBeTruthy();
 
     // Historial completo y sin huecos: sin marca de parcialidad.
     expect(screen.queryByText(/Reconstrucción parcial/)).toBeNull();
     expect(screen.queryByText(/Se omitieron/)).toBeNull();
+  });
+
+  test('muestra solo los nombres de los patrones en la descripción y conserva las fechas del periodo', () => {
+    mockExtractedText = TEXTO_DETALLE_COMPLETO.replace(
+      'EMPRESA DE PRUEBA SA DE CV\nRegistro Patronal Y584460910\nTipo de movimiento Fecha de movimiento',
+      'EMPRESA DE PRUEBA SA DE CV Registro Patronal Y584460910 Tipo de movimiento Fecha de movimiento',
+    );
+    renderScreen(<ValidationScreen />);
+
+    fireEvent.press(screen.getByText('Cómo se calculó tu SBC promedio (1 periodo)'));
+
+    expect(screen.getByText('EMPRESA DE PRUEBA SA DE CV')).toBeTruthy();
+    expect(screen.queryByText(/EMPRESA DE PRUEBA SA DE CV \+/)).toBeNull();
+    expect(screen.queryByText(/Registro Patronal|Fecha de movimi/i)).toBeNull();
+    expect(screen.getByText(/01\/01\/2021 – \d{2}\/\d{2}\/\d{4}/)).toBeTruthy();
   });
 
   test('muestra la marca de reconstrucción parcial cuando el historial no alcanza las 250 semanas', () => {
@@ -298,9 +313,8 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     expect(screen.getByText('Cómo se calculó tu SBC promedio (2 periodos)')).toBeTruthy();
     fireEvent.press(screen.getByText('Cómo se calculó tu SBC promedio (2 periodos)'));
 
-    // Nota del banner (el warning del parser usa una redacción distinta:
-    // "...que no cuentan").
-    expect(screen.getByText(/\(periodos sin patrón\); no cuentan para el promedio/)).toBeTruthy();
+    // El resumen limita el recuento de huecos a la ventana del promedio.
+    expect(screen.getByText(/\d+ semanas sin cotización dentro de la ventana del promedio; no cuentan para el promedio/)).toBeTruthy();
     // Las 250 semanas sí se completaron: sin marca de parcialidad.
     expect(screen.queryByText(/Reconstrucción parcial/)).toBeNull();
     expect(screen.getByText('250 de 250')).toBeTruthy();
@@ -367,7 +381,9 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     expect(screen.getByText('01/01/2022 – 30/06/2023')).toBeTruthy();
     expect(screen.getByText('$900.00/día')).toBeTruthy();
     // Y los DOS patrones quedan visibles.
-    expect(screen.getByText(/EMPRESA A SA DE CV \+ EMPRESA B SA DE CV/)).toBeTruthy();
+    expect(screen.getByText('• EMPRESA A SA DE CV')).toBeTruthy();
+    expect(screen.getByText('• EMPRESA B SA DE CV')).toBeTruthy();
+    expect(screen.queryByText(/EMPRESA A SA DE CV \+ EMPRESA B SA DE CV/)).toBeNull();
 
     // Los periodos con un solo patrón muestran el SBC de ese patrón (los dos
     // periodos de EMPRESA A: antes y después del trabajo temporal).
@@ -383,6 +399,23 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     expect(screen.queryByText(/tramo/i)).toBeNull();
   });
 
+  test('el periodo traslapado limpia encabezados IMSS separados por espacios Unicode', () => {
+    mockExtractedText = TEXTO_TRASLAPADOS.replace(
+      'Nombre del patrón EMPRESA B SA DE CV\nRegistro Patronal Y500000002\nTipo de movimiento Fecha de movimiento Salario Base',
+      'Nombre del patrón EMPRESA B SA DE CV Registro\u00A0Patronal Y500000002 Tipo\u00A0de\u00A0movimiento Fecha\u00A0de\u00A0movimiento Salario Base',
+    );
+    renderScreen(<ValidationScreen />);
+
+    fireEvent.press(screen.getByText('Cómo se calculó tu SBC promedio (3 periodos)'));
+
+    expect(screen.getByText('01/01/2022 – 30/06/2023')).toBeTruthy();
+    expect(screen.getByText('$900.00/día')).toBeTruthy();
+    expect(screen.getByText('• EMPRESA A SA DE CV')).toBeTruthy();
+    expect(screen.getByText('• EMPRESA B SA DE CV')).toBeTruthy();
+    expect(screen.queryByText(/EMPRESA A SA DE CV \+ EMPRESA B SA DE CV/)).toBeNull();
+    expect(screen.queryByText(/Registro\s+Patronal|Fecha\s+de\s+movimi/i)).toBeNull();
+  });
+
   test('el periodo más reciente con patrones simultáneos muestra el SBC SUMADO', () => {
     mockExtractedText = TEXTO_CONCURRENTES_SIN_BAJA;
     renderScreen(<ValidationScreen />);
@@ -392,7 +425,9 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     // El periodo más reciente es el común a los dos patrones: su SBC es la
     // suma ($600 + $300) y los DOS patrones quedan visibles.
     expect(screen.getByText('$900.00/día')).toBeTruthy();
-    expect(screen.getByText(/EMPRESA A SA DE CV \+ EMPRESA B SA DE CV/)).toBeTruthy();
+    expect(screen.getByText('• EMPRESA A SA DE CV')).toBeTruthy();
+    expect(screen.getByText('• EMPRESA B SA DE CV')).toBeTruthy();
+    expect(screen.queryByText(/EMPRESA A SA DE CV \+ EMPRESA B SA DE CV/)).toBeNull();
   });
 
   test('sin historial detallado: la sección no se muestra y se conserva el aviso de captura manual', () => {

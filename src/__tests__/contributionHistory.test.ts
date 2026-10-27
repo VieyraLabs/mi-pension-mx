@@ -121,6 +121,18 @@ describe('últimas 250 semanas cotizadas (Art. 167 LSS 1973)', () => {
     expect(summary.averageSalary).toBe(420);
   });
 
+  test('no cuenta huecos antiguos fuera del rango de semanas seleccionado', () => {
+    const history = buildContributionHistory(
+      [periodoPorSemanas(0, 300, 500), periodoPorSemanas(320, 420, 100)],
+      REFERENCIA,
+    );
+    const summary = calculateContributionSummary(history)!;
+
+    expect(summary.selectedWeeks).toBe(250);
+    expect(summary.skippedWeeks).toBe(0);
+    expect(summary.averageSalary).toBe(500);
+  });
+
   test('Caso 2 (contraste): tomar 250 semanas calendario daría un promedio distinto', () => {
     // Mismo historial que el caso anterior. Con el criterio incorrecto de
     // "250 semanas calendario" solo se alcanzarían 100 semanas a $900 y 98
