@@ -168,6 +168,14 @@ export default function ValidationScreen() {
             style={styles.input}
           />
           <TextInput
+            label="Último SBC registrado (solo referencia, no es el promedio)"
+            value={data.lastSBC}
+            onChangeText={(v) => setData({ ...data, lastSBC: v })}
+            mode="outlined"
+            keyboardType="decimal-pad"
+            style={styles.input}
+          />
+          <TextInput
             label="SBC promedio de las últimas 250 semanas (diario, MXN)"
             value={data.averageSBC}
             onChangeText={(v) => setData({ ...data, averageSBC: v })}
@@ -191,14 +199,6 @@ export default function ValidationScreen() {
               ↓ Despliega «Cómo se calculó tu SBC promedio» para auditar cómo se obtuvo este valor. Puedes corregirlo manualmente si lo deseas.
             </Text>
           )}
-          <TextInput
-            label="Último SBC registrado (solo referencia, no es el promedio)"
-            value={data.lastSBC}
-            onChangeText={(v) => setData({ ...data, lastSBC: v })}
-            mode="outlined"
-            keyboardType="decimal-pad"
-            style={styles.input}
-          />
         </Card.Content>
       </Card>
 
