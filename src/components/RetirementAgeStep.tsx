@@ -197,15 +197,17 @@ export function RetirementAgeStep({ personalData, onChange, theme }: RetirementA
           label="Edad de retiro *"
           value={`${formateaEdad(edad)} años`}
           theme={theme}
+          highlight
+          prominent
         />
         <HelperText type="info">
           60–64 = Cesantía en Edad Avanzada (con reducción). 65+ = Vejez (sin reducción).
         </HelperText>
         {edad !== edadEntera && (
           <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 8 }}>
-            {`Cálculo del motor: ${edadLegal} años${
-              edadLegal !== edad ? ' (edad legal, Art. 171 LSS 1973)' : ''
-            }.`}
+            {edadLegal < 65
+              ? `Para el factor de Cesantía, se considera como ${edadLegal} años (Art. 171 LSS 1973).`
+              : 'Para determinar el tipo y factor de pensión, se considera como 65 años (Vejez, Art. 171 LSS 1973).'}
           </Text>
         )}
       </Card.Content>

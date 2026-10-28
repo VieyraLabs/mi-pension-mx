@@ -22,7 +22,9 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { screen, fireEvent } from '@testing-library/react-native';
+import { lightTheme } from '../theme';
 import { renderScreen } from '../test-utils/renderScreen';
 import NewSimulationScreen from '../screens/NewSimulationScreen';
 import { calculateAge } from '../utils/date';
@@ -151,6 +153,44 @@ describe('NewSimulationScreen', () => {
     expect(screen.queryByDisplayValue('64.5')).toBeNull();
   });
 
+  test('para el 1 de julio de 2025 muestra 60.5 años y aclara la edad para el factor de Cesantía', () => {
+    renderScreen(<NewSimulationScreen />);
+
+    fireEvent.press(screen.getByText('Siguiente'));
+    fireEvent.press(screen.getByText('Siguiente'));
+
+    fireEvent.press(screen.getByLabelText('Abrir calendario'));
+    fireEvent.press(screen.getByLabelText('Año 2025'));
+    fireEvent.press(screen.getByLabelText('Mes julio'));
+    fireEvent.press(screen.getByLabelText('Día 1'));
+    fireEvent.press(screen.getByText('Aceptar'));
+
+    expect(screen.getByDisplayValue('1 de julio de 2025')).toBeTruthy();
+    expect(screen.getByText('60.5 años')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Para el factor de Cesantía, se considera como 61 años (Art. 171 LSS 1973).',
+      ),
+    ).toBeTruthy();
+  });
+
+  test('para el 1 de julio de 2030 muestra 65 años sin fracción ni nota de edad legal', () => {
+    renderScreen(<NewSimulationScreen />);
+
+    fireEvent.press(screen.getByText('Siguiente'));
+    fireEvent.press(screen.getByText('Siguiente'));
+
+    fireEvent.press(screen.getByLabelText('Abrir calendario'));
+    fireEvent.press(screen.getByLabelText('Año 2030'));
+    fireEvent.press(screen.getByLabelText('Mes julio'));
+    fireEvent.press(screen.getByLabelText('Día 1'));
+    fireEvent.press(screen.getByText('Aceptar'));
+
+    expect(screen.getByDisplayValue('1 de julio de 2030')).toBeTruthy();
+    expect(screen.getByText('65 años')).toBeTruthy();
+    expect(screen.queryByText(/65\.5 años|se considera como/)).toBeNull();
+  });
+
   test('tocar el campo de fecha abre el calendario', () => {
     renderScreen(<NewSimulationScreen />);
 
@@ -175,10 +215,19 @@ describe('NewSimulationScreen', () => {
     fireEvent.press(screen.getByLabelText('Día 1'));
     fireEvent.press(screen.getByText('Aceptar'));
 
-    expect(screen.getByText('64.5 años')).toBeTruthy();
+    const displayedAge = screen.getByText('64.5 años');
+    expect(displayedAge).toBeTruthy();
+    expect(StyleSheet.flatten(displayedAge.props.style)).toMatchObject({
+      fontSize: lightTheme.fonts.titleMedium.fontSize,
+      lineHeight: lightTheme.fonts.titleMedium.lineHeight,
+    });
 
     // El motor aplica el Art. 171 LSS 1973: 64.5 → edad legal 65 (vejez).
-    expect(screen.getByText('Cálculo del motor: 65 años (edad legal, Art. 171 LSS 1973).')).toBeTruthy();
+    expect(
+      screen.getByText(
+        'Para determinar el tipo y factor de pensión, se considera como 65 años (Vejez, Art. 171 LSS 1973).',
+      ),
+    ).toBeTruthy();
 
     // El horizonte de Modalidad 40 se deriva de la EDAD DE PRESENTACIÓN (64.5).
     fireEvent.press(screen.getByText('Siguiente'));

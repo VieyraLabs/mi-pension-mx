@@ -21,8 +21,9 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 import React from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { fireEvent, screen, within } from '@testing-library/react-native';
+import { lightTheme } from '../theme';
 import { renderScreen } from '../test-utils/renderScreen';
 import ValidationScreen from '../screens/ValidationScreen';
 
@@ -239,7 +240,12 @@ describe('ValidationScreen', () => {
 
     const lastSbcLabel = screen.getByText('Último SBC registrado (solo referencia, no es el promedio)');
     const lastSbcRow = within(lastSbcLabel.parent!.parent!.parent!);
-    expect(lastSbcRow.getByText('$900.00')).toBeTruthy();
+    const lastSbcValue = lastSbcRow.getByText('$900.00');
+    expect(lastSbcValue).toBeTruthy();
+    expect(StyleSheet.flatten(lastSbcValue.props.style)).toMatchObject({
+      fontSize: lightTheme.fonts.titleMedium.fontSize,
+      lineHeight: lightTheme.fonts.titleMedium.lineHeight,
+    });
     expect(lastSbcRow.queryByDisplayValue('900')).toBeNull();
     expect(lastSbcRow.queryByDisplayValue('$900.00')).toBeNull();
 

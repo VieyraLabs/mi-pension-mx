@@ -171,6 +171,8 @@ export default function ValidationScreen() {
             label="Último SBC registrado (solo referencia, no es el promedio)"
             value={data.lastSBC ? formatCurrency(parseFloat(data.lastSBC)) : 'No disponible'}
             theme={theme}
+            highlight
+            prominent
           />
           <TextInput
             label="SBC promedio de las últimas 250 semanas (diario, MXN)"
