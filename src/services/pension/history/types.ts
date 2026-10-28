@@ -37,6 +37,8 @@ export interface SBCPeriodSegment {
   sbc: number;
   /** Patrones que concurren en el tramo (pueden ser varios). */
   employerNames: string[];
+  /** SBC diario individual por patrón, ordenado por nombre. */
+  employers: { employerName: string; sbc: number }[];
 }
 
 /**

@@ -219,17 +219,33 @@ export default function ValidationScreen() {
                   label={`${formatDateShort(segment.startDate)} – ${formatDateShort(segment.endDate)}`}
                   value={`${formatCurrency(segment.sbc)}/día`}
                   theme={theme}
-                  highlight={segment.employerNames.length > 1}
+                  highlight={segment.employers.length > 1}
                 />
-                {segment.employerNames.length > 0 && (
+                {segment.employers.length > 1 ? (
                   <View style={{ marginBottom: 8 }}>
-                    {segment.employerNames.map((employerName, employerIndex) => (
-                      <Text key={`${employerName}-${employerIndex}`} variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                        {segment.employerNames.length > 1 ? '• ' : ''}{employerName}
-                      </Text>
+                    {segment.employers.map(({ employerName, sbc }, employerIndex) => (
+                      <View key={`${employerIndex}-${employerName}-${sbc}`} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                        <Text
+                          variant="labelSmall"
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                          style={{ color: theme.colors.onSurfaceVariant, flex: 1, minWidth: 0, marginRight: 8 }}
+                        >
+                          • {employerName}
+                        </Text>
+                        <Text variant="labelSmall" style={{ color: theme.colors.onSurface, flexShrink: 0 }}>
+                          {formatCurrency(sbc)}/día
+                        </Text>
+                      </View>
                     ))}
                   </View>
-                )}
+                ) : segment.employerNames.length === 1 ? (
+                  <View style={{ marginBottom: 8 }}>
+                    <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                      {segment.employerNames[0]}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             ))}
             <Divider style={styles.innerDivider} />

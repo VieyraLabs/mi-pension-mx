@@ -21,6 +21,7 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 import React from 'react';
+import { View } from 'react-native';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { renderScreen } from '../test-utils/renderScreen';
 import ValidationScreen from '../screens/ValidationScreen';
@@ -385,9 +386,9 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     expect(screen.getByText('• EMPRESA B SA DE CV')).toBeTruthy();
     expect(screen.queryByText(/EMPRESA A SA DE CV \+ EMPRESA B SA DE CV/)).toBeNull();
 
-    // Los periodos con un solo patrón muestran el SBC de ese patrón (los dos
-    // periodos de EMPRESA A: antes y después del trabajo temporal).
-    expect(screen.getAllByText('$600.00/día')).toHaveLength(2);
+    // Los dos periodos con un solo patrón y el desglose individual de A en el
+    // periodo concurrente muestran $600/día.
+    expect(screen.getAllByText('$600.00/día')).toHaveLength(3);
 
     // La nota que explica la regla aparece UNA sola vez y usa el mismo
     // vocabulario que el resto de la sección: "periodo" (nunca "tramo").
@@ -425,9 +426,37 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     // El periodo más reciente es el común a los dos patrones: su SBC es la
     // suma ($600 + $300) y los DOS patrones quedan visibles.
     expect(screen.getByText('$900.00/día')).toBeTruthy();
-    expect(screen.getByText('• EMPRESA A SA DE CV')).toBeTruthy();
-    expect(screen.getByText('• EMPRESA B SA DE CV')).toBeTruthy();
+    const employerA = screen.getByText('• EMPRESA A SA DE CV');
+    const employerB = screen.getByText('• EMPRESA B SA DE CV');
+    const salaryA = screen.getByText('$600.00/día');
+    const salaryB = screen.getByText('$300.00/día');
+    const nearestView = (node: typeof employerA) => {
+      let parent = node.parent;
+      while (parent && parent.type !== View) parent = parent.parent;
+      return parent;
+    };
+    expect(nearestView(salaryA) === nearestView(employerA)).toBe(true);
+    expect(nearestView(salaryB) === nearestView(employerB)).toBe(true);
+    expect(employerA.props.numberOfLines).toBe(1);
+    expect(employerA.props.ellipsizeMode).toBe('tail');
+    expect(employerB.props.numberOfLines).toBe(1);
+    expect(employerB.props.ellipsizeMode).toBe('tail');
     expect(screen.queryByText(/EMPRESA A SA DE CV \+ EMPRESA B SA DE CV/)).toBeNull();
+  });
+
+  test('muestra salarios individuales para patrones concurrentes con el mismo nombre', () => {
+    mockExtractedText = TEXTO_CONCURRENTES_SIN_BAJA.replace(
+      'EMPRESA A SA DE CV',
+      'EMPRESA B SA DE CV',
+    );
+    renderScreen(<ValidationScreen />);
+
+    fireEvent.press(screen.getByText(/^Cómo se calculó tu SBC promedio \(/));
+
+    expect(screen.getByText('$900.00/día')).toBeTruthy();
+    expect(screen.getAllByText('• EMPRESA B SA DE CV')).toHaveLength(2);
+    expect(screen.getByText('$300.00/día')).toBeTruthy();
+    expect(screen.getByText('$600.00/día')).toBeTruthy();
   });
 
   test('sin historial detallado: la sección no se muestra y se conserva el aviso de captura manual', () => {

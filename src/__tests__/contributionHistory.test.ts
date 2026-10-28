@@ -296,6 +296,33 @@ describe('patrones simultáneos', () => {
 // vez. Es la MISMA cifra que ve la persona usuaria en el desglose.
 
 describe('buildContributionSegments', () => {
+  test('conserva una fila por periodo activo aunque dos patrones compartan nombre', () => {
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 11, 31),
+        sbc: 600,
+        employerName: 'EMPRESA COMPARTIDA',
+      },
+      {
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 11, 31),
+        sbc: 300,
+        employerName: 'EMPRESA COMPARTIDA',
+      },
+    ];
+
+    const tramos = buildContributionSegments(periodos);
+
+    expect(tramos).toHaveLength(1);
+    expect(tramos[0]!.sbc).toBe(900);
+    expect(tramos[0]!.employerNames).toEqual(['EMPRESA COMPARTIDA']);
+    expect(tramos[0]!.employers).toEqual([
+      { employerName: 'EMPRESA COMPARTIDA', sbc: 300 },
+      { employerName: 'EMPRESA COMPARTIDA', sbc: 600 },
+    ]);
+  });
+
   test('un solo patrón con dos cambios de salario produce dos tramos con el SBC de cada uno', () => {
     const periodos: SBCPeriod[] = [
       {
@@ -325,6 +352,59 @@ describe('buildContributionSegments', () => {
     expect(tramos[1]!.endDate).toEqual(new Date(2024, 5, 30));
     expect(tramos[1]!.sbc).toBe(100);
     expect(tramos[1]!.employerNames).toEqual(['EMPRESA A']);
+  });
+
+  test('conserva el SBC de cada patrón y no funde cuando cambia el reparto aunque el total y los nombres coincidan', () => {
+    const periodos: SBCPeriod[] = [
+      {
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 5, 30),
+        sbc: 100,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 6, 1),
+        endDate: new Date(2024, 11, 31),
+        sbc: 200,
+        employerName: 'EMPRESA A',
+      },
+      {
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 5, 30),
+        sbc: 200,
+        employerName: 'EMPRESA B',
+      },
+      {
+        startDate: new Date(2024, 6, 1),
+        endDate: new Date(2024, 11, 31),
+        sbc: 100,
+        employerName: 'EMPRESA B',
+      },
+    ];
+
+    const tramos = buildContributionSegments(periodos);
+
+    expect(tramos).toHaveLength(2);
+    expect(tramos[0]).toMatchObject({
+      startDate: new Date(2024, 6, 1),
+      endDate: new Date(2024, 11, 31),
+      sbc: 300,
+      employerNames: ['EMPRESA A', 'EMPRESA B'],
+      employers: [
+        { employerName: 'EMPRESA A', sbc: 200 },
+        { employerName: 'EMPRESA B', sbc: 100 },
+      ],
+    });
+    expect(tramos[1]).toMatchObject({
+      startDate: new Date(2024, 0, 1),
+      endDate: new Date(2024, 5, 30),
+      sbc: 300,
+      employerNames: ['EMPRESA A', 'EMPRESA B'],
+      employers: [
+        { employerName: 'EMPRESA A', sbc: 100 },
+        { employerName: 'EMPRESA B', sbc: 200 },
+      ],
+    });
   });
 
   test('dos patrones traslapados parcialmente: el tramo común suma los SBC y nombra ambos patrones', () => {

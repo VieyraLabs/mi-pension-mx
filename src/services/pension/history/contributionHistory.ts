@@ -77,17 +77,27 @@ export function buildContributionSegments(
     if (activos.length === 0) continue; // hueco sin cotización
 
     const sbc = activos.reduce((sum, l) => sum + l.sbc, 0);
-    const employerNames = [...new Set(activos.map((l) => l.nombre).filter((n) => n.length > 0))].sort();
+    const employers = activos
+      .filter((activo) => activo.nombre.length > 0)
+      .map((activo) => ({ employerName: activo.nombre, sbc: activo.sbc }))
+      .sort((a, b) =>
+        a.employerName < b.employerName
+          ? -1
+          : a.employerName > b.employerName
+            ? 1
+            : a.sbc - b.sbc,
+      );
+    const employerNames = [...new Set(employers.map((employer) => employer.employerName))];
 
     const anterior = tramos[tramos.length - 1];
-    // Tramos contiguos con el MISMO conjunto de patrones y el mismo SBC
-    // efectivo se funden en uno solo: el cambio de patrón sin cambio de SBC
-    // no es un corte real del desglose.
+    // Tramos contiguos se funden solo si coinciden el total, los patrones y
+    // el SBC individual de cada patrón; un reparto distinto es un cambio real.
     if (
       anterior &&
       anterior.sbc === sbc &&
       anterior.endDate.getTime() + MS_PER_DAY === inicio &&
-      sonElMismoConjunto(anterior.employerNames, employerNames)
+      sonElMismoConjunto(anterior.employerNames, employerNames) &&
+      esElMismoReparto(anterior.employers, employers)
     ) {
       anterior.endDate = new Date(fin - MS_PER_DAY);
       continue;
@@ -98,6 +108,7 @@ export function buildContributionSegments(
       endDate: new Date(fin - MS_PER_DAY),
       sbc,
       employerNames,
+      employers,
     });
   }
 
@@ -109,6 +120,16 @@ export function buildContributionSegments(
 function sonElMismoConjunto(a: readonly string[], b: readonly string[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((nombre, i) => nombre === b[i]);
+}
+
+function esElMismoReparto(
+  a: readonly { employerName: string; sbc: number }[],
+  b: readonly { employerName: string; sbc: number }[],
+): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((employer, i) =>
+    employer.employerName === b[i]!.employerName && employer.sbc === b[i]!.sbc,
+  );
 }
 
 /**
