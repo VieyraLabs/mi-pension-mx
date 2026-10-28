@@ -22,6 +22,7 @@ import type { PersonalData } from '../models';
 import { formatDateLong } from '../utils/format';
 import { calculateLegalAge } from '../utils/date';
 import { DateWheelPicker } from './DateWheelPicker';
+import { DataRow } from './DataRow';
 
 /** Edad a la que se precarga la fecha de retiro por defecto. */
 export const EDAD_RETIRIO_POR_DEFECTO = 65;
@@ -192,14 +193,10 @@ export function RetirementAgeStep({ personalData, onChange, theme }: RetirementA
           Toca la fecha para elegirla en el calendario. La edad se calcula a partir de tu fecha de
           nacimiento.
         </HelperText>
-        <TextInput
+        <DataRow
           label="Edad de retiro *"
-          value={formateaEdad(edad)}
-          editable={false}
-          mode="outlined"
-          style={styles.input}
-          accessibilityLabel="Edad de retiro (calculada)"
-          right={<TextInput.Affix text="años" />}
+          value={`${formateaEdad(edad)} años`}
+          theme={theme}
         />
         <HelperText type="info">
           60–64 = Cesantía en Edad Avanzada (con reducción). 65+ = Vejez (sin reducción).

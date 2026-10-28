@@ -22,7 +22,7 @@ jest.mock('@react-navigation/native', () => ({
 
 import React from 'react';
 import { View } from 'react-native';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, within } from '@testing-library/react-native';
 import { renderScreen } from '../test-utils/renderScreen';
 import ValidationScreen from '../screens/ValidationScreen';
 
@@ -231,6 +231,21 @@ describe('ValidationScreen', () => {
     expect(screen.getByText('Datos personales extraídos')).toBeTruthy();
     expect(screen.getByDisplayValue('520')).toBeTruthy();
     expect(screen.getByDisplayValue('PEPJ600101HDFRRN01')).toBeTruthy();
+  });
+
+  test('muestra el último SBC con formato de moneda como dato informativo, no como input editable', () => {
+    mockExtractedText = TEXTO_CONCURRENTES_SIN_BAJA;
+    renderScreen(<ValidationScreen />);
+
+    const lastSbcLabel = screen.getByText('Último SBC registrado (solo referencia, no es el promedio)');
+    const lastSbcRow = within(lastSbcLabel.parent!.parent!.parent!);
+    expect(lastSbcRow.getByText('$900.00')).toBeTruthy();
+    expect(lastSbcRow.queryByDisplayValue('900')).toBeNull();
+    expect(lastSbcRow.queryByDisplayValue('$900.00')).toBeNull();
+
+    const averageSbcInput = screen.getByDisplayValue('900');
+    fireEvent.changeText(averageSbcInput, '901');
+    expect(screen.getByDisplayValue('901')).toBeTruthy();
   });
 
   test('muestra los campos no encontrados como faltantes', () => {

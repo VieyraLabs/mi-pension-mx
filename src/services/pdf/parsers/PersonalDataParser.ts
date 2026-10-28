@@ -167,6 +167,9 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
       );
       if (summary) {
         data.sbcPeriods = selectSegmentsInAverageWindow(data.sbcPeriods, summary);
+        if (data.sbcPeriods.length > 0) {
+          data.lastSBC = data.sbcPeriods[0]!.sbc;
+        }
         data.averageSBC = summary.averageSalary;
         data.contributionSummary = summary;
         warnings.push(

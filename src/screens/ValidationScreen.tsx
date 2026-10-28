@@ -167,13 +167,10 @@ export default function ValidationScreen() {
             keyboardType="numeric"
             style={styles.input}
           />
-          <TextInput
+          <DataRow
             label="Último SBC registrado (solo referencia, no es el promedio)"
-            value={data.lastSBC}
-            onChangeText={(v) => setData({ ...data, lastSBC: v })}
-            mode="outlined"
-            keyboardType="decimal-pad"
-            style={styles.input}
+            value={data.lastSBC ? formatCurrency(parseFloat(data.lastSBC)) : 'No disponible'}
+            theme={theme}
           />
           <TextInput
             label="SBC promedio de las últimas 250 semanas (diario, MXN)"

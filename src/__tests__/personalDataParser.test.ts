@@ -731,6 +731,7 @@ describe('ConstanciaIMSSParser — tramos con SBC efectivo', () => {
     const reciente = tramos![0]!;
     expect(reciente.employerNames).toEqual(['EMPRESA A SA DE CV', 'EMPRESA B SA DE CV']);
     expect(reciente.sbc).toBe(900);
+    expect(result.data?.lastSBC).toBe(reciente.sbc);
 
     // El promedio refleja la misma suma.
     expect(result.data?.averageSBC).toBe(900);

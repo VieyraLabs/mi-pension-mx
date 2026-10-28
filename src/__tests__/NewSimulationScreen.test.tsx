@@ -128,10 +128,9 @@ describe('NewSimulationScreen', () => {
 
     // La fecha precargada es el cumpleaños a los 65 años (1 de enero de 2030).
     expect(screen.getByDisplayValue('1 de enero de 2030')).toBeTruthy();
-    // La edad es un campo de solo lectura: no se escribe a mano.
-    const inputEdad = screen.getByDisplayValue('65');
-    expect(inputEdad.props.editable).toBe(false);
-    expect(inputEdad).toBeDisabled();
+    // La edad calculada se presenta como texto informativo, no como input.
+    expect(screen.getByText('65 años')).toBeTruthy();
+    expect(screen.queryByDisplayValue('65')).toBeNull();
   });
 
   test('elegir una fecha en el calendario actualiza la edad mostrada', () => {
@@ -148,7 +147,8 @@ describe('NewSimulationScreen', () => {
     fireEvent.press(screen.getByText('Aceptar'));
 
     expect(screen.getByDisplayValue('1 de julio de 2029')).toBeTruthy();
-    expect(screen.getByDisplayValue('64.5')).toBeTruthy();
+    expect(screen.getByText('64.5 años')).toBeTruthy();
+    expect(screen.queryByDisplayValue('64.5')).toBeNull();
   });
 
   test('tocar el campo de fecha abre el calendario', () => {
@@ -175,7 +175,7 @@ describe('NewSimulationScreen', () => {
     fireEvent.press(screen.getByLabelText('Día 1'));
     fireEvent.press(screen.getByText('Aceptar'));
 
-    expect(screen.getByDisplayValue('64.5')).toBeTruthy();
+    expect(screen.getByText('64.5 años')).toBeTruthy();
 
     // El motor aplica el Art. 171 LSS 1973: 64.5 → edad legal 65 (vejez).
     expect(screen.getByText('Cálculo del motor: 65 años (edad legal, Art. 171 LSS 1973).')).toBeTruthy();
