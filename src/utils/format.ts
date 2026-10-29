@@ -105,7 +105,7 @@ export function getWeeksLabel(projection?: WeeksProjection): string {
 
 /**
  * Texto de las semanas con las que se jubila el asegurado:
- * "1,640 sem. (600 cotizadas + 1,040 proyectadas hasta los 65 años)".
+ * "1,640 sem. (600 cotizadas + 1,040 proyectadas hasta la fecha de retiro)".
  *
  * Consume la proyección que produce el motor (`weeksProjection`): la UI no
  * recalcula ni las semanas ni su desglose, solo las formatea.
@@ -118,7 +118,14 @@ export function formatWeeksTargetText(
   if (parts.length <= 1) {
     return `${formatInteger(projection.targetWeeks)} sem.`;
   }
-  return `${formatInteger(projection.targetWeeks)} sem. (${parts.map(formatNumbersInText).join(' + ')})`;
+
+  const dateHorizon = retirementAge !== undefined
+    ? `proyectadas hasta los ${formatAge(retirementAge)} años`
+    : 'proyectadas hasta la edad de retiro';
+  const formattedParts = parts.map((part) =>
+    formatNumbersInText(part.replace(dateHorizon, 'proyectadas hasta la fecha de retiro')),
+  );
+  return `${formatInteger(projection.targetWeeks)} sem. (${formattedParts.join(' + ')})`;
 }
 
 /** Formatea un decimal como porcentaje (0.75 → 75.00%) */

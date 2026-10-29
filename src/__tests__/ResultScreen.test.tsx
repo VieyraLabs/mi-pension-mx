@@ -28,7 +28,7 @@ import ResultScreen from '../screens/ResultScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import { saveSimulation } from '../storage/simulationStorage';
 import { calculatePension } from '../services/pension/PensionCalculator';
-import { formatCurrency } from '../utils/format';
+import { formatCurrency, formatDateLong } from '../utils/format';
 import type { PensionInput } from '../models';
 
 function buildResult(
@@ -139,8 +139,10 @@ describe('ResultScreen', () => {
     expect(screen.getByText('Semanas estimadas al pensionarte')).toBeTruthy();
     expect(screen.queryByText('Semanas cotizadas registradas')).toBeNull();
     // La proyección usa los días calendario entre ambas fechas exactas.
+    expect(screen.getByText('Fecha de retiro')).toBeTruthy();
+    expect(screen.getByText(formatDateLong(new Date(2045, 5, 1)))).toBeTruthy();
     expect(
-      screen.getByText('1,644 sem. (600 cotizadas + 1,044 proyectadas hasta los 65 años)'),
+      screen.getByText('1,644 sem. (600 cotizadas + 1,044 proyectadas hasta la fecha de retiro)'),
     ).toBeTruthy();
   });
 
@@ -160,10 +162,10 @@ describe('ResultScreen', () => {
 
     // El objetivo se muestra con separador de miles en todas sus cifras.
     expect(
-      screen.getByText('1,644 sem. (600 cotizadas + 1,044 proyectadas hasta los 65 años)'),
+      screen.getByText('1,644 sem. (600 cotizadas + 1,044 proyectadas hasta la fecha de retiro)'),
     ).toBeTruthy();
     expect(
-      screen.queryByText('1644 sem. (600 cotizadas + 1044 proyectadas hasta los 65 años)'),
+      screen.queryByText('1644 sem. (600 cotizadas + 1044 proyectadas hasta la fecha de retiro)'),
     ).toBeNull();
   });
 
@@ -190,7 +192,7 @@ describe('ResultScreen', () => {
     expect(screen.getByText('Semanas cotizadas + semanas M40 planeadas')).toBeTruthy();
     expect(screen.queryByText('Semanas cotizadas + semanas M40 planeadas (aprox. por meses)')).toBeNull();
     expect(screen.getByText('604 sem.')).toBeTruthy();
-    expect(screen.getByText('604 sem. (600 cotizadas + 4 proyectadas hasta los 65 años)')).toBeTruthy();
+    expect(screen.getByText('604 sem. (600 cotizadas + 4 proyectadas hasta la fecha de retiro)')).toBeTruthy();
   });
 
   test('resumen y AverageSalaryStep usan las mismas 31 semanas M40 y el promedio de $212.40', async () => {
@@ -287,7 +289,7 @@ describe('ResultScreen', () => {
 
     // El objetivo normal es 500 cotizadas + 2611 proyectadas = 3111.
     expect(
-      screen.getByText('3,111 sem. (500 cotizadas + 2,611 proyectadas hasta los 100 años)'),
+      screen.getByText('3,111 sem. (500 cotizadas + 2,611 proyectadas hasta la fecha de retiro)'),
     ).toBeTruthy();
     // El bloque Modalidad 40 ya no se titula como el total de semanas cotizadas…
     expect(screen.queryByText('Total de semanas cotizadas')).toBeNull();
@@ -345,7 +347,7 @@ describe('ResultScreen', () => {
     expect(screen.getByText('Semanas estimadas al pensionarte')).toBeTruthy();
     expect(screen.queryByText('Semanas cotizadas registradas')).toBeNull();
     expect(
-      screen.getByText('1,644 sem. (600 cotizadas + 1,044 proyectadas hasta los 65 años)'),
+      screen.getByText('1,644 sem. (600 cotizadas + 1,044 proyectadas hasta la fecha de retiro)'),
     ).toBeTruthy();
   });
 

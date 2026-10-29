@@ -114,7 +114,7 @@ describe('exportPensionResultToPdf', () => {
     expect(html).not.toContain('Semanas cotizadas registradas');
     // El intervalo exacto genera 1044 semanas proyectadas y 1544 objetivo.
     expect(html).toContain(
-      '1,544 sem. (500 cotizadas + 1,044 proyectadas hasta los 65 años)',
+      '1,544 sem. (500 cotizadas + 1,044 proyectadas hasta la fecha de retiro)',
     );
     expect(html).not.toContain('aprox. por meses');
   });

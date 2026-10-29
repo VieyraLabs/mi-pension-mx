@@ -11,7 +11,15 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
 import { exportPensionResultToPdf } from '../services/export/pdfExport';
-import { formatCurrency, formatPercent, formatInteger, formatWeeksTargetText, formatAge, getWeeksLabel } from '../utils/format';
+import {
+  formatCurrency,
+  formatPercent,
+  formatInteger,
+  formatWeeksTargetText,
+  formatAge,
+  formatDateLong,
+  getWeeksLabel,
+} from '../utils/format';
 import { showAlert } from '../utils/alert';
 import { calculateM40PlannedWeeks, calculateM40Summary } from '../utils/modalidad40';
 import { normalizeLocalCalendarDate } from '../utils/weeksProjection';
@@ -57,6 +65,9 @@ export default function ResultScreen() {
   // Las simulaciones guardadas antes de existir la proyección no la traen: en
   // ese caso se muestran las semanas cotizadas capturadas.
   const weeksProjection = result.weeksProjection;
+  const retirementDate = normalizeLocalCalendarDate(
+    new Date(result.input.personalData.estimatedRetirementDate as unknown as string),
+  );
   const currentWeeks = weeksProjection?.currentWeeks ?? result.input.workHistory.totalWeeks;
   const targetWeeksText = weeksProjection
     ? formatWeeksTargetText(weeksProjection, result.input.personalData.retirementAge)
@@ -161,6 +172,7 @@ export default function ResultScreen() {
           {result.input.personalData.name && (
             <SummaryRow label="Nombre" value={result.input.personalData.name} theme={theme} />
           )}
+          <SummaryRow label="Fecha de retiro" value={formatDateLong(retirementDate)} theme={theme} />
           <SummaryRow label="Edad de retiro" value={`${formatAge(result.input.personalData.retirementAge)} años`} theme={theme} />
           <SummaryRow label="Tipo de pensión" value={result.pensionType === 'vejez' ? 'Vejez (Art. 138)' : 'Cesantía Edad Avanzada (Art. 145)'} theme={theme} />
           <SummaryRow label="Semanas cotizadas actuales" value={`${formatInteger(currentWeeks)} sem.`} theme={theme} />

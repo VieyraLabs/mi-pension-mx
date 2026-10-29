@@ -24,6 +24,6 @@ describe('formato compartido de semanas estimadas', () => {
         targetWeeks: 1644,
         yearsToRetirement: 20,
       }, 65),
-    ).toBe('1,644 sem. (600 cotizadas + 1,044 proyectadas hasta los 65 años)');
+    ).toBe('1,644 sem. (600 cotizadas + 1,044 proyectadas hasta la fecha de retiro)');
   });
 });
