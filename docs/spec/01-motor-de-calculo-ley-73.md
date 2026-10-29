@@ -27,11 +27,13 @@ devuelve:
 - El desglose: `steps[]`, un elemento por regla aplicada más el paso de resultado final.
 - `warnings[]`, con el aviso legal siempre presente al final.
 - `isEstimate: true`, siempre.
-- `weeksProjection`, con la proyección de semanas hasta la edad de retiro:
-  `currentWeeks` (las ya cotizadas), `projectedWeeks` (las del horizonte hasta la edad de
-  retiro), `targetWeeks` (con las que se jubila el asegurado) y `yearsToRetirement`. Es
-  opcional a propósito: las simulaciones guardadas antes de existir la proyección no lo
-  traen, y en ese caso la interfaz muestra las semanas cotizadas capturadas.
+- `weeksProjection`, con la proyección de semanas hasta la fecha exacta de retiro:
+  `currentWeeks` (las ya cotizadas), `projectedWeeks` (desde el día siguiente a
+  `referenceDate` hasta `estimatedRetirementDate`, ambos inclusive), `targetWeeks` (con
+  las que se jubila el asegurado) y
+  `yearsToRetirement` (metadato de diferencia de edades, no usado para proyectar semanas).
+  Es opcional a propósito: las simulaciones históricas pueden no traerlo y conservan las
+  semanas cotizadas capturadas como valor de respaldo.
 - `pensionType` (`vejez` o `cesantia_edad_avanzada`) y `ageFactor` (0.75 a 1.0): los dos
   se determinan a partir de la **edad legal** (Art. 171 LSS 1973), no de la edad
   declarada (ver «Reglas de negocio»).
@@ -87,33 +89,50 @@ Reglas transversales:
   siempre cuál de las dos edades se usó, para que el salto sea auditable.
 - **La edad legal no toca las semanas cotizadas.** La regla del Art. 171 rige la
   **cuantía** (tipo de pensión y factor de reducción). No aplica a las 500 semanas
-  mínimas (Arts. 138 y 145 LSS 1973) ni a la proyección de semanas hasta el retiro: esas
-  siguen evaluándose contra la edad declarada y el horizonte capturado.
+  mínimas (Arts. 138 y 145 LSS 1973) ni determina la proyección: `projectedWeeks` usa la
+  fecha de referencia local y la fecha exacta de retiro; la edad declarada se conserva
+  únicamente en el metadato `yearsToRetirement`.
 
-- **El motor evalúa el mínimo legal y los incrementos contra las semanas con las que se
-  jubilaría el asegurado, no solo contra las ya cotizadas.** El total de referencia es
+- **El motor evalúa el mínimo legal y los incrementos contra las semanas estimadas al
+  retiro, no solo contra las ya cotizadas.** El total de referencia es
   `weeksProjection.targetWeeks`:
-  - `yearsToRetirement = max(0, edad de retiro − edad actual)`.
-  - `projectedWeeks = yearsToRetirement × 52`.
-  - `targetWeeks = semanas ya cotizadas + max(projectedWeeks, semanas planeadas en
-    Modalidad 40)`. Las semanas de Modalidad 40 caen **dentro** del horizonte hasta la
-    edad de retiro, así que se toma el mayor de los dos y nunca la suma: no se cuentan
-    dos veces.
-  - `targetWeeks` es el que se compara contra las 500 semanas mínimas (Arts. 138 y 145
-    LSS 1973) y el que produce los años excedentes de los incrementos anuales del
-    Art. 167 LSS 1973.
-  - La edad actual se toma del dato de entrada (`personalData.age`), nunca de la fecha del
-    sistema: el motor sigue siendo determinista (mismo input → mismo resultado).
+  - Cada operación captura una sola `calculationDate`; su día calendario local normalizado
+    es `referenceDate`. El cálculo es determinista con el mismo `input` y la misma
+    `referenceDate`; una operación nueva en otro día puede producir otra proyección.
+  - La proyección normal cubre desde el día siguiente a `referenceDate` hasta
+    `estimatedRetirementDate`, ambos inclusive. Para `N` días calendario:
+    `projectedWeeks = floor(N / 7) + (N mod 7 > 3 ? 1 : 0)`. Un intervalo sin días
+    futuros aporta 0 semanas. El residuo mayor que tres sigue la regla aritmética del
+    Art. 20 de la LSS vigente; no se verificó independientemente que la LSS 1973 tenga
+    ese mismo texto (ver [nota de investigación](../investigacion/semanas-cotizadas-y-proyeccion.md)).
+  - Modalidad 40 comienza el día 1 del mes siguiente a `referenceDate` y cuenta hasta el
+    último día del mes de retiro, con el límite vigente de 600 meses desde el primer mes
+    M40 permitido. `targetWeeks = semanas actuales + max(projectedWeeks,
+    m40PlannedWeeks)`: las semanas M40 dentro del horizonte no se suman dos veces.
+  - `yearsToRetirement = max(0, edad de retiro − edad actual)` se conserva como metadato,
+    pero no determina las semanas proyectadas. La edad actual sigue tomando el dato de
+    `personalData.age`; la edad legal y su factor no cambian.
+  - `targetWeeks` se compara contra las 500 semanas mínimas (Arts. 138 y 145 LSS 1973) y
+    produce los años excedentes de los incrementos del Art. 167 LSS 1973. Las semanas
+    M40 derivadas por fecha también alimentan el promedio M40 de resultados nuevos.
+  - Las simulaciones históricas sin `weeksProjection` conservan sus cifras ya guardadas;
+    el fallback M40 por meses (`expectedMonths × 52/12`) se identifica como aproximado.
+    La etiqueta compartida en resultado, historial y PDF es «Semanas estimadas al
+    pensionarte».
+  - La decisión de proyección vigente se documenta en
+    [ADR-0013](../adr/0013-proyeccion-de-semanas-por-fecha.md).
 - **La proyección es una estimación.** Asume que el asegurado sigue cotizando de forma
-  continua hasta la edad de retiro. Por eso el paso de incrementos anuales del Art. 167 se
-  marca como estimado (`isEstimate`) cuando hay proyección, declara el supuesto en su
-  `assumption`, y el resultado completo lleva la marca de estimación y el aviso legal.
+  continua durante el horizonte; no afirma que las semanas futuras estén reconocidas por
+  el IMSS. Por eso el paso de incrementos anuales del Art. 167 se marca como estimado
+  (`isEstimate`) cuando hay proyección, declara el supuesto en su `assumption`, y el
+  resultado completo lleva la marca de estimación y el aviso legal.
 - **El orden del pipeline es normativo.** Cada paso consume el resultado del anterior.
 - **Todo resultado es una estimación.** El campo `isEstimate` es `true` siempre, y las
   advertencias incluyen el aviso legal.
 - **Los valores normativos vienen de `src/constants/`**, nunca están escritos en el
   motor (ver [ADR-0005](../adr/0005-constantes-legales-en-modulos-separados.md)).
-- **Los pasos son puros**: mismo `input`, mismo resultado, sin efectos secundarios.
+- **Los pasos son puros**: el mismo `input` y la misma `referenceDate` producen el mismo
+  resultado, sin efectos secundarios.
 
 ## Fuera de alcance
 

@@ -11,7 +11,7 @@ afectado y qué **no** se hizo a propósito.
 - **Ámbito**: `src/services/pension/`, `src/utils/weeksProjection.ts`
 - **Estado**: Vigente (se actualiza cuando un ítem se resuelva o se descarte)
 - **Relacionado con**: [Spec-01](spec/01-motor-de-calculo-ley-73.md),
-  [ADR-0012](adr/0012-proyeccion-de-semanas-hasta-la-edad-de-retiro.md),
+  [ADR-0013](adr/0013-proyeccion-de-semanas-por-fecha.md) (sustituye ADR-0012),
   [ADR-0010](adr/0010-sbc-promedio-desde-el-historial-de-cotizaciones.md)
 
 ## Cómo se lee este documento
@@ -32,8 +32,8 @@ cesantía en edad avanzada y regla de los seis meses).
 |---|---|---|---|
 | 1 | Techo del 100 % del salario promedio (Art. 169 LSS 1973) | Alta: puede inflar la pensión estimada | Documentado, sin resolver |
 | 2 | Fracción de año en los incrementos (Art. 167 LSS 1973) | Media: subestima el incremento por semanas excedentes | Documentado, sin resolver |
-| 3 | Supuestos de la proyección de semanas | Media: el resultado depende del horizonte supuesto | Documentado, sin resolver |
-| 4 | Modalidad 40 y la ventana de 250 semanas | Media: el SBC capturado puede quedar fuera del promedio | Documentado, sin resolver |
+| 3 | Supuestos de la proyección de semanas | Media: el resultado depende del horizonte supuesto | Fórmula age×52 resuelta por ADR-0013; supuestos restantes documentados |
+| 4 | Modalidad 40 y la ventana de 250 semanas | Media: el SBC capturado puede quedar fuera del promedio | ADR-0013 resuelve semanas por fecha; promedio SBC aún aproximado; fallback histórico aprox. por meses |
 | 5 | Porcentaje del Art. 171 sobre la cuantía básica, no sobre la vejez | Media: la cesantía se estima por debajo de la cantidad legal | Documentado, sin resolver |
 
 ---
@@ -140,20 +140,25 @@ verificada, porque `AGENTS.md` exige que las constantes normativas lleven su fue
 
 ---
 
-## 3. Supuestos de la proyección de semanas hasta la edad de retiro
+## 3. Supuestos de la proyección de semanas hasta la fecha de retiro exacta
 
 ### Qué falta
 
-La proyección a la edad de retiro asume **cotización continua** hasta jubilarse: se
-proyectan `(edad de retiro − edad actual) × 52` semanas, sin huecos, y se supone el mismo
-SBC que el capturado hoy. **No** se modela:
+ADR-0013 resuelve la aproximación anterior `(edad de retiro − edad actual) × 52`: las
+simulaciones nuevas cuentan días calendario desde el día siguiente a la fecha de referencia
+hasta la fecha exacta de retiro. La proyección de Modalidad 40 también se cuenta por fechas,
+hasta fin del mes de retiro. La edad queda como metadato; no determina las semanas
+proyectadas. ADR-0012 documenta el método anterior y está sustituida por ADR-0013.
 
-- ceses o periodos sin empleo antes de la edad de retiro;
+La proyección actual sigue asumiendo **cotización continua** hasta jubilarse y el mismo SBC
+que el capturado hoy. **No** se modela:
+
+- ceses o periodos sin empleo antes de la fecha de retiro;
 - cambios de salario futuros (un aumento o una disminución);
 - cotizaciones por debajo del salario mínimo general;
 - la diferencia entre la fecha de la constancia y la fecha real de la estimación.
 
-Tampoco hay una **prueba de sensibilidad**: ningún caso de la suite vary el horizonte para
+Tampoco hay una **prueba de sensibilidad**: ningún caso de la suite varía el horizonte para
 medir cuánto se mueve el resultado.
 
 ### Por qué importa
@@ -170,25 +175,21 @@ sensibilidad medida es difícil de auditar frente a la respuesta oficial.
 
 ### Dónde está el código afectado
 
-- `src/utils/weeksProjection.ts:62` — `yearsToRetirement` y `projectedWeeks` se calculan
-  como una recta: `retirementAge − age` por 52 semanas.
-- `src/utils/weeksProjection.ts:64` — `targetWeeks` suma las semanas actuales al mayor
-  entre proyección y Modalidad 40.
-- `src/services/pension/steps/AnnualIncrementsStep.ts:20` — `excessWeeks` sale de
-  `targetWeeks`, es decir, del horizonte supuesto.
-- `src/validation/pensionSchema.ts:8` — el mismo cálculo sostiene el mensaje de validación
-  del mínimo de 500 semanas, de modo que el hueco se propaga a la captura.
-- `src/components/WorkHistoryStep.tsx:46` — la nota que declara el supuesto al usuario.
+- `src/utils/weeksProjection.ts:37-44, 87-108` — cuenta semanas por días calendario; `yearsToRetirement` queda solo como metadato.
+- `src/utils/modalidad40.ts:36-53` — calcula las semanas M40 entre el primer día del mes siguiente a la referencia y el fin del mes de retiro.
+- `src/services/pension/PensionCalculator.ts` — fija la fecha de cálculo de una operación, usada como referencia común.
+- `src/services/pension/steps/AnnualIncrementsStep.ts:14-20` — los incrementos consumen el `targetWeeks` producido por la proyección.
+- `src/validation/pensionSchema.ts` — comparte la proyección para validar el mínimo de 500 semanas.
+- `src/components/WorkHistoryStep.tsx` — captura las semanas cotizadas registradas; no proyecta semanas antes de elegir la fecha de retiro.
 
 ### Qué no se hizo a propósito
 
 No se modelaron ceses ni cambios de salario porque hacerlo exige **datos que la app no
-tiene**: el usuario no declara su situación laboral futura. Se prefirió un supuesto
-explícito y visible (el mismo texto que comparten el motor y la validación, ver
-[ADR-0012](adr/0012-proyeccion-de-semanas-hasta-la-edad-de-retiro.md)) frente a un modelo
-de simulación que se presentaría con más precisión de la que tiene. Tampoco se añadió la
-prueba de sensibilidad porque es un caso de prueba sobre datos hipotéticos, no sobre
-comportamiento verificable del sistema.
+tiene**: el usuario no declara su situación laboral futura. Se prefirió mantener explícito
+el supuesto de cotización continua y la proyección por fecha de ADR-0013, que sustituye el
+método por edad documentado en ADR-0012, frente a un modelo de simulación que se presentaría
+con más precisión de la que tiene. Tampoco se añadió la prueba de sensibilidad porque es un
+caso de prueba sobre datos hipotéticos, no sobre comportamiento verificable del sistema.
 
 ---
 
@@ -196,15 +197,25 @@ comportamiento verificable del sistema.
 
 ### Qué falta
 
-El paso del SBC promedio pondera el promedio de las 250 semanas de referencia así:
+ADR-0013 reemplaza para los cálculos nuevos la conversión `mesesM40 × 52/12`: las semanas
+M40 se cuentan por fechas y se pondera así dentro de las 250 semanas de referencia:
 
 ```
-m40Weeks   = min(mesesM40 × 52/12, 250)
+m40Weeks   = min(m40PlannedWeeks, 250)
 baseWeeks  = 250 − m40Weeks
 promedio   = (SBC_régimen × baseWeeks + SBC_M40 × m40Weeks) ÷ 250
 ```
 
-Con un horizonte de Modalidad 40 largo (p. ej. 420 meses hasta la edad de retiro), ese
+Los resultados históricos sin `weeksProjection` conservan el fallback aproximado por meses:
+
+```
+m40Weeks ≈ min(expectedMonths × 52/12, 250)
+```
+
+Ese fallback sigue identificado como **«aprox. por meses»**; no es el método de las
+simulaciones nuevas.
+
+Con un horizonte de Modalidad 40 largo (p. ej. 420 meses hasta la fecha de retiro), ese
 mínimo **satura** las 250 semanas de referencia: `m40Weeks` vale 250, `baseWeeks` vale 0 y
 el promedio ponderado es **exactamente el SBC de Modalidad 40**, sin ninguna semana del
 régimen obligatorio. El SBC que el usuario capturó —que describe su historial real— puede
@@ -225,25 +236,18 @@ el que usa el motor no son el mismo número** en este escenario.
 
 ### Dónde está el código afectado
 
-- `src/services/pension/steps/AverageSalaryStep.ts:46` — `const m40Weeks =
-  Math.min(modalidad40.expectedMonths * WEEKS_PER_MONTH, referenceWeeks);` el `min` que
-  satura.
-- `src/services/pension/steps/AverageSalaryStep.ts:47` — `baseWeeks = referenceWeeks −
-  m40Weeks`, que llega a cero.
-- `src/services/pension/steps/AverageSalaryStep.ts:60` — el promedio ponderado que sale de
-  esa división.
-- `src/utils/modalidad40.ts:89` — el mismo `min` replicado en el resumen que muestran las
-  pantallas (`calculateM40Summary`), para que la UI y el motor no se contradigan.
-- `src/hooks/usePensionForm.ts:45` — `expectedMonthsForHorizon`: el horizonte de meses de
-  M40 que alimenta el cálculo (por defecto, los meses hasta la edad de retiro, acotados a
-  600).
-- `src/components/Modalidad40Step.tsx:68` — el campo «Meses cotizando en M40 (estimado)»,
-  derivado y de solo lectura, que es la fuente del horizonte.
+- `src/services/pension/steps/AverageSalaryStep.ts:42-46, 58-64` — pondera las semanas M40 por fecha dentro de la ventana de 250 semanas.
+- `src/utils/modalidad40.ts:110-115` — el resumen usa las semanas por fecha y conserva `expectedMonths × 52/12` solo cuando no se entrega `plannedWeeks` (fallback histórico).
+- `src/utils/modalidad40.ts:130-134` — total M40 del resumen; también distingue proyección exacta del fallback aproximado.
+- `src/utils/modalidad40.ts:36-53` — calcula semanas M40 por fechas para resultados nuevos.
+- `src/hooks/usePensionForm.ts:38-40` — deriva los meses contractuales de M40 entre fechas de referencia y retiro; no convierte esos meses a semanas en el cálculo nuevo.
+- `src/components/Modalidad40Step.tsx:70-78` — muestra los meses estimados derivados de la fecha de retiro.
 
 ### Qué no se hizo a propósito
 
-No se resolvió porque **es una decisión de producto y legal, no de código**. Las salidas
-posibles cambian lo que la app afirma:
+La fórmula de semanas por fechas sí quedó resuelta por ADR-0013; sigue pendiente la
+aproximación del promedio histórico, porque **es una decisión de producto y legal, no de
+código**. Las salidas posibles cambian lo que la app afirma:
 
 1. **Advertir y no ponderar**: usar el SBC capturado y mostrar el SBC de M40 aparte, como
    referencia, sin alterar el promedio.

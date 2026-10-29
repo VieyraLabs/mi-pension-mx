@@ -6,8 +6,13 @@
 import { renderHook, act } from '@testing-library/react-native';
 import { usePensionForm } from '../hooks/usePensionForm';
 import { calculateAge, calculateRetirementDate } from '../utils/date';
-import { estimateMonthsToRetirement } from '../utils/weeksProjection';
+import {
+  countCotizedWeeksInDateRange,
+  getLocalReferenceDate,
+} from '../utils/weeksProjection';
+import { estimateM40Months } from '../utils/modalidad40';
 import { calculatePension } from '../services/pension/PensionCalculator';
+import { PensionInputSchema } from '../validation/pensionSchema';
 
 describe('usePensionForm', () => {
   test('inicia con el estado por defecto (65 años, sin beneficiarios)', () => {
@@ -146,8 +151,8 @@ describe('usePensionForm', () => {
   test('updateModalidad40 precarga los meses esperados al activar Modalidad 40', () => {
     const { result } = renderHook(() => usePensionForm());
 
-    const { age, retirementAge } = result.current.input.personalData;
-    const mesesEsperados = Math.max(1, estimateMonthsToRetirement(age, retirementAge));
+    const { estimatedRetirementDate } = result.current.input.personalData;
+    const mesesEsperados = estimateM40Months(getLocalReferenceDate(), estimatedRetirementDate);
 
     act(() => {
       result.current.updateModalidad40({ active: true, contributionSalary: 500 });
@@ -172,7 +177,7 @@ describe('usePensionForm', () => {
     expect(result.current.input.modalidad40.expectedMonths).toBeUndefined();
   });
 
-  test('al activar Modalidad 40 los meses se derivan del horizonte hasta la edad de retiro', () => {
+  test('al activar Modalidad 40 los meses se derivan hasta la fecha exacta de retiro', () => {
     const { result } = renderHook(() => usePensionForm());
 
     act(() => {
@@ -183,12 +188,14 @@ describe('usePensionForm', () => {
     });
 
     expect(result.current.input.modalidad40.expectedMonths).toBe(
-      estimateMonthsToRetirement(40, 65),
+      estimateM40Months(
+        getLocalReferenceDate(),
+        result.current.input.personalData.estimatedRetirementDate,
+      ),
     );
-    expect(result.current.input.modalidad40.expectedMonths).toBe(25 * 12);
   });
 
-  test('al cambiar la edad con Modalidad 40 activa los meses se recalculan', () => {
+  test('al cambiar solo la edad sin cambiar la fecha de retiro no cambia el horizonte M40', () => {
     const { result } = renderHook(() => usePensionForm());
 
     act(() => {
@@ -202,7 +209,10 @@ describe('usePensionForm', () => {
     });
 
     expect(result.current.input.modalidad40.expectedMonths).toBe(
-      estimateMonthsToRetirement(50, 65),
+      estimateM40Months(
+        getLocalReferenceDate(),
+        result.current.input.personalData.estimatedRetirementDate,
+      ),
     );
   });
 
@@ -220,7 +230,10 @@ describe('usePensionForm', () => {
     });
 
     expect(result.current.input.modalidad40.expectedMonths).toBe(
-      estimateMonthsToRetirement(40, 60),
+      estimateM40Months(
+        getLocalReferenceDate(),
+        result.current.input.personalData.estimatedRetirementDate,
+      ),
     );
   });
 
@@ -238,7 +251,10 @@ describe('usePensionForm', () => {
     });
 
     expect(result.current.input.modalidad40.expectedMonths).toBe(
-      estimateMonthsToRetirement(40, 65),
+      estimateM40Months(
+        getLocalReferenceDate(),
+        result.current.input.personalData.estimatedRetirementDate,
+      ),
     );
   });
 
@@ -246,14 +262,13 @@ describe('usePensionForm', () => {
     const { result } = renderHook(() => usePensionForm());
 
     act(() => {
-      result.current.updatePersonalData({ age: 10, retirementAge: 65 });
+      result.current.updatePersonalData({ estimatedRetirementDate: new Date(2100, 0, 1) });
     });
     act(() => {
       result.current.updateModalidad40({ active: true });
     });
 
-    // 55 años de horizonte = 660 meses, pero el esquema (Zod) admite 1..600.
-    expect(estimateMonthsToRetirement(10, 65)).toBe(660);
+    // El horizonte supera el máximo vigente de 600 meses admitido por Zod.
     expect(result.current.input.modalidad40.expectedMonths).toBe(600);
   });
 
@@ -267,9 +282,15 @@ describe('usePensionForm', () => {
       result.current.updateWorkHistory({ totalWeeks: 100 });
     });
 
+    const referenceDate = getLocalReferenceDate();
+    const retirementDate = result.current.input.personalData.estimatedRetirementDate;
+    const projectedWeeks = countCotizedWeeksInDateRange(
+      new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate() + 1),
+      retirementDate,
+    );
     expect(result.current.weeksProjection.currentWeeks).toBe(100);
-    expect(result.current.weeksProjection.projectedWeeks).toBe(25 * 52);
-    expect(result.current.weeksProjection.targetWeeks).toBe(100 + 25 * 52);
+    expect(result.current.weeksProjection.projectedWeeks).toBe(projectedWeeks);
+    expect(result.current.weeksProjection.targetWeeks).toBe(100 + projectedWeeks);
     expect(result.current.weeksProjection.yearsToRetirement).toBe(25);
   });
 
@@ -304,10 +325,73 @@ describe('usePensionForm', () => {
       result.current.updatePersonalData({ retirementAge: 60 });
     });
 
-    const { age, retirementAge } = result.current.input.personalData;
     expect(result.current.input.modalidad40.expectedMonths).toBe(
-      Math.max(1, estimateMonthsToRetirement(age, retirementAge)),
+      estimateM40Months(
+        getLocalReferenceDate(),
+        result.current.input.personalData.estimatedRetirementDate,
+      ),
     );
+  });
+
+  test('el hook, Zod y el motor comparten la proyección por fecha exacta', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2025, 5, 1));
+    try {
+      const { result } = renderHook(() => usePensionForm());
+      act(() => {
+        result.current.updatePersonalData({
+          birthDate: new Date(1960, 5, 12),
+          retirementAge: 65,
+        });
+      });
+      act(() => {
+        result.current.updateWorkHistory({ totalWeeks: 497 });
+      });
+
+      const input = result.current.input;
+      const engineResult = calculatePension(input);
+      const validation = PensionInputSchema.safeParse(input);
+      const weekIssue = validation.success
+        ? undefined
+        : validation.error.issues.find((issue) => issue.path.join('.') === 'workHistory.totalWeeks');
+
+      expect(input.personalData.estimatedRetirementDate).toEqual(new Date(2025, 5, 12));
+      expect(result.current.weeksProjection).toEqual(engineResult.weeksProjection);
+      expect(engineResult.weeksProjection?.projectedWeeks).toBe(2);
+      expect(engineResult.weeksProjection?.targetWeeks).toBe(499);
+      expect(weekIssue?.message).toContain('497 cotizadas + 2 proyectadas hasta la edad de retiro = 499');
+      expect(engineResult.steps.find((step) => step.id === 'incrementos_anuales')?.description)
+        .toContain('497 cotizadas + 2 proyectadas hasta la edad de retiro = 499');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('recalcula semanas y meses M40 si cambia solo la fecha exacta de retiro', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2025, 5, 1));
+    try {
+      const { result } = renderHook(() => usePensionForm());
+      act(() => {
+        result.current.updatePersonalData({
+          birthDate: new Date(1960, 5, 1),
+          retirementAge: 65,
+        });
+      });
+      act(() => {
+        result.current.updateModalidad40({ active: true, contributionSalary: 500 });
+      });
+
+      expect(result.current.input.modalidad40.expectedMonths).toBe(0);
+      expect(result.current.weeksProjection.projectedWeeks).toBe(0);
+
+      act(() => {
+        result.current.updatePersonalData({ estimatedRetirementDate: new Date(2025, 6, 1) });
+      });
+
+      expect(result.current.input.modalidad40.expectedMonths).toBe(1);
+      expect(result.current.weeksProjection.projectedWeeks).toBe(4);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   test('updateBeneficiaries actualiza los beneficiarios', () => {

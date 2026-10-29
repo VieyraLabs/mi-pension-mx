@@ -21,8 +21,12 @@ import { LimitsStep } from './steps/LimitsStep';
 import { DAYS_PER_YEAR_UMA, AVERAGE_DAYS_PER_MONTH, MONTHS_PER_YEAR, MINIMUM_WEEKS_VEJEZ } from '../../constants/ley73';
 import { round2 } from '../../utils/format';
 import { calculateM40PlannedWeeks } from '../../utils/modalidad40';
-import { calculateWeeksProjection } from '../../utils/weeksProjection';
-import { PensionInputSchema } from '../../validation/pensionSchema';
+import {
+  calculateWeeksProjection,
+  getLocalReferenceDate,
+  normalizeLocalCalendarDate,
+} from '../../utils/weeksProjection';
+import { safeParsePensionInputAtReferenceDate } from '../../validation/pensionSchema';
 
 /** Resultado de validación previa al cálculo. */
 export interface ValidationResult {
@@ -39,17 +43,20 @@ export interface ValidationResult {
  */
 export function validateInput(input: PensionInput): ValidationResult {
   const warnings: string[] = [];
-  const parseResult = PensionInputSchema.safeParse(input);
+  const referenceDate = getLocalReferenceDate();
+  const parseResult = safeParsePensionInputAtReferenceDate(input, referenceDate);
   const errors = parseResult.success ? [] : parseResult.error.issues.map((issue) => issue.message);
 
-  // La proyección de semanas (ya cotizadas + semanas hasta la edad de retiro)
-  // es la misma que usa el motor: el mínimo legal y los incrementos se
-  // evalúan contra el total con el que se jubilaría el asegurado.
+  // La proyección de semanas comparte la fecha de referencia con la validación.
   const { targetWeeks } = calculateWeeksProjection({
     currentWeeks: input.workHistory.totalWeeks,
     age: input.personalData.age,
     retirementAge: input.personalData.retirementAge,
-    m40PlannedWeeks: calculateM40PlannedWeeks(input.modalidad40),
+    referenceDate,
+    retirementDate: input.personalData.estimatedRetirementDate,
+    m40PlannedWeeks: input.modalidad40.active
+      ? calculateM40PlannedWeeks(referenceDate, input.personalData.estimatedRetirementDate)
+      : 0,
   });
   if (targetWeeks >= MINIMUM_WEEKS_VEJEZ && targetWeeks < 520) {
     warnings.push(
@@ -71,15 +78,22 @@ export function validateInput(input: PensionInput): ValidationResult {
 /**
  * Crea el contexto inicial del pipeline con valores por defecto.
  */
-function createInitialContext(input: PensionInput): CalculationContext {
+function createInitialContext(
+  input: PensionInput,
+  referenceDate: Date,
+  m40PlannedWeeks: number,
+): CalculationContext {
   return {
     input,
     weeksProjection: calculateWeeksProjection({
       currentWeeks: input.workHistory.totalWeeks,
       age: input.personalData.age,
       retirementAge: input.personalData.retirementAge,
-      m40PlannedWeeks: calculateM40PlannedWeeks(input.modalidad40),
+      referenceDate,
+      retirementDate: input.personalData.estimatedRetirementDate,
+      m40PlannedWeeks,
     }),
+    m40PlannedWeeks,
     effectiveDailySalary: input.averageSalary.dailySalary,
     salaryInTimesMinimumWage: 0,
     basicQuantityPct: 0,
@@ -121,10 +135,15 @@ const PIPELINE = [
  * @returns PensionResult con el resultado y desglose completo
  */
 export function calculatePension(input: PensionInput): PensionResult {
+  const calculationDate = new Date();
+  const referenceDate = normalizeLocalCalendarDate(calculationDate);
+  const m40PlannedWeeks = input.modalidad40.active
+    ? calculateM40PlannedWeeks(referenceDate, input.personalData.estimatedRetirementDate)
+    : 0;
   // Ejecutar pipeline: cada paso recibe y devuelve un contexto
   const finalContext = PIPELINE.reduce<CalculationContext>(
     (ctx, step) => step(ctx),
-    createInitialContext(input),
+    createInitialContext(input, referenceDate, m40PlannedWeeks),
   );
 
   const monthlyPension = round2(finalContext.monthlyPension);
@@ -170,7 +189,7 @@ export function calculatePension(input: PensionInput): PensionResult {
     ],
     isEstimate: true,
     input,
-    calculationDate: new Date().toISOString(),
+    calculationDate: calculationDate.toISOString(),
   };
 }
 

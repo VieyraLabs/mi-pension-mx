@@ -153,7 +153,6 @@ export default function NewSimulationScreen() {
             />
             <Modalidad40Step
               modalidad40={input.modalidad40}
-              personalData={input.personalData}
               onChange={updateModalidad40}
               theme={theme}
             />

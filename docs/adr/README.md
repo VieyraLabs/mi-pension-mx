@@ -26,7 +26,8 @@ cambia, se marca como `Sustituida` y se escribe una nueva que la reemplaza.
 | [0009](0009-cero-telemetria-y-cero-servicios-de-terceros.md) | Cero telemetría y cero servicios de terceros | Aceptada | 2026-08-01 |
 | [0010](0010-sbc-promedio-desde-el-historial-de-cotizaciones.md) | El SBC promedio se calcula del historial completo de cotizaciones | Aceptada | 2026-08-01 |
 | [0011](0011-sistema-de-diseno-esmeralda-y-superficies-degradadas.md) | Sistema de diseño esmeralda con superficies degradadas | Aceptada | 2026-10-26 |
-| [0012](0012-proyeccion-de-semanas-hasta-la-edad-de-retiro.md) | El motor proyecta las semanas hasta la edad de retiro y calcula con esas semanas | Aceptada | 2026-10-26 |
+| [0012](0012-proyeccion-de-semanas-hasta-la-edad-de-retiro.md) | El motor proyecta las semanas hasta la edad de retiro y calcula con esas semanas | Sustituida por ADR-0013 | 2026-10-26 |
+| [0013](0013-proyeccion-de-semanas-por-fecha.md) | Proyectar semanas por fecha calendario de retiro | Aceptada | 2026-10-28 |
 
 ## Formato
 

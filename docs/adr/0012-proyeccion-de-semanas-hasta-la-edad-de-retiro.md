@@ -1,6 +1,6 @@
 # ADR-0012 — El motor proyecta las semanas hasta la edad de retiro y calcula con esas semanas
 
-- **Estado**: Aceptada
+- **Estado**: Sustituida por ADR-0013
 - **Fecha**: 2026-10-26
 - **Ámbito**: `src/services/pension/`, `src/utils/weeksProjection.ts`, `src/validation/pensionSchema.ts`
 

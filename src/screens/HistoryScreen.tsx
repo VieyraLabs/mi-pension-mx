@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
-import { formatCurrency, formatDateShort, formatInteger, formatWeeksTargetText } from '../utils/format';
+import { formatCurrency, formatDateShort, formatInteger, formatWeeksTargetText, getWeeksLabel } from '../utils/format';
 import { DataRow } from '../components/DataRow';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -123,18 +123,11 @@ export default function HistoryScreen() {
                 </View>
                 <Divider style={{ marginVertical: 8 }} />
                 <View style={styles.cardData}>
-                  {/* Semanas: si la simulación trae proyección (las nuevas), se
-                      muestra el objetivo con el que se jubila el asegurado, con
-                      el MISMO texto y formato que el resumen de la simulación
-                      (ResultScreen) y que el PDF; las simulaciones guardadas
-                      antes de existir la proyección no la traen, y en ese caso
-                      se muestran solo las semanas cotizadas capturadas. */}
+                  {/* La etiqueta y el valor de proyección se comparten con
+                      ResultScreen y el PDF. Los registros históricos sin
+                      proyección conservan como valor las semanas capturadas. */}
                   <DataRow
-                    label={
-                      sim.result.weeksProjection
-                        ? 'Semanas cotizadas objetivo (al jubilarte)'
-                        : 'Semanas cotizadas actuales'
-                    }
+                    label={getWeeksLabel(sim.result.weeksProjection)}
                     value={
                       sim.result.weeksProjection
                         ? formatWeeksTargetText(

@@ -9,6 +9,7 @@ import {
   WEEKS_PER_YEAR,
 } from '../constants/ley73';
 import { round2 } from './format';
+import { countCotizedWeeksInDateRange } from './weeksProjection';
 
 /**
  * Subconjunto de `Modalidad40` (más laxo en nulabilidad) que necesita
@@ -20,16 +21,36 @@ interface Modalidad40WeeksInput {
   expectedMonths?: number | null;
 }
 
+const M40_MAX_MONTHS = 600;
+
 /**
- * Semanas que se sumarán al total de semanas cotizadas por los meses de
- * Modalidad 40 que el usuario planea contratar a futuro. `expectedMonths`
- * representa meses TODAVÍA NO cotizados (una proyección hacia adelante),
- * no meses ya incluidos en el historial laboral capturado — por eso se
- * suman al total en vez de solo usarse para el promedio del SBC.
+ * Meses contractuales de Modalidad 40 desde el mes siguiente a la referencia
+ * hasta el mes de retiro inclusive.
  */
-export function calculateM40PlannedWeeks(modalidad40: Modalidad40WeeksInput): number {
-  if (!modalidad40.active || !modalidad40.expectedMonths) return 0;
-  return Math.round(modalidad40.expectedMonths * WEEKS_PER_MONTH);
+export function estimateM40Months(referenceDate: Date, retirementDate: Date): number {
+  const firstM40Month = referenceDate.getFullYear() * 12 + referenceDate.getMonth() + 1;
+  const retirementMonth = retirementDate.getFullYear() * 12 + retirementDate.getMonth();
+  return Math.min(M40_MAX_MONTHS, Math.max(0, retirementMonth - firstM40Month + 1));
+}
+
+export function calculateM40PlannedWeeks(
+  referenceDate: Date,
+  retirementDate: Date,
+): number {
+  if (estimateM40Months(referenceDate, retirementDate) === 0) return 0;
+
+  const startDate = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth() + 1,
+    1,
+  );
+  const months = estimateM40Months(referenceDate, retirementDate);
+  const endDate = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth() + months + 1,
+    0,
+  );
+  return countCotizedWeeksInDateRange(startDate, endDate);
 }
 
 export interface Modalidad40Summary {
@@ -63,6 +84,7 @@ export function calculateM40Summary(
   totalExistingWeeks: number,
   baseDailySalary: number,
   dailyUMA: number,
+  plannedWeeks?: number,
 ): Modalidad40Summary {
   const empty: Modalidad40Summary = {
     referenceWeeks: 0,
@@ -75,7 +97,7 @@ export function calculateM40Summary(
   if (
     !modalidad40.active ||
     !modalidad40.contributionSalary ||
-    !modalidad40.expectedMonths
+    modalidad40.expectedMonths == null
   ) {
     return empty;
   }
@@ -87,7 +109,7 @@ export function calculateM40Summary(
 
   const referenceWeeks = SBC_AVERAGE_WEEKS;
   const m40Weeks = Math.min(
-    modalidad40.expectedMonths * WEEKS_PER_MONTH,
+    plannedWeeks ?? modalidad40.expectedMonths * WEEKS_PER_MONTH,
     referenceWeeks,
   );
   const baseWeeks = referenceWeeks - m40Weeks;
@@ -105,7 +127,8 @@ export function calculateM40Summary(
   const weightedAverage =
     (baseDailySalary * baseWeeks + adjustedDailyM40Salary * m40Weeks) / referenceWeeks;
 
-  const estimatedTotalWeeks = totalExistingWeeks + Math.round(modalidad40.expectedMonths * WEEKS_PER_MONTH);
+  const estimatedTotalWeeks =
+    totalExistingWeeks + (plannedWeeks ?? Math.round(modalidad40.expectedMonths * WEEKS_PER_MONTH));
 
   return {
     referenceWeeks: Math.round(m40Weeks),

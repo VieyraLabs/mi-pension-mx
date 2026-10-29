@@ -7,21 +7,17 @@ import { StyleSheet, TouchableOpacity } from 'react-native';
 import { Card, Text, TextInput, Switch, HelperText } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { MD3Theme } from 'react-native-paper';
-import type { Modalidad40, PersonalData } from '../models';
+import type { Modalidad40 } from '../models';
 import { getBrandGradient, BRAND_ON_COLOR } from '../theme';
-import { formatAge } from '../utils/format';
 
 export interface Modalidad40StepProps {
   modalidad40: Modalidad40;
-  /** Datos personales: solo para explicar de dónde sale el valor derivado. */
-  personalData: PersonalData;
   onChange: (data: Partial<Modalidad40>) => void;
   theme: MD3Theme;
 }
 
 export function Modalidad40Step({
   modalidad40,
-  personalData,
   onChange,
   theme,
 }: Modalidad40StepProps) {
@@ -75,7 +71,7 @@ export function Modalidad40Step({
               style={styles.input}
             />
             <HelperText type="info" style={{ marginBottom: 12 }}>
-              {`Se calcula automáticamente: los meses entre hoy y tu fecha de retiro (edad ${personalData.age}, retiro a los ${formatAge(personalData.retirementAge)} años).`}
+              Se calcula automáticamente: M40 va del día 1 del mes siguiente a hoy hasta el último día del mes de retiro, ambos inclusive.
             </HelperText>
             <TextInput
               label="Incremento salarial anual esperado (%) — opcional"

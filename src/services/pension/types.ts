@@ -15,6 +15,8 @@ export interface CalculationContext {
   readonly input: PensionInput;
   /** Proyección de semanas hasta la edad de retiro (ya cotizadas + proyectadas) */
   weeksProjection: WeeksProjection;
+  /** Semanas M40 planeadas por fechas, solo para los pasos internos del cálculo. */
+  m40PlannedWeeks: number;
   /** Salario diario efectivo (ya topado y ajustado por M40) */
   effectiveDailySalary: number;
   /** Salario en veces el SMG (para buscar rango en tabla Art. 167) */

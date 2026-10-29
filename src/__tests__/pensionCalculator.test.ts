@@ -14,7 +14,6 @@ import {
   DAYS_PER_YEAR_UMA,
   AVERAGE_DAYS_PER_MONTH,
   MONTHS_PER_YEAR,
-  WEEKS_PER_YEAR,
 } from '../constants/ley73';
 
 // ─────────────────────────────────────────────
@@ -23,6 +22,15 @@ import {
 
 const UMA_2025 = 113.14;
 const SMG_2025 = 278.8;
+
+function withReferenceDate<T>(referenceDate: Date, operation: () => T): T {
+  jest.useFakeTimers().setSystemTime(referenceDate);
+  try {
+    return operation();
+  } finally {
+    jest.useRealTimers();
+  }
+}
 
 function buildInput(overrides: Partial<{
   semanas: number;
@@ -39,6 +47,7 @@ function buildInput(overrides: Partial<{
   m40Meses: number;
   umaDiaria: number;
   smgCdmx: number;
+  fechaRetiro: Date;
 }>): PensionInput {
   const {
     semanas = 500,
@@ -59,6 +68,7 @@ function buildInput(overrides: Partial<{
     m40Meses = 0,
     umaDiaria = UMA_2025,
     smgCdmx = SMG_2025,
+    fechaRetiro = new Date(2025, 0, 1),
   } = overrides;
 
   return {
@@ -66,7 +76,7 @@ function buildInput(overrides: Partial<{
       sex: 'masculino',
       birthDate: fechaNacimiento,
       age: edadActual,
-      estimatedRetirementDate: new Date(2025, 0, 1),
+      estimatedRetirementDate: fechaRetiro,
       retirementAge: edadRetiro,
     },
     workHistory: {
@@ -115,12 +125,16 @@ describe('validateInput', () => {
     expect(result.errors.some((e) => e.includes('500'))).toBe(true);
   });
 
-  test('acepta pocas semanas si la proyección hasta el retiro alcanza las 500', () => {
-    // 100 semanas cotizadas a los 30 años + 35 años proyectados (1820
-    // semanas) = 1920 al jubilarse: el mínimo legal se cumple al retiro.
-    const input = buildInput({ semanas: 100, edadActual: 30, edadRetiro: 65 });
-    const result = validateInput(input);
-    expect(result.valid).toBe(true);
+  test('acepta pocas semanas si la proyección por fecha exacta alcanza las 500', () => {
+    withReferenceDate(new Date(2025, 5, 1), () => {
+      const input = buildInput({
+        semanas: 100,
+        edadActual: 30,
+        edadRetiro: 65,
+        fechaRetiro: new Date(2060, 5, 1),
+      });
+      expect(validateInput(input).valid).toBe(true);
+    });
   });
 
   test('acepta exactamente 500 semanas', () => {
@@ -163,19 +177,32 @@ describe('validateInput', () => {
     expect(result.valid).toBe(false);
   });
 
-  test('acepta semanas menores a 500 cuando Modalidad 40 planeada completa el mínimo', () => {
-    // 480 semanas ya cotizadas + 24 meses de M40 (~104 semanas) = 584, sí alcanza el mínimo.
-    const input = buildInput({ semanas: 480, modalidad40Activa: true, m40Salario: 300, m40Meses: 24 });
-    const result = validateInput(input);
-    expect(result.valid).toBe(true);
+  test('acepta semanas menores a 500 cuando M40 por fechas completa el mínimo', () => {
+    withReferenceDate(new Date(2025, 4, 30), () => {
+      const input = buildInput({
+        semanas: 496,
+        modalidad40Activa: true,
+        m40Salario: 300,
+        m40Meses: 24,
+        fechaRetiro: new Date(2025, 5, 15),
+      });
+      expect(validateInput(input).valid).toBe(true);
+    });
   });
 
-  test('rechaza semanas menores a 500 si ni con Modalidad 40 planeada se alcanza el mínimo', () => {
-    // 400 semanas + 6 meses de M40 (~26 semanas) = 426, no alcanza.
-    const input = buildInput({ semanas: 400, modalidad40Activa: true, m40Salario: 300, m40Meses: 6 });
-    const result = validateInput(input);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes('planeadas en Modalidad 40'))).toBe(true);
+  test('rechaza semanas menores a 500 cuando la M40 por fechas no completa el mínimo', () => {
+    withReferenceDate(new Date(2025, 4, 30), () => {
+      const input = buildInput({
+        semanas: 400,
+        modalidad40Activa: true,
+        m40Salario: 300,
+        m40Meses: 6,
+        fechaRetiro: new Date(2025, 5, 15),
+      });
+      const result = validateInput(input);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e) => e.includes('planeadas en Modalidad 40'))).toBe(true);
+    });
   });
 });
 
@@ -189,29 +216,27 @@ describe('validateInput', () => {
 // anuales, no solo usarse para el promedio ponderado del SBC.
 
 describe('calculatePension — Modalidad 40 (semanas proyectadas)', () => {
-  test('las semanas planeadas de Modalidad 40 se suman a las semanas excedentes', () => {
-    // 500 semanas ya cotizadas (0 excedentes por sí solas) + 52 semanas
-    // proyectadas por 12 meses de M40 = 552 → 52 excedentes → 1 año completo.
-    // Se compara el paso de incrementos directamente (no la pensión final)
-    // para no depender de si la Pensión Mínima Garantizada u otro tope
-    // termina dominando el resultado con un salario de prueba dado.
-    const sinM40 = calculatePension(buildInput({ semanas: 500 }));
-    const conM40 = calculatePension(
-      buildInput({ semanas: 500, modalidad40Activa: true, m40Salario: 200, m40Meses: 12 }),
-    );
+  test('la proyección M40 dentro del horizonte no duplica las semanas estimadas', () => {
+    withReferenceDate(new Date(2025, 5, 1), () => {
+      const fechaRetiro = new Date(2026, 5, 30);
+      const sinM40 = calculatePension(
+        buildInput({ semanas: 500, fechaRetiro }),
+      );
+      const conM40 = calculatePension(
+        buildInput({
+          semanas: 500,
+          fechaRetiro,
+          modalidad40Activa: true,
+          m40Salario: 200,
+          m40Meses: 12,
+        }),
+      );
 
-    const pasoSinM40 = sinM40.steps.find((p) => p.id === 'incrementos_anuales');
-    const pasoConM40 = conM40.steps.find((p) => p.id === 'incrementos_anuales');
-
-    expect(pasoSinM40?.description).not.toMatch(/Modalidad 40/i);
-    expect(pasoSinM40?.value).toBe(0);
-    expect(pasoConM40?.description).toMatch(/552/);
-    expect(pasoConM40?.description).toMatch(/Modalidad 40/i);
-    // 52 semanas excedentes = 1 año completo de incremento, en vez de 0.
-    expect(pasoConM40?.value).toBeGreaterThan(0);
-    // Las semanas planeadas de M40 son un supuesto: el paso queda marcado
-    // como estimación.
-    expect(pasoConM40?.isEstimate).toBe(true);
+      expect(sinM40.weeksProjection?.projectedWeeks).toBe(56);
+      expect(conM40.weeksProjection?.projectedWeeks).toBe(56);
+      expect(conM40.weeksProjection?.targetWeeks).toBe(556);
+      expect(conM40.weeksProjection?.targetWeeks).toBe(sinM40.weeksProjection?.targetWeeks);
+    });
   });
 
   test('sin Modalidad 40 activa, las semanas proyectadas no se suman', () => {
@@ -219,6 +244,35 @@ describe('calculatePension — Modalidad 40 (semanas proyectadas)', () => {
     const result = calculatePension(input);
     const paso = result.steps.find((p) => p.id === 'incrementos_anuales');
     expect(paso?.description).not.toMatch(/Modalidad 40/i);
+  });
+
+  test('AverageSalaryStep pondera 31 semanas M40 del intervalo 1-jul a 31-ene', () => {
+    withReferenceDate(new Date(2025, 5, 1), () => {
+      const result = calculatePension(
+        buildInput({
+          semanas: 500,
+          salarioDiario: 200,
+          modalidad40Activa: true,
+          m40Salario: 300,
+          m40Meses: 7,
+          fechaRetiro: new Date(2026, 0, 31),
+        }),
+      );
+      const averageStep = result.steps.find((step) => step.id === 'salario_promedio');
+
+      expect(averageStep?.description).toContain(
+        '219 sem. ordinarias ($200.00/día) + 31 sem. M40 ($300.00/día) = $212.40/día',
+      );
+      const projectionKeys = [
+        'currentWeeks',
+        'projectedWeeks',
+        'targetWeeks',
+        'yearsToRetirement',
+      ];
+      expect(Object.keys(result.weeksProjection!).sort()).toEqual(projectionKeys.sort());
+      const serializedProjection = JSON.parse(JSON.stringify(result)).weeksProjection;
+      expect(Object.keys(serializedProjection).sort()).toEqual(projectionKeys.sort());
+    });
   });
 });
 
@@ -231,35 +285,42 @@ describe('calculatePension — Modalidad 40 (semanas proyectadas)', () => {
 // de 500 semanas y los incrementos anuales del Art. 167 LSS 1973.
 
 describe('calculatePension — Proyección de semanas al jubilarse', () => {
-  test('las semanas proyectadas hasta la edad de retiro alimentan los incrementos del Art. 167', () => {
-    // 100 semanas cotizadas a los 30 años + 35 años proyectados (1820 semanas)
-    // = 1920 semanas al jubilarse → 1420 excedentes → 27 años completos de
-    // incremento (floor(1420 / 52) = 27).
-    const input = buildInput({
-      semanas: 100,
-      edadActual: 30,
-      edadRetiro: 65,
-      salarioDiario: UMA_2025,
-    });
-    const result = calculatePension(input);
+  test('las semanas hasta la fecha exacta de retiro alimentan los incrementos del Art. 167', () => {
+    withReferenceDate(new Date(2025, 5, 1), () => {
+      const input = buildInput({
+        semanas: 100,
+        edadActual: 30,
+        edadRetiro: 65,
+        salarioDiario: UMA_2025,
+        fechaRetiro: new Date(2060, 5, 1),
+      });
+      const result = calculatePension(input);
 
-    const paso = result.steps.find((p) => p.id === 'incrementos_anuales');
-    expect(result.annualIncrements).toBeGreaterThan(0);
-    expect(paso?.description).toMatch(/1820/);
-    expect(paso?.description).toMatch(/1920/);
-    expect(paso?.isEstimate).toBe(true);
-    expect(paso?.assumption).toMatch(/proyectadas/i);
+      const paso = result.steps.find((p) => p.id === 'incrementos_anuales');
+      expect(result.annualIncrements).toBeGreaterThan(0);
+      expect(paso?.description).toMatch(/1826/);
+      expect(paso?.description).toMatch(/1926/);
+      expect(paso?.isEstimate).toBe(true);
+      expect(paso?.assumption).toMatch(/proyectadas/i);
+    });
   });
 
-  test('el resultado expone la weeksProjection con las tres cifras coherentes', () => {
-    const input = buildInput({ semanas: 100, edadActual: 30, edadRetiro: 65 });
-    const result = calculatePension(input);
+  test('el resultado expone las cifras coherentes de la proyección por fechas', () => {
+    withReferenceDate(new Date(2025, 5, 1), () => {
+      const input = buildInput({
+        semanas: 100,
+        edadActual: 30,
+        edadRetiro: 65,
+        fechaRetiro: new Date(2060, 5, 1),
+      });
+      const result = calculatePension(input);
 
-    expect(result.weeksProjection).toBeDefined();
-    expect(result.weeksProjection?.currentWeeks).toBe(100);
-    expect(result.weeksProjection?.projectedWeeks).toBe(35 * WEEKS_PER_YEAR);
-    expect(result.weeksProjection?.targetWeeks).toBe(100 + 35 * WEEKS_PER_YEAR);
-    expect(result.weeksProjection?.yearsToRetirement).toBe(35);
+      expect(result.weeksProjection).toBeDefined();
+      expect(result.weeksProjection?.currentWeeks).toBe(100);
+      expect(result.weeksProjection?.projectedWeeks).toBe(1826);
+      expect(result.weeksProjection?.targetWeeks).toBe(1926);
+      expect(result.weeksProjection?.yearsToRetirement).toBe(35);
+    });
   });
 
   test('sin horizonte a futuro la proyección es cero y el total son las semanas cotizadas', () => {
@@ -274,42 +335,84 @@ describe('calculatePension — Proyección de semanas al jubilarse', () => {
   test('las semanas de Modalidad 40 dentro del horizonte no se cuentan dos veces', () => {
     // 35 años proyectados (1820 semanas) con 12 meses de M40 (52 semanas):
     // la M40 cae dentro del horizonte, así que el total NO es 1920 + 52.
+    withReferenceDate(new Date(2025, 5, 1), () => {
+      const input = buildInput({
+        semanas: 100,
+        edadActual: 30,
+        edadRetiro: 65,
+        modalidad40Activa: true,
+        m40Salario: 200,
+        m40Meses: 12,
+        fechaRetiro: new Date(2060, 5, 1),
+      });
+      const result = calculatePension(input);
+
+      expect(result.weeksProjection?.targetWeeks).toBe(100 + 1826);
+    });
+  });
+
+  test('conserva como calculationDate el instante capturado al inicio de la operación', () => {
+    const calculationStart = new Date(2025, 4, 31, 23, 59);
+    const laterInstant = new Date(2025, 5, 1, 0, 1);
+    jest.useFakeTimers().setSystemTime(calculationStart);
     const input = buildInput({
       semanas: 100,
       edadActual: 30,
       edadRetiro: 65,
-      modalidad40Activa: true,
-      m40Salario: 200,
-      m40Meses: 12,
+      fechaRetiro: new Date(2026, 5, 30),
     });
-    const result = calculatePension(input);
+    const personalData = input.personalData;
+    Object.defineProperty(input, 'personalData', {
+      get() {
+        jest.setSystemTime(laterInstant);
+        return personalData;
+      },
+    });
 
-    expect(result.weeksProjection?.targetWeeks).toBe(100 + 35 * WEEKS_PER_YEAR);
+    let result: ReturnType<typeof calculatePension>;
+    try {
+      result = calculatePension(input);
+    } finally {
+      jest.useRealTimers();
+    }
+
+    expect(result!.calculationDate).toBe(calculationStart.toISOString());
   });
 
-  test('el motor es determinista: el mismo input produce la misma proyección', () => {
-    const input = buildInput({ semanas: 100, edadActual: 30, edadRetiro: 65 });
-    const primero = calculatePension(input);
-    const segundo = calculatePension(input);
+  test('el motor es determinista para una fecha de referencia fija', () => {
+    withReferenceDate(new Date(2025, 5, 1), () => {
+      const input = buildInput({
+        semanas: 100,
+        edadActual: 30,
+        edadRetiro: 65,
+        fechaRetiro: new Date(2060, 5, 1),
+      });
+      const primero = calculatePension(input);
+      const segundo = calculatePension(input);
 
-    expect(segundo.weeksProjection).toEqual(primero.weeksProjection);
-    expect(segundo.monthlyPension).toBe(primero.monthlyPension);
+      expect(segundo.weeksProjection).toEqual(primero.weeksProjection);
+      expect(segundo.monthlyPension).toBe(primero.monthlyPension);
+    });
   });
 
-  test('la weeksProjection del resultado coincide con las cifras que narra el motor', () => {
-    // 100 cotizadas a los 30 años + 35 años proyectados = 1920 al jubilarse.
-    const input = buildInput({ semanas: 100, edadActual: 30, edadRetiro: 65 });
-    const result = calculatePension(input);
+  test('la weeksProjection coincide con las cifras que narra el motor', () => {
+    withReferenceDate(new Date(2025, 5, 1), () => {
+      const input = buildInput({
+        semanas: 100,
+        edadActual: 30,
+        edadRetiro: 65,
+        fechaRetiro: new Date(2060, 5, 1),
+      });
+      const result = calculatePension(input);
 
-    const paso = result.steps.find((p) => p.id === 'incrementos_anuales');
-    // Las tres cifras de la proyección aparecen en el desglose del motor.
-    expect(paso?.description).toMatch(/100 cotizadas/);
-    expect(paso?.description).toMatch(/1820 proyectadas hasta la edad de retiro/);
-    expect(paso?.description).toMatch(/1920/);
-    // Y son las mismas que expone el resultado.
-    expect(result.weeksProjection?.currentWeeks).toBe(100);
-    expect(result.weeksProjection?.projectedWeeks).toBe(1820);
-    expect(result.weeksProjection?.targetWeeks).toBe(1920);
+      const paso = result.steps.find((p) => p.id === 'incrementos_anuales');
+      expect(paso?.description).toMatch(/100 cotizadas/);
+      expect(paso?.description).toMatch(/1826 proyectadas hasta la edad de retiro/);
+      expect(paso?.description).toMatch(/1926/);
+      expect(result.weeksProjection?.currentWeeks).toBe(100);
+      expect(result.weeksProjection?.projectedWeeks).toBe(1826);
+      expect(result.weeksProjection?.targetWeeks).toBe(1926);
+    });
   });
 });
 
@@ -656,6 +759,42 @@ describe('calculatePension — Desglose', () => {
       expect(typeof adv).toBe('string');
       expect(adv.length).toBeGreaterThan(0);
     });
+  });
+
+  test('la fecha exacta cambia semanas sin modificar edad de retiro ni factor de edad', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2025, 5, 1));
+    try {
+      const inputEarlier = buildInput({ semanas: 500, edadActual: 64, edadRetiro: 65 });
+      inputEarlier.personalData.estimatedRetirementDate = new Date(2025, 5, 11);
+      const inputLater = {
+        ...inputEarlier,
+        personalData: {
+          ...inputEarlier.personalData,
+          estimatedRetirementDate: new Date(2025, 5, 12),
+        },
+      };
+
+      const earlier = calculatePension(inputEarlier);
+      const later = calculatePension(inputLater);
+      const today = calculatePension({
+        ...inputEarlier,
+        personalData: { ...inputEarlier.personalData, estimatedRetirementDate: new Date(2025, 5, 1) },
+      });
+      const past = calculatePension({
+        ...inputEarlier,
+        personalData: { ...inputEarlier.personalData, estimatedRetirementDate: new Date(2025, 4, 31) },
+      });
+
+      expect(earlier.weeksProjection?.projectedWeeks).toBe(1);
+      expect(later.weeksProjection?.projectedWeeks).toBe(2);
+      expect(earlier.weeksProjection?.yearsToRetirement).toBe(1);
+      expect(later.weeksProjection?.yearsToRetirement).toBe(1);
+      expect(earlier.ageFactor).toBe(later.ageFactor);
+      expect(today.weeksProjection?.projectedWeeks).toBe(0);
+      expect(past.weeksProjection?.projectedWeeks).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   test('el resultado siempre marca esEstimacion: true', () => {

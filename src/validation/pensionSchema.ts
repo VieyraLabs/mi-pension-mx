@@ -5,7 +5,11 @@
 import { z } from 'zod';
 import { MINIMUM_WEEKS_VEJEZ } from '../constants/ley73';
 import { calculateM40PlannedWeeks } from '../utils/modalidad40';
-import { calculateWeeksProjection, describeWeeksProjection } from '../utils/weeksProjection';
+import {
+  calculateWeeksProjection,
+  describeWeeksProjection,
+  getLocalReferenceDate,
+} from '../utils/weeksProjection';
 
 // ─────────────────────────────────────────────
 // Esquemas base
@@ -97,7 +101,7 @@ export const Modalidad40Schema = z.object({
   expectedMonths: z
     .number()
     .int()
-    .min(1, 'Los meses de Modalidad 40 deben ser al menos 1')
+    .min(0, 'Los meses de Modalidad 40 no pueden ser negativos')
     .max(600)
     .optional()
     .nullable(),
@@ -116,41 +120,54 @@ export const BeneficiariesSchema = z.object({
 // Esquema completo del formulario
 // ─────────────────────────────────────────────
 
-export const PensionInputSchema = z
-  .object({
-    personalData: PersonalDataSchema,
-    workHistory: WorkHistorySchema,
-    averageSalary: AverageContributionSalarySchema,
-    uma: UMAConfigurationSchema,
-    modalidad40: Modalidad40Schema,
-    beneficiaries: BeneficiariesSchema,
-  })
-  .superRefine((data, ctx) => {
-    // El mínimo de 500 semanas (Arts. 138 y 145 LSS 1973) se evalúa contra
-    // las semanas con las que el asegurado se jubilaría: las ya cotizadas más
-    // las proyectadas hasta la edad de retiro (y las planeadas por Modalidad
-    // 40, que caen dentro de ese horizonte).
-    const projection = calculateWeeksProjection({
-      currentWeeks: data.workHistory.totalWeeks,
-      age: data.personalData.age,
-      retirementAge: data.personalData.retirementAge,
-      m40PlannedWeeks: calculateM40PlannedWeeks(data.modalidad40),
-    });
-    if (projection.targetWeeks < MINIMUM_WEEKS_VEJEZ) {
-      const faltantes = MINIMUM_WEEKS_VEJEZ - projection.targetWeeks;
-      // El desglose es el MISMO que narra el motor (Art. 167 LSS 1973):
-      // semanas cotizadas + proyectadas hasta la edad de retiro = total con
-      // el que se jubila el asegurado.
-      const { breakdown } = describeWeeksProjection(projection);
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['workHistory', 'totalWeeks'],
-        message:
-          `Se requieren mínimo ${MINIMUM_WEEKS_VEJEZ} semanas cotizadas (Arts. 138 y 145 LSS 1973)` +
-          ` (${breakdown}). Te faltan ${faltantes} semanas para al jubilarse.`,
+function createPensionInputSchema(referenceDateProvider: () => Date) {
+  return z
+    .object({
+      personalData: PersonalDataSchema,
+      workHistory: WorkHistorySchema,
+      averageSalary: AverageContributionSalarySchema,
+      uma: UMAConfigurationSchema,
+      modalidad40: Modalidad40Schema,
+      beneficiaries: BeneficiariesSchema,
+    })
+    .superRefine((data, ctx) => {
+      // El mínimo legal se evalúa contra la proyección hasta la fecha exacta
+      // de retiro y las semanas contractuales de M40.
+      const referenceDate = referenceDateProvider();
+      const retirementDate = data.personalData.estimatedRetirementDate;
+      const projection = calculateWeeksProjection({
+        currentWeeks: data.workHistory.totalWeeks,
+        age: data.personalData.age,
+        retirementAge: data.personalData.retirementAge,
+        referenceDate,
+        retirementDate,
+        m40PlannedWeeks: data.modalidad40.active
+          ? calculateM40PlannedWeeks(referenceDate, retirementDate)
+          : 0,
       });
-    }
-  });
+      if (projection.targetWeeks < MINIMUM_WEEKS_VEJEZ) {
+        const faltantes = MINIMUM_WEEKS_VEJEZ - projection.targetWeeks;
+        // El desglose es el MISMO que narra el motor (Art. 167 LSS 1973):
+        // semanas cotizadas + proyectadas hasta la edad de retiro = total con
+        // el que se jubila el asegurado.
+        const { breakdown } = describeWeeksProjection(projection);
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['workHistory', 'totalWeeks'],
+          message:
+            `Se requieren mínimo ${MINIMUM_WEEKS_VEJEZ} semanas cotizadas (Arts. 138 y 145 LSS 1973)` +
+            ` (${breakdown}). Te faltan ${faltantes} semanas para al jubilarse.`,
+        });
+      }
+    });
+}
+
+export const PensionInputSchema = createPensionInputSchema(getLocalReferenceDate);
+
+/** Parse con la fecha local de referencia de la operación que lo invoca. */
+export function safeParsePensionInputAtReferenceDate(input: unknown, referenceDate: Date) {
+  return createPensionInputSchema(() => referenceDate).safeParse(input);
+}
 
 export type PensionInputForm = z.infer<typeof PensionInputSchema>;
 

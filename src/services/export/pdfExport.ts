@@ -11,9 +11,11 @@
  * ámbar #D97706 y neutros slate.)
  */
 import * as Print from 'expo-print';
+import { calculateM40PlannedWeeks, calculateM40Summary } from '../../utils/modalidad40';
+import { normalizeLocalCalendarDate } from '../../utils/weeksProjection';
 import * as Sharing from 'expo-sharing';
 import type { PensionResult } from '../../models';
-import { formatCurrency, formatPercent, formatDateLong, formatInteger, formatWeeksTargetText, formatAge } from '../../utils/format';
+import { formatCurrency, formatPercent, formatDateLong, formatInteger, formatWeeksTargetText, formatAge, getWeeksLabel } from '../../utils/format';
 
 /**
  * Genera el contenido HTML del reporte de pensión.
@@ -32,6 +34,35 @@ function generateHtml(result: PensionResult): string {
   const targetWeeksText = weeksProjection
     ? formatWeeksTargetText(weeksProjection, input.personalData.retirementAge)
     : `${formatInteger(currentWeeks)} sem.`;
+
+  const m40PlannedWeeks = input.modalidad40.active && weeksProjection
+    ? calculateM40PlannedWeeks(
+        normalizeLocalCalendarDate(new Date(result.calculationDate)),
+        new Date(input.personalData.estimatedRetirementDate as unknown as string),
+      )
+    : undefined;
+  const m40Summary = input.modalidad40.active
+    ? calculateM40Summary(
+        input.modalidad40,
+        input.workHistory.totalWeeks,
+        input.averageSalary.dailySalary,
+        input.uma.dailyUMA,
+        m40PlannedWeeks,
+      )
+    : undefined;
+  const m40SummaryHtml = input.modalidad40.active && m40Summary
+    ? `
+    <tr><td>Meses que planeas cotizar</td><td>${formatInteger(input.modalidad40.expectedMonths ?? 0)} meses</td></tr>
+    <tr><td>${weeksProjection ? 'Semanas M40 dentro del promedio de últimas 250' : 'Semanas M40 dentro del promedio de últimas 250 (aprox. por meses)'}</td><td>${formatInteger(m40Summary.referenceWeeks)} sem.</td></tr>
+    <tr><td>${weeksProjection ? 'Semanas previas al periodo M40' : 'Semanas previas al periodo M40 (aprox. por meses)'}</td><td>${formatInteger(m40Summary.baseWeeks)} sem.</td></tr>
+    <tr><td>${m40PlannedWeeks == null ? 'Semanas M40 planeadas hasta fin de mes de retiro (aprox. por meses)' : 'Semanas M40 planeadas hasta fin de mes de retiro'}</td><td>${formatInteger(m40PlannedWeeks ?? Math.max(0, m40Summary.estimatedTotalWeeks - currentWeeks))} sem.</td></tr>
+    <tr><td>${weeksProjection ? 'Semanas cotizadas + semanas M40 planeadas' : 'Semanas cotizadas + semanas M40 planeadas (aprox. por meses)'}</td><td>${formatInteger(m40Summary.estimatedTotalWeeks)} sem.</td></tr>
+    ${input.modalidad40.contributionSalary != null && input.modalidad40.expectedMonths != null
+      ? `<tr><td>SBC M40 con incremento anual</td><td>${formatCurrency(m40Summary.adjustedDailyM40Salary)}/día</td></tr>
+    <tr><td>${weeksProjection ? 'Salario promedio ponderado' : 'Salario promedio ponderado (aprox. por meses)'}</td><td>${formatCurrency(m40Summary.estimatedAverageDailySalary)}/día</td></tr>`
+      : ''}
+  `
+    : '';
 
   const stepsHtml = result.steps
     .map(
@@ -93,10 +124,11 @@ function generateHtml(result: PensionResult): string {
     <tr><td>Edad de retiro</td><td>${formatAge(input.personalData.retirementAge)} años</td></tr>
     <tr><td>Tipo de pensión</td><td>${result.pensionType === 'vejez' ? 'Vejez (Art. 138 LSS 1973)' : 'Cesantía en Edad Avanzada (Art. 145 LSS 1973)'}</td></tr>
     <tr><td>Semanas cotizadas actuales</td><td>${formatInteger(currentWeeks)} sem.</td></tr>
-    <tr><td>Semanas cotizadas objetivo (al jubilarte)</td><td>${targetWeeksText}</td></tr>
+    <tr><td>${getWeeksLabel(weeksProjection)}</td><td>${targetWeeksText}</td></tr>
     <tr><td>Salario diario promedio (SBC)</td><td>${formatCurrency(input.averageSalary.dailySalary)}</td></tr>
     <tr><td>UMA utilizada</td><td>${formatCurrency(input.uma.dailyUMA)}/día (${input.uma.year}${input.uma.isCustom ? ', personalizada' : ''})</td></tr>
-    ${input.modalidad40.active ? `<tr><td>Modalidad 40</td><td>Activa — $${input.modalidad40.contributionSalary}/día</td></tr>` : ''}
+    ${input.modalidad40.active ? `<tr><td>Modalidad 40</td><td>Activa — &#36;${input.modalidad40.contributionSalary}/día</td></tr>` : ''}
+    ${m40SummaryHtml}
   </table>
 
   <!-- Resultado principal -->

@@ -95,6 +95,14 @@ export function formatNumbersInText(text: string): string {
   return text.replace(/\d+/g, (digits) => INTEGER_FORMATTER.format(Number(digits)));
 }
 
+export const WEEKS_TARGET_LABEL = 'Semanas estimadas al pensionarte';
+export const WEEKS_RECORDED_LABEL = 'Semanas cotizadas registradas';
+
+/** Elige una etiqueta que no presente semanas registradas como proyección. */
+export function getWeeksLabel(projection?: WeeksProjection): string {
+  return projection ? WEEKS_TARGET_LABEL : WEEKS_RECORDED_LABEL;
+}
+
 /**
  * Texto de las semanas con las que se jubila el asegurado:
  * "1,640 sem. (600 cotizadas + 1,040 proyectadas hasta los 65 años)".

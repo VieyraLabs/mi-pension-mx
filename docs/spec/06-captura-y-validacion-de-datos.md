@@ -51,13 +51,17 @@ esa fecha es la que queda.
 - **La validación es la de Zod**, y es la misma que usa el motor
   ([ADR-0004](../adr/0004-validacion-con-zod-como-fuente-unica.md)). Los mensajes de
   error citan el artículo legal cuando la regla tiene uno.
-- **El mínimo de 500 semanas se evalúa contra las semanas con las que se jubilaría el
-  asegurado**, no solo contra las ya cotizadas: las semanas actuales más las proyectadas
-  hasta la edad de retiro (las planeadas en Modalidad 40 caen dentro de ese horizonte y no
-  se cuentan dos veces). El mensaje de error muestra el desglose: "500 semanas cotizadas
-  (480 cotizadas + 20 planeadas en Modalidad 40 = 500)". La misma proyección usa el motor
-  (ver [Spec-01](01-motor-de-calculo-ley-73.md) y
-  [ADR-0012](../adr/0012-proyeccion-de-semanas-hasta-la-edad-de-retiro.md)).
+- **El mínimo de 500 semanas de Ley 73 se evalúa contra las semanas estimadas con las que
+  se jubilaría el asegurado**, no solo contra las ya cotizadas: semanas actuales más las
+  proyectadas hasta la fecha exacta de retiro (las de Modalidad 40 caen dentro de ese
+  horizonte y no se cuentan dos veces). La proyección normal comprende desde el día
+  siguiente a `referenceDate` hasta `estimatedRetirementDate`, ambos inclusive, bajo el
+  supuesto de cotización continua. Para convertir los días proyectados en semanas se usa
+  el criterio de residuo mayor que tres del Art. 20 de la LSS vigente; no se verificó
+  independientemente ese texto en la LSS 1973 (ver
+  [ADR-0013](../adr/0013-proyeccion-de-semanas-por-fecha.md)).
+  El mensaje de error muestra el desglose: "500 semanas cotizadas (480 cotizadas + 20
+  planeadas en Modalidad 40 = 500)" (ver [Spec-01](01-motor-de-calculo-ley-73.md)).
 - **La edad de retiro NO es un dato personal: es una decisión sobre cuándo se jubila la
   persona usuaria.** Por eso vive en su propio paso (el 3) y no en «Datos personales»:
   el paso 1 se llama «Datos personales» y solo lleva nombre, sexo y fecha de nacimiento. El
@@ -78,13 +82,14 @@ esa fecha es la que queda.
   ofrece una guía evergreen sobre dónde verificar las semanas cotizadas (el portal del
   IMSS con el NSS). El mínimo de 500 semanas se revisa al final, con la edad de retiro ya
   definida.
-- **El campo «Meses cotizando en M40 (estimado)» es derivado y de solo lectura.** Su valor
-  se precarga al activar Modalidad 40 con los meses que hay entre hoy y la fecha de retiro,
-  y se recalcula si cambian la fecha de nacimiento o la edad de retiro. No es editable: si
-  fuera editable, sus semanas se sumarían a un horizonte que ya las contiene. Un texto
-  auxiliar explica de dónde sale el valor. El horizonte se acota al rango que admite el
-  esquema (1 a 600 meses): si el asegurado ya está en la edad de retiro el valor es 1, y
-  si el horizonte supera los 50 años se acota a 600.
+- **El campo «Meses cotizando en M40 (estimado)» es derivado y de solo lectura.** El periodo
+  contractual va desde el día 1 del mes calendario siguiente a `referenceDate` hasta el
+  último día del mes de retiro, inclusive; por tanto, incluye el mes de retiro completo y
+  excluye el mes de referencia. `expectedMonths` admite de 0 a 600: vale 0 si no hay ningún
+  mes contractual en ese intervalo y se limita a 600 si el horizonte excede ese máximo.
+  Se precarga al activar M40 y se recalcula si cambian la fecha de nacimiento o la edad de
+  retiro. Un texto auxiliar explica el periodo; no es editable, porque sus semanas forman
+  parte del horizonte de proyección y no deben sumarse de nuevo.
 - **La edad de retiro va de 60 a 100 años**, con el mínimo justificado por la cesantía en
   edad avanzada, y admite **fracciones de medio año** (60, 60.5, 61, …): el esquema
   rechaza, con mensaje, las edades que no son múltiplos de medio año.

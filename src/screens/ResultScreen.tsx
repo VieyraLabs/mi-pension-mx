@@ -11,9 +11,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
 import { exportPensionResultToPdf } from '../services/export/pdfExport';
-import { formatCurrency, formatPercent, formatInteger, formatWeeksTargetText, formatAge } from '../utils/format';
+import { formatCurrency, formatPercent, formatInteger, formatWeeksTargetText, formatAge, getWeeksLabel } from '../utils/format';
 import { showAlert } from '../utils/alert';
-import { calculateM40Summary } from '../utils/modalidad40';
+import { calculateM40PlannedWeeks, calculateM40Summary } from '../utils/modalidad40';
+import { normalizeLocalCalendarDate } from '../utils/weeksProjection';
 import { getBannerColors, getBrandGradient, BRAND_ON_COLOR } from '../theme';
 import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
 import { EmptyState } from '../components/EmptyState';
@@ -163,7 +164,7 @@ export default function ResultScreen() {
           <SummaryRow label="Edad de retiro" value={`${formatAge(result.input.personalData.retirementAge)} años`} theme={theme} />
           <SummaryRow label="Tipo de pensión" value={result.pensionType === 'vejez' ? 'Vejez (Art. 138)' : 'Cesantía Edad Avanzada (Art. 145)'} theme={theme} />
           <SummaryRow label="Semanas cotizadas actuales" value={`${formatInteger(currentWeeks)} sem.`} theme={theme} />
-          <SummaryRow label="Semanas cotizadas objetivo (al jubilarte)" value={targetWeeksText} theme={theme} />
+          <SummaryRow label={getWeeksLabel(weeksProjection)} value={targetWeeksText} theme={theme} />
           <SummaryRow label="Salario diario promedio" value={formatCurrency(result.input.averageSalary.dailySalary)} theme={theme} />
           <SummaryRow label="UMA utilizada" value={`$${result.input.uma.dailyUMA}/día (${result.input.uma.year}${result.input.uma.isCustom ? ', personalizada' : ''})`} theme={theme} />
           {result.input.modalidad40.active && (() => {
@@ -173,6 +174,15 @@ export default function ResultScreen() {
               result.input.workHistory.totalWeeks,
               result.input.averageSalary.dailySalary,
               result.input.uma.dailyUMA,
+              weeksProjection
+                ? calculateM40PlannedWeeks(
+                    normalizeLocalCalendarDate(new Date(result.calculationDate)),
+                    // JSON storage revives model Date fields as ISO strings.
+                    new Date(
+                      result.input.personalData.estimatedRetirementDate as unknown as string,
+                    ),
+                  )
+                : undefined,
             );
             return (
               <View style={[styles.m40Block, { borderTopColor: theme.colors.outlineVariant }]}>
@@ -198,25 +208,50 @@ export default function ResultScreen() {
                   theme={theme}
                 />
                 <SummaryRow
-                  label="Semanas M40 (de las 250)"
+                  label={
+                    weeksProjection
+                      ? 'Semanas M40 (de las 250)'
+                      : 'Semanas M40 (de las 250) (aprox. por meses)'
+                  }
                   value={`${formatInteger(summary.referenceWeeks)} sem.`}
                   theme={theme}
                 />
                 <SummaryRow
-                  label="Semanas previas al M40"
+                  label={
+                    weeksProjection
+                      ? 'Semanas previas al M40'
+                      : 'Semanas previas al M40 (aprox. por meses)'
+                  }
                   value={`${formatInteger(summary.baseWeeks)} sem.`}
                   theme={theme}
                 />
+                <SummaryRow
+                  label={
+                    weeksProjection
+                      ? 'Semanas M40 planeadas'
+                      : 'Semanas M40 planeadas (aprox. por meses)'
+                  }
+                  value={`${formatInteger(Math.max(0, summary.estimatedTotalWeeks - currentWeeks))} sem.`}
+                  theme={theme}
+                />
                 {/* NO es el total de semanas del cálculo (ese es el objetivo de
-                    la fila "Semanas cotizadas objetivo (al jubilarte)"): son las
+                    la fila de semanas proyectadas, si hay proyección): son las
                     semanas ya cotizadas más las que se planean cotizar en M40. */}
                 <SummaryRow
-                  label="Semanas cotizadas + semanas M40 planeadas"
+                  label={
+                    weeksProjection
+                      ? 'Semanas cotizadas + semanas M40 planeadas'
+                      : 'Semanas cotizadas + semanas M40 planeadas (aprox. por meses)'
+                  }
                   value={`${formatInteger(summary.estimatedTotalWeeks)} sem.`}
                   theme={theme}
                 />
                 <SummaryRow
-                  label="Salario promedio ponderado"
+                  label={
+                    weeksProjection
+                      ? 'Salario promedio ponderado'
+                      : 'Salario promedio ponderado (aprox. por meses)'
+                  }
                   value={`${formatCurrency(summary.estimatedAverageDailySalary)}/día`}
                   theme={theme}
                 />

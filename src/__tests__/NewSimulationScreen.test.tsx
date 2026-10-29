@@ -27,8 +27,8 @@ import { screen, fireEvent } from '@testing-library/react-native';
 import { lightTheme } from '../theme';
 import { renderScreen } from '../test-utils/renderScreen';
 import NewSimulationScreen from '../screens/NewSimulationScreen';
-import { calculateAge } from '../utils/date';
-import { estimateMonthsToRetirement } from '../utils/weeksProjection';
+import { getLocalReferenceDate } from '../utils/weeksProjection';
+import { estimateM40Months } from '../utils/modalidad40';
 import {
   cumpleanosEnEdad,
   edadMostrada,
@@ -233,12 +233,14 @@ describe('NewSimulationScreen', () => {
     fireEvent.press(screen.getByText('Siguiente'));
     fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 40? Toca aquí'));
 
-    const age = calculateAge(new Date(1965, 0, 1));
-    const mesesConMediaEdad = estimateMonthsToRetirement(age, 64.5);
+    const mesesConMediaEdad = estimateM40Months(
+      getLocalReferenceDate(),
+      new Date(2029, 6, 1),
+    );
     expect(screen.getByDisplayValue(String(mesesConMediaEdad))).toBeTruthy();
     expect(
       screen.getByText(
-        `Se calcula automáticamente: los meses entre hoy y tu fecha de retiro (edad ${age}, retiro a los 64.5 años).`,
+        'Se calcula automáticamente: M40 va del día 1 del mes siguiente a hoy hasta el último día del mes de retiro, ambos inclusive.',
       ),
     ).toBeTruthy();
   });
@@ -256,9 +258,10 @@ describe('NewSimulationScreen', () => {
     fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 40? Toca aquí'));
 
     // El valor viene del horizonte: los meses entre hoy y la fecha de retiro.
-    const age = calculateAge(new Date(1965, 0, 1));
-    const retirementAge = 65;
-    const mesesEsperados = estimateMonthsToRetirement(age, retirementAge);
+    const mesesEsperados = estimateM40Months(
+      getLocalReferenceDate(),
+      new Date(2030, 0, 1),
+    );
 
     const inputMeses = screen.getByDisplayValue(String(mesesEsperados));
     expect(inputMeses.props.editable).toBe(false);
@@ -267,7 +270,7 @@ describe('NewSimulationScreen', () => {
     // El helper explica de dónde sale el valor.
     expect(
       screen.getByText(
-        `Se calcula automáticamente: los meses entre hoy y tu fecha de retiro (edad ${age}, retiro a los ${retirementAge} años).`,
+        'Se calcula automáticamente: M40 va del día 1 del mes siguiente a hoy hasta el último día del mes de retiro, ambos inclusive.',
       ),
     ).toBeTruthy();
   });

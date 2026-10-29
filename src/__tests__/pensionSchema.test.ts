@@ -10,8 +10,10 @@
  */
 import {
   PensionInputSchema,
+  Modalidad40Schema,
   WorkHistorySchema,
   EmploymentRelationSchema,
+  safeParsePensionInputAtReferenceDate,
 } from '../validation/pensionSchema';
 
 function buildValidRelation() {
@@ -24,6 +26,10 @@ function buildValidRelation() {
     movementType: '09',
     contributedDays: 920,
   };
+}
+
+function parseAtReferenceDate(input: unknown, referenceDate: Date) {
+  return safeParsePensionInputAtReferenceDate(input, referenceDate);
 }
 
 function buildValidInput() {
@@ -146,6 +152,12 @@ describe('PensionInputSchema — contrato completo con historial reconstruido', 
   });
 });
 
+describe('Modalidad40Schema — meses esperados', () => {
+  test('acepta cero meses si no hay un mes contractual antes del retiro', () => {
+    expect(Modalidad40Schema.safeParse({ active: true, expectedMonths: 0 }).success).toBe(true);
+  });
+});
+
 describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubilarse)', () => {
   test('rechaza un sexo no soportado con el mensaje del errorMap (enum SexSchema)', () => {
     const input = buildValidInput();
@@ -221,22 +233,30 @@ describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubi
   });
 
   test('acepta pocas semanas si la proyección hasta el retiro alcanza las 500', () => {
-    // 100 semanas cotizadas a los 30 años + 35 años proyectados (1820
-    // semanas) = 1920 al jubilarse: se cumple el mínimo legal (Arts. 138 y 145).
+    // El horizonte date-exacto de 35 años supera ampliamente el mínimo legal.
     const input = { ...buildValidInput() };
-    input.personalData = { ...input.personalData, age: 30, retirementAge: 65 };
+    input.personalData = {
+      ...input.personalData,
+      age: 30,
+      retirementAge: 65,
+      estimatedRetirementDate: new Date(2060, 5, 1),
+    };
     input.workHistory = { totalWeeks: 100, employmentRelations: [] };
-    const result = PensionInputSchema.safeParse(input);
+    const result = parseAtReferenceDate(input, new Date(2025, 5, 1));
     expect(result.success).toBe(true);
   });
 
   test('quien no cumple hoy pero sí al jubilarse NO recibe el error de semanas', () => {
-    // 100 semanas cotizadas a los 30 años: hoy NO cumple el mínimo, pero
-    // al jubilarse tendrá 1920 (100 + 1820 proyectadas) y sí cumple.
+    // Con la fecha exacta de retiro indicada, la proyección supera el mínimo.
     const input = { ...buildValidInput() };
-    input.personalData = { ...input.personalData, age: 30, retirementAge: 65 };
+    input.personalData = {
+      ...input.personalData,
+      age: 30,
+      retirementAge: 65,
+      estimatedRetirementDate: new Date(2060, 5, 1),
+    };
     input.workHistory = { totalWeeks: 100, employmentRelations: [] };
-    const result = PensionInputSchema.safeParse(input);
+    const result = parseAtReferenceDate(input, new Date(2025, 5, 1));
     expect(result.success).toBe(true);
     if (!result.success) {
       expect(
@@ -246,11 +266,16 @@ describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubi
   });
 
   test('rechaza cuando ni con la proyección se alcanza el mínimo de 500', () => {
-    // 50 semanas cotizadas a los 64 años + 1 año proyectado (52) = 102.
+    // Del 1 de enero al 1 de enero siguiente se proyectan 52 semanas.
     const input = { ...buildValidInput() };
-    input.personalData = { ...input.personalData, age: 64, retirementAge: 65 };
+    input.personalData = {
+      ...input.personalData,
+      age: 64,
+      retirementAge: 65,
+      estimatedRetirementDate: new Date(2026, 0, 1),
+    };
     input.workHistory = { totalWeeks: 50, employmentRelations: [] };
-    const result = PensionInputSchema.safeParse(input);
+    const result = parseAtReferenceDate(input, new Date(2025, 0, 1));
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(
@@ -260,12 +285,16 @@ describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubi
   });
 
   test('el mensaje del mínimo de 500 narra las cifras de la proyección', () => {
-    // 50 cotizadas + 52 proyectadas hasta los 65 años = 102 al jubilarse:
-    // faltan 398 semanas.
+    // 50 cotizadas + 52 proyectadas en el intervalo exacto = 102; faltan 398.
     const input = { ...buildValidInput() };
-    input.personalData = { ...input.personalData, age: 64, retirementAge: 65 };
+    input.personalData = {
+      ...input.personalData,
+      age: 64,
+      retirementAge: 65,
+      estimatedRetirementDate: new Date(2026, 0, 1),
+    };
     input.workHistory = { totalWeeks: 50, employmentRelations: [] };
-    const result = PensionInputSchema.safeParse(input);
+    const result = parseAtReferenceDate(input, new Date(2025, 0, 1));
     expect(result.success).toBe(false);
     if (!result.success) {
       const mensaje = result.error.issues
@@ -282,7 +311,8 @@ describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubi
 
   test('acepta 480 semanas + Modalidad 40 planeada que completa el mínimo', () => {
     const input = { ...buildValidInput() };
-    input.workHistory = { totalWeeks: 480, employmentRelations: [buildValidRelation()] };
+    input.personalData.estimatedRetirementDate = new Date(2025, 5, 15);
+    input.workHistory = { totalWeeks: 496, employmentRelations: [buildValidRelation()] };
     input.modalidad40 = {
       active: true,
       contributionSalary: 300,
@@ -290,12 +320,13 @@ describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubi
       expectedMonths: 24,
       annualSalaryIncrease: 5,
     } as typeof input.modalidad40;
-    const result = PensionInputSchema.safeParse(input);
+    const result = parseAtReferenceDate(input, new Date(2025, 4, 30));
     expect(result.success).toBe(true);
   });
 
   test('rechaza 400 semanas aunque Modalidad 40 planeada no alcance el mínimo', () => {
     const input = { ...buildValidInput() };
+    input.personalData.estimatedRetirementDate = new Date(2025, 5, 15);
     input.workHistory = { totalWeeks: 400, employmentRelations: [] };
     input.modalidad40 = {
       active: true,
@@ -304,7 +335,7 @@ describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubi
       expectedMonths: 6,
       annualSalaryIncrease: 5,
     } as typeof input.modalidad40;
-    const result = PensionInputSchema.safeParse(input);
+    const result = parseAtReferenceDate(input, new Date(2025, 4, 30));
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(

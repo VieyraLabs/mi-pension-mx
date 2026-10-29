@@ -10,7 +10,6 @@ import {
   MODALIDAD_40_CAP_TIMES_UMA,
   SBC_AVERAGE_WEEKS,
   SBC_CAP_TIMES_UMA,
-  WEEKS_PER_MONTH,
   WEEKS_PER_YEAR,
 } from '../../../constants/ley73';
 import { round2 } from '../../../utils/format';
@@ -21,7 +20,7 @@ import { round2 } from '../../../utils/format';
  *
  * Supuesto M40: cuando M40 está activa, calculamos el promedio ponderado
  * aproximado entre el SBC del régimen obligatorio y el SBC de M40,
- * según los meses esperados de cotización M40 dentro de las 250 semanas.
+ * según las semanas M40 planeadas por fecha dentro de las 250 semanas.
  */
 export const AverageSalaryStep: CalculationStep = (ctx): CalculationContext => {
   const { input } = ctx;
@@ -43,7 +42,7 @@ export const AverageSalaryStep: CalculationStep = (ctx): CalculationContext => {
     // Semanas totales del período de referencia
     const referenceWeeks = SBC_AVERAGE_WEEKS; // 250
     // Semanas de M40 dentro del período de referencia
-    const m40Weeks = Math.min(modalidad40.expectedMonths * WEEKS_PER_MONTH, referenceWeeks);
+    const m40Weeks = Math.min(ctx.m40PlannedWeeks, referenceWeeks);
     const baseWeeks = referenceWeeks - m40Weeks;
 
     // Incremento anual de M40 si aplica

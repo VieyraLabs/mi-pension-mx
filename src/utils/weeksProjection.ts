@@ -2,22 +2,51 @@
  * Utilidades de proyección de semanas compartidas por el motor de cálculo,
  * el esquema de validación y el formulario.
  *
- * Una persona que todavía no llega a la edad de retiro seguirá cotizando: el
- * horizonte de semanas hasta la edad de retiro es el supuesto que permite
- * estimar si se alcanzará el mínimo legal de 500 semanas (Arts. 138 y 145
- * LSS 1973) y cuántos años excedentes habría al jubilarse (Art. 167 LSS 1973).
+ * Una persona que aún no llega a la fecha de retiro puede seguir cotizando: el
+ * horizonte de semanas se estima por días calendario desde mañana hasta la
+ * fecha de retiro, con el supuesto de cotización futura continua.
  *
- * NOTA: la edad actual se toma del dato de entrada (`personalData.age`), nunca
- * de `new Date()` — el motor debe ser determinista (mismo input → mismo
- * resultado).
+ * La edad actual se conserva únicamente para el metadato `yearsToRetirement`; no
+ * participa en el cálculo de semanas.
  */
-import { MONTHS_PER_YEAR, WEEKS_PER_YEAR } from '../constants/ley73';
+import { MONTHS_PER_YEAR } from '../constants/ley73';
 import { formatAge } from './format';
+
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Normaliza un instante al inicio de su día calendario local. */
+export function normalizeLocalCalendarDate(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/** Captura la fecha de referencia local para una operación. */
+export function getLocalReferenceDate(): Date {
+  return normalizeLocalCalendarDate(new Date());
+}
+
+function getCalendarDayNumber(date: Date): number {
+  const utcDate = new Date(0);
+  utcDate.setUTCFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+  return utcDate.getTime() / MILLISECONDS_PER_DAY;
+}
+
+/**
+ * Cuenta las semanas estimadas entre dos fechas calendario, incluyendo ambos
+ * extremos y redondeando solo si los días restantes exceden la mitad de semana.
+ */
+export function countCotizedWeeksInDateRange(startDate: Date, endDate: Date): number {
+  const days = getCalendarDayNumber(endDate) - getCalendarDayNumber(startDate) + 1;
+  if (days <= 0) return 0;
+
+  const fullWeeks = Math.floor(days / 7);
+  const remainingDays = days % 7;
+  return fullWeeks + (remainingDays > 3 ? 1 : 0);
+}
 
 export interface WeeksProjection {
   /** Semanas ya cotizadas a la fecha. */
   currentWeeks: number;
-  /** Semanas proyectadas entre hoy y la edad de retiro. */
+  /** Semanas proyectadas desde mañana hasta la fecha exacta de retiro. */
   projectedWeeks: number;
   /** Semanas con las que se calcula (currentWeeks + futuro). */
   targetWeeks: number;
@@ -29,7 +58,7 @@ export interface WeeksProjection {
 export interface WeeksNarrative {
   /** Semanas ya cotizadas. */
   currentWeeks: number;
-  /** Semanas proyectadas hasta la edad de retiro. */
+  /** Semanas proyectadas desde mañana hasta la fecha exacta de retiro. */
   projectedWeeks: number;
   /** Semanas de Modalidad 40 que exceden el horizonte (0 si no las hay). */
   m40ExtraWeeks: number;
@@ -48,20 +77,28 @@ export interface WeeksNarrative {
 }
 
 /**
- * Calcula la proyección de semanas hasta la edad de retiro.
+ * Calcula la proyección de semanas por días calendario. La edad solo se conserva
+ * como metadato de compatibilidad; no determina las semanas estimadas.
  *
- * Las semanas de Modalidad 40 planeadas caen DENTRO del horizonte hasta la
- * fecha de retiro, así que se toma el mayor de los dos (proyección vs. M40)
- * y nunca la suma: de otro modo las semanas de M40 se contarían dos veces.
+ * La proyección base empieza mañana para no volver a contar el día reflejado en
+ * `currentWeeks`. M40 puede cubrir hasta el fin del mes de retiro, por lo que
+ * el objetivo toma el máximo de ambas proyecciones y nunca las suma.
  */
 export function calculateWeeksProjection(params: {
   currentWeeks: number;
   age: number;
   retirementAge: number;
+  referenceDate: Date;
+  retirementDate: Date;
   m40PlannedWeeks: number;
 }): WeeksProjection {
   const yearsToRetirement = Math.max(0, params.retirementAge - params.age);
-  const projectedWeeks = yearsToRetirement * WEEKS_PER_YEAR;
+  const startDate = new Date(
+    params.referenceDate.getFullYear(),
+    params.referenceDate.getMonth(),
+    params.referenceDate.getDate() + 1,
+  );
+  const projectedWeeks = countCotizedWeeksInDateRange(startDate, params.retirementDate);
   const targetWeeks = params.currentWeeks + Math.max(projectedWeeks, params.m40PlannedWeeks);
 
   return {
