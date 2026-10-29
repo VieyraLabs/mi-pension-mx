@@ -215,9 +215,13 @@ describe('exportPensionResultToPdf', () => {
 
     mockPrintToFileAsync.mockClear();
     const withoutM40 = buildResult();
+    withoutM40.input.projectedAverageDailySalary = 300;
     await exportPensionResultToPdf(withoutM40);
     const noM40Html = mockPrintToFileAsync.mock.calls[0][0].html as string;
-    expect(noM40Html).toContain('Salario diario promedio (SBC)');
+    expect(noM40Html).toContain('SBC actual (diario)');
+    expect(noM40Html).toContain('SBC proyectado al retiro (diario)');
+    expect(noM40Html).toContain(formatCurrency(200));
+    expect(noM40Html).toContain(formatCurrency(300));
     expect(noM40Html).not.toContain('Meses que planeas cotizar');
     expect(noM40Html).not.toContain('Semanas M40 planeadas');
     expect(noM40Html).not.toContain('Salario promedio ponderado');

@@ -165,14 +165,15 @@ export default function ResultScreen() {
           <SummaryRow label="Tipo de pensión" value={result.pensionType === 'vejez' ? 'Vejez (Art. 138)' : 'Cesantía Edad Avanzada (Art. 145)'} theme={theme} />
           <SummaryRow label="Semanas cotizadas actuales" value={`${formatInteger(currentWeeks)} sem.`} theme={theme} />
           <SummaryRow label={getWeeksLabel(weeksProjection)} value={targetWeeksText} theme={theme} />
-          <SummaryRow label="Salario diario promedio" value={formatCurrency(result.input.averageSalary.dailySalary)} theme={theme} />
+          <SummaryRow label="SBC actual (diario)" value={formatCurrency(result.input.averageSalary.dailySalary)} theme={theme} />
+          <SummaryRow label="SBC proyectado al retiro (diario)" value={formatCurrency(result.input.projectedAverageDailySalary ?? result.input.averageSalary.dailySalary)} theme={theme} />
           <SummaryRow label="UMA utilizada" value={`$${result.input.uma.dailyUMA}/día (${result.input.uma.year}${result.input.uma.isCustom ? ', personalizada' : ''})`} theme={theme} />
           {result.input.modalidad40.active && (() => {
             const m40 = result.input.modalidad40;
             const summary = calculateM40Summary(
               m40,
               result.input.workHistory.totalWeeks,
-              result.input.averageSalary.dailySalary,
+              result.input.projectedAverageDailySalary ?? result.input.averageSalary.dailySalary,
               result.input.uma.dailyUMA,
               weeksProjection
                 ? calculateM40PlannedWeeks(

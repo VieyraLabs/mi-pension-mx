@@ -21,7 +21,7 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { fireEvent, screen, within } from '@testing-library/react-native';
 import { lightTheme } from '../theme';
 import { renderScreen } from '../test-utils/renderScreen';
@@ -463,6 +463,26 @@ describe('ValidationScreen — desglose del SBC promedio (US-001)', () => {
     expect(employerB.props.numberOfLines).toBe(1);
     expect(employerB.props.ellipsizeMode).toBe('tail');
     expect(screen.queryByText(/EMPRESA A SA DE CV \+ EMPRESA B SA DE CV/)).toBeNull();
+  });
+
+  test('pasa el historial detallado agregado al iniciar una simulación', () => {
+    mockExtractedText = TEXTO_CONCURRENTES_SIN_BAJA;
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+      buttons?.find((button) => button.text === 'Continuar')?.onPress?.();
+    });
+
+    try {
+      renderScreen(<ValidationScreen />);
+      fireEvent.press(screen.getByText('Confirmar y continuar'));
+
+      expect(mockNavigate).toHaveBeenCalledWith('NewSimulation', expect.objectContaining({
+        importedData: expect.objectContaining({
+          sbcPeriods: expect.arrayContaining([expect.objectContaining({ sbc: 900 })]),
+        }),
+      }));
+    } finally {
+      alertSpy.mockRestore();
+    }
   });
 
   test('muestra salarios individuales para patrones concurrentes con el mismo nombre', () => {

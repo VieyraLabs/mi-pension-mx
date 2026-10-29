@@ -486,6 +486,20 @@ describe('calculatePension — Pensión de Vejez (65 años)', () => {
     expect(result1000.monthlyPension).toBeGreaterThan(result500.monthlyPension);
   });
 
+  test('usa el SBC proyectado opcional y conserva el SBC actual como entrada independiente', () => {
+    const input = buildInput({ semanas: 800, salarioDiario: 200, edadRetiro: 65 });
+    const actual = calculatePension(input);
+    const projected = calculatePension({ ...input, projectedAverageDailySalary: 300 });
+
+    expect(projected.basicAmount).toBeGreaterThan(actual.basicAmount);
+    expect(projected.steps.find((step) => step.id === 'salario_promedio')?.value).toBeGreaterThan(
+      actual.steps.find((step) => step.id === 'salario_promedio')?.value ?? 0,
+    );
+    expect(projected.input.averageSalary.dailySalary).toBe(200);
+    expect(projected.input.projectedAverageDailySalary).toBe(300);
+    expect(projected.steps.find((step) => step.id === 'salario_promedio')?.description).toContain('$300.00/día');
+  });
+
   test('mayor salario produce pensión mayor (mismo número de semanas)', () => {
     const inputBajo = buildInput({ semanas: 1200, salarioDiario: UMA_2025 * 5, edadRetiro: 65 });
     const inputAlto = buildInput({ semanas: 1200, salarioDiario: UMA_2025 * 10, edadRetiro: 65 });

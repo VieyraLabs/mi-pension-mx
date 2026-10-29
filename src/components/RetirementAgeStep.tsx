@@ -19,7 +19,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Card, Icon, Text, TextInput, HelperText } from 'react-native-paper';
 import type { MD3Theme } from 'react-native-paper';
 import type { PersonalData } from '../models';
-import { formatDateLong } from '../utils/format';
+import { formatCurrency, formatDateLong } from '../utils/format';
 import { calculateLegalAge } from '../utils/date';
 import { DateWheelPicker } from './DateWheelPicker';
 import { DataRow } from './DataRow';
@@ -129,9 +129,10 @@ export interface RetirementAgeStepProps {
   personalData: PersonalData;
   onChange: (data: Partial<PersonalData>) => void;
   theme: MD3Theme;
+  projectedSBC: number;
 }
 
-export function RetirementAgeStep({ personalData, onChange, theme }: RetirementAgeStepProps) {
+export function RetirementAgeStep({ personalData, onChange, theme, projectedSBC }: RetirementAgeStepProps) {
   const [pickerVisible, setPickerVisible] = useState(false);
 
   // La fecha precargada es el cumpleaños en el año en que cumpliría 65 años.
@@ -199,6 +200,14 @@ export function RetirementAgeStep({ personalData, onChange, theme }: RetirementA
           theme={theme}
           highlight
           prominent
+        />
+        <TextInput
+          label="Salario Base de Cotización proyectado"
+          value={formatCurrency(projectedSBC)}
+          editable={false}
+          mode="outlined"
+          style={styles.input}
+          accessibilityLabel="Salario Base de Cotización proyectado"
         />
         <HelperText type="info">
           60–64 = Cesantía en Edad Avanzada (con reducción). 65+ = Vejez (sin reducción).

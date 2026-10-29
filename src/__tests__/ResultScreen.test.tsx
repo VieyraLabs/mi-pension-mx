@@ -104,6 +104,21 @@ describe('ResultScreen', () => {
     expect(screen.getByText('Pensión mensual estimada')).toBeTruthy();
   });
 
+  test('muestra por separado el SBC actual y el SBC proyectado al retiro', async () => {
+    const result = buildResult();
+    result.input.projectedAverageDailySalary = 300;
+    const saved = await saveSimulation(result, 'María López');
+    mockRouteParams = { simulationId: saved.id };
+
+    renderScreen(<ResultScreen />);
+
+    await waitFor(() => expect(screen.getByText('María López')).toBeTruthy());
+    expect(screen.getByText('SBC actual (diario)')).toBeTruthy();
+    expect(screen.getByText('SBC proyectado al retiro (diario)')).toBeTruthy();
+    expect(screen.getByText(formatCurrency(250))).toBeTruthy();
+    expect(screen.getByText(formatCurrency(300))).toBeTruthy();
+  });
+
   test('el resumen separa las semanas cotizadas actuales de las objetivo al jubilarse', async () => {
     const saved = await saveSimulation(
       buildResultAtReferenceDate(new Date(2025, 5, 1), {

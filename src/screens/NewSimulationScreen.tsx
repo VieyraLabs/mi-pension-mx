@@ -2,7 +2,7 @@
  * Pantalla de nueva simulación — formulario por pasos (stepper).
  * Reúne todos los datos necesarios para calcular la pensión.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Button, useTheme } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -11,8 +11,10 @@ import type { RootStackParamList } from '../navigation/RootNavigator';
 import { usePensionForm } from '../hooks/usePensionForm';
 import { StepProgress } from '../components/StepProgress';
 import { calculatePension, validateInput } from '../services/pension/PensionCalculator';
+import { calculateProjectedSBC } from '../services/pension/history/projectedSBC';
 import { useHistory } from '../hooks/useHistory';
 import { showAlert } from '../utils/alert';
+import { getLocalReferenceDate } from '../utils/weeksProjection';
 import { MessageBanner } from '../components/MessageBanner';
 import { PersonalDataStep } from '../components/PersonalDataStep';
 import { WorkHistoryStep } from '../components/WorkHistoryStep';
@@ -61,6 +63,23 @@ export default function NewSimulationScreen() {
   const [customUMA, setCustomUMAMode] = useState(false);
   const [preloadedFromPdf, setPreloadedFromPdf] = useState(false);
   const [preloadedSbcIsAverage, setPreloadedSbcIsAverage] = useState(false);
+  const importedSbcPeriods = useMemo(
+    () => (route.params?.importedData?.sbcPeriods ?? []).map((period) => ({
+      ...period,
+      startDate: new Date(period.startDate),
+      endDate: new Date(period.endDate),
+    })),
+    [route.params?.importedData?.sbcPeriods],
+  );
+  const projectedSBC = useMemo(
+    () => calculateProjectedSBC(
+      importedSbcPeriods,
+      input.averageSalary.dailySalary,
+      input.personalData.estimatedRetirementDate,
+      getLocalReferenceDate(),
+    ),
+    [importedSbcPeriods, input.averageSalary.dailySalary, input.personalData.estimatedRetirementDate.getTime()],
+  );
 
   // Precarga el formulario con los datos revisados en ValidationScreen
   // (importación de PDF). Solo corre una vez, al entrar a la pantalla.
@@ -93,12 +112,15 @@ export default function NewSimulationScreen() {
   const goToStep = (n: number) => setStep((s) => Math.max(0, Math.min(STEPS.length - 1, s + n)));
 
   const calculate = async () => {
-    const validation = validateInput(input);
+    const inputWithProjection = importedSbcPeriods.length > 0
+      ? { ...input, projectedAverageDailySalary: projectedSBC }
+      : input;
+    const validation = validateInput(inputWithProjection);
     if (!validation.valid) {
       showAlert('Datos insuficientes', validation.errors.join('\n'));
       return;
     }
-    const result = calculatePension(input);
+    const result = calculatePension(inputWithProjection);
     const saved = await save(result, input.personalData.name ?? 'Simulación');
     navigation.navigate('Result', { simulationId: saved.id });
   };
@@ -131,6 +153,7 @@ export default function NewSimulationScreen() {
             <RetirementAgeStep
               personalData={input.personalData}
               onChange={updatePersonalData}
+              projectedSBC={projectedSBC}
               theme={theme}
             />
             <BeneficiariesStep

@@ -131,6 +131,8 @@ export interface PensionInput {
   personalData: PersonalData;
   workHistory: WorkHistory;
   averageSalary: AverageContributionSalary;
+  /** SBC diario promedio proyectado al retiro; opcional para compatibilidad con simulaciones anteriores. */
+  projectedAverageDailySalary?: number;
   uma: UMAConfiguration;
   modalidad40: Modalidad40;
   beneficiaries: Beneficiaries;
@@ -222,6 +224,13 @@ export interface SavedSimulation {
 // ─────────────────────────────────────────────
 
 /** Datos ya revisados/corregidos por el usuario en ValidationScreen, para precargar NewSimulationScreen. */
+export interface ImportedSBCPeriodSegment extends Omit<SBCPeriodSegment, 'startDate' | 'endDate'> {
+  /** Fechas ISO para mantener serializables los parámetros de navegación. */
+  startDate: string;
+  endDate: string;
+}
+
+/** Datos ya revisados/corregidos por el usuario en ValidationScreen, para precargar NewSimulationScreen. */
 export interface ImportedSimulationData {
   name?: string;
   sex?: Sex;
@@ -232,6 +241,8 @@ export interface ImportedSimulationData {
   averageSBC?: number;
   /** Último SBC registrado con el patrón más reciente — solo informativo, no es el promedio. */
   lastSBC?: number;
+  /** Segmentos históricos agregados que se usarán para proyectar el promedio al retiro. */
+  sbcPeriods?: ImportedSBCPeriodSegment[];
 }
 
 // ─────────────────────────────────────────────

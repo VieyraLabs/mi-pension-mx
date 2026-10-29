@@ -45,7 +45,7 @@ function generateHtml(result: PensionResult): string {
     ? calculateM40Summary(
         input.modalidad40,
         input.workHistory.totalWeeks,
-        input.averageSalary.dailySalary,
+        input.projectedAverageDailySalary ?? input.averageSalary.dailySalary,
         input.uma.dailyUMA,
         m40PlannedWeeks,
       )
@@ -125,7 +125,8 @@ function generateHtml(result: PensionResult): string {
     <tr><td>Tipo de pensión</td><td>${result.pensionType === 'vejez' ? 'Vejez (Art. 138 LSS 1973)' : 'Cesantía en Edad Avanzada (Art. 145 LSS 1973)'}</td></tr>
     <tr><td>Semanas cotizadas actuales</td><td>${formatInteger(currentWeeks)} sem.</td></tr>
     <tr><td>${getWeeksLabel(weeksProjection)}</td><td>${targetWeeksText}</td></tr>
-    <tr><td>Salario diario promedio (SBC)</td><td>${formatCurrency(input.averageSalary.dailySalary)}</td></tr>
+    <tr><td>SBC actual (diario)</td><td>${formatCurrency(input.averageSalary.dailySalary)}</td></tr>
+    <tr><td>SBC proyectado al retiro (diario)</td><td>${formatCurrency(input.projectedAverageDailySalary ?? input.averageSalary.dailySalary)}</td></tr>
     <tr><td>UMA utilizada</td><td>${formatCurrency(input.uma.dailyUMA)}/día (${input.uma.year}${input.uma.isCustom ? ', personalizada' : ''})</td></tr>
     ${input.modalidad40.active ? `<tr><td>Modalidad 40</td><td>Activa — &#36;${input.modalidad40.contributionSalary}/día</td></tr>` : ''}
     ${m40SummaryHtml}

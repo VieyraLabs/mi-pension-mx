@@ -94,7 +94,7 @@ function createInitialContext(
       m40PlannedWeeks,
     }),
     m40PlannedWeeks,
-    effectiveDailySalary: input.averageSalary.dailySalary,
+    effectiveDailySalary: input.projectedAverageDailySalary ?? input.averageSalary.dailySalary,
     salaryInTimesMinimumWage: 0,
     basicQuantityPct: 0,
     annualIncrementPct: 0,

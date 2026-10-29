@@ -123,9 +123,13 @@ Reglas transversales:
     [ADR-0013](../adr/0013-proyeccion-de-semanas-por-fecha.md).
 - **La proyección es una estimación.** Asume que el asegurado sigue cotizando de forma
   continua durante el horizonte; no afirma que las semanas futuras estén reconocidas por
-  el IMSS. Por eso el paso de incrementos anuales del Art. 167 se marca como estimado
-  (`isEstimate`) cuando hay proyección, declara el supuesto en su `assumption`, y el
-  resultado completo lleva la marca de estimación y el aviso legal.
+  el IMSS. El SBC proyectado al retiro se calcula sobre las últimas 250 semanas cotizadas
+  a esa fecha: conserva los periodos históricos que sigan dentro de la ventana y completa
+  las semanas futuras con el SBC efectivo del último periodo histórico (suma de patrones
+  concurrentes). Sin historial detallado, usa el SBC actual capturado, no el último importe
+  aislado del PDF. Se supone que el último SBC se mantiene constante; no se modelan aumentos
+  salariales futuros. El paso salarial declara el supuesto en `assumption`, y el resultado
+  completo lleva la marca de estimación y el aviso legal.
 - **El orden del pipeline es normativo.** Cada paso consume el resultado del anterior.
 - **Todo resultado es una estimación.** El campo `isEstimate` es `true` siempre, y las
   advertencias incluyen el aviso legal.
@@ -141,9 +145,11 @@ Reglas transversales:
 - No se calculan Zackarias por viudez, orfandad o Accidente de trabajo.
 - No se calcula la pensión de invalidez ni la de cesantía en edad avanzada como
   tipos separados: el factor por edad cubre el caso de edad avanzada.
-- **La proyección de semanas no modela el futuro real del asegurado.** No contempla ceses,
-  huecos laborales, cambios de salario ni cotizaciones por debajo del salario mínimo: solo
-  proyecta un horizonte de cotización continua. La resolución oficial corresponde al IMSS.
+- **La proyección no modela el futuro real del asegurado.** No contempla ceses, huecos
+  laborales futuros ni cotizaciones por debajo del salario mínimo: proyecta cotización
+  continua al SBC constante del último periodo conocido cuando hay historial detallado.
+  Sin ese historial, conserva el SBC actual capturado. La resolución oficial corresponde
+  al IMSS.
 - No se resuelve ningún trámite ante el IMSS.
 - **La cuantía no se topa al 100 % del salario promedio** (Art. 169 LSS 1973): solo se
   aplican el tope de cotización de 25 UMA (Art. 28 LSS vigente), el tope de pensión de 25 UMA

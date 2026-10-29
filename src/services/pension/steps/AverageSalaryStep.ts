@@ -25,14 +25,19 @@ import { round2 } from '../../../utils/format';
 export const AverageSalaryStep: CalculationStep = (ctx): CalculationContext => {
   const { input } = ctx;
   const { averageSalary, uma, modalidad40 } = input;
+  const salaryForCalculation = input.projectedAverageDailySalary ?? averageSalary.dailySalary;
   const warnings = [...ctx.warnings];
   const steps = [...ctx.steps];
 
   const dailyUMACap = SBC_CAP_TIMES_UMA * uma.dailyUMA;
-  let baseDailySalary = averageSalary.dailySalary;
-  let isSalaryEstimate = false;
-  let salaryDescription = `Salario diario promedio ingresado: $${baseDailySalary.toFixed(2)}`;
-  let salaryFormula = 'SBC promedio (250 semanas) — ingresado por el usuario';
+  let baseDailySalary = salaryForCalculation;
+  let isSalaryEstimate = input.projectedAverageDailySalary != null;
+  let salaryDescription = input.projectedAverageDailySalary == null
+    ? `Salario diario promedio ingresado: \u0024${baseDailySalary.toFixed(2)}`
+    : `SBC promedio proyectado al retiro: \u0024${baseDailySalary.toFixed(2)}/día`;
+  let salaryFormula = input.projectedAverageDailySalary == null
+    ? 'SBC promedio (250 semanas) — ingresado por el usuario'
+    : 'SBC promedio proyectado al retiro — historial + último SBC';
 
   // Ajuste por Modalidad 40
   if (modalidad40.active && modalidad40.contributionSalary && modalidad40.expectedMonths) {
@@ -60,7 +65,7 @@ export const AverageSalaryStep: CalculationStep = (ctx): CalculationContext => {
       (baseDailySalary * baseWeeks + adjustedDailyM40Salary * m40Weeks) / referenceWeeks;
 
     baseDailySalary = round2(weightedAverage);
-    salaryDescription = `Promedio ponderado: ${baseWeeks.toFixed(0)} sem. ordinarias ($${averageSalary.dailySalary.toFixed(2)}/día) + ${m40Weeks.toFixed(0)} sem. M40 ($${adjustedDailyM40Salary.toFixed(2)}/día) = $${baseDailySalary.toFixed(2)}/día`;
+    salaryDescription = `Promedio ponderado: ${baseWeeks.toFixed(0)} sem. ordinarias (\u0024${salaryForCalculation.toFixed(2)}/día) + ${m40Weeks.toFixed(0)} sem. M40 (\u0024${adjustedDailyM40Salary.toFixed(2)}/día) = \u0024${baseDailySalary.toFixed(2)}/día`;
     salaryFormula = '(SBC_ord × sem_ord + SBC_M40 × sem_M40) ÷ 250';
     isSalaryEstimate = true;
     warnings.push(
@@ -91,9 +96,11 @@ export const AverageSalaryStep: CalculationStep = (ctx): CalculationContext => {
     formula: capApplied ? `min(${salaryFormula}, 25 × UMA_diaria)` : salaryFormula,
     legalBasis: 'Art. 167 LSS 1973 (promedio 250 semanas); Art. 28 LSS vigente (tope 25 UMA)',
     isEstimate: isSalaryEstimate,
-    assumption: isSalaryEstimate
-      ? 'Promedio ponderado estimado considerando Modalidad 40. El IMSS usará el historial exacto.'
-      : undefined,
+    assumption: input.projectedAverageDailySalary != null
+      ? 'Se asume cotización continua hasta el retiro con el último SBC agregado del historial disponible.'
+      : isSalaryEstimate
+        ? 'Promedio ponderado estimado considerando Modalidad 40. El IMSS usará el historial exacto.'
+        : undefined,
   });
 
   return {

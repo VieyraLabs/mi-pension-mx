@@ -93,6 +93,11 @@ export default function ValidationScreen() {
                 totalWeeks: !isNaN(totalWeeks) ? totalWeeks : undefined,
                 averageSBC: averageSBC && !isNaN(averageSBC) ? averageSBC : undefined,
                 lastSBC: lastSBC && !isNaN(lastSBC) ? lastSBC : undefined,
+                sbcPeriods: sbcDetail?.segments.map(({ startDate, endDate, ...period }) => ({
+                  ...period,
+                  startDate: startDate.toISOString(),
+                  endDate: endDate.toISOString(),
+                })),
               },
             }),
         },

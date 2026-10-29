@@ -126,6 +126,7 @@ function createPensionInputSchema(referenceDateProvider: () => Date) {
       personalData: PersonalDataSchema,
       workHistory: WorkHistorySchema,
       averageSalary: AverageContributionSalarySchema,
+      projectedAverageDailySalary: z.number().positive().max(100000).optional(),
       uma: UMAConfigurationSchema,
       modalidad40: Modalidad40Schema,
       beneficiaries: BeneficiariesSchema,
