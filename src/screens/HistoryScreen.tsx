@@ -135,6 +135,11 @@ export default function HistoryScreen() {
                 </View>
                 <Divider style={{ marginVertical: 8 }} />
                 <View style={styles.cardData}>
+                  <DataRow
+                    label="Fecha de retiro"
+                    value={`${formatDateLong(getRetirementDate(sim.result.input.personalData))} (${formatAge(sim.result.input.personalData.retirementAge)} años)`}
+                    theme={theme}
+                  />
                   {/* La etiqueta y el valor de proyección se comparten con
                       ResultScreen y el PDF. Los registros históricos sin
                       proyección conservan como valor las semanas capturadas. */}
@@ -151,11 +156,12 @@ export default function HistoryScreen() {
                     theme={theme}
                   />
                   <DataRow
-                    label="Fecha de retiro"
-                    value={`${formatDateLong(getRetirementDate(sim.result.input.personalData))} (${formatAge(sim.result.input.personalData.retirementAge)} años)`}
+                    label="SBC proyectado (diario)"
+                    value={formatCurrency(
+                      sim.result.input.projectedAverageDailySalary ?? sim.result.input.averageSalary.dailySalary,
+                    )}
                     theme={theme}
                   />
-                  <DataRow label="Tipo" value={sim.result.pensionType === 'vejez' ? 'Vejez' : 'Cesantía'} theme={theme} />
                 </View>
               </Card.Content>
             </Card>
