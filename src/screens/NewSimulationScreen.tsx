@@ -111,6 +111,38 @@ export default function NewSimulationScreen() {
 
   const goToStep = (n: number) => setStep((s) => Math.max(0, Math.min(STEPS.length - 1, s + n)));
 
+  const canGoToNextStep = (() => {
+    switch (step) {
+      case 0: {
+        const { sex, birthDate } = input.personalData;
+        return (
+          (sex === 'masculino' || sex === 'femenino') &&
+          birthDate instanceof Date &&
+          !isNaN(birthDate.getTime())
+        );
+      }
+      case 1: {
+        const { totalWeeks } = input.workHistory;
+        const { dailySalary } = input.averageSalary;
+        return (
+          Number.isInteger(totalWeeks) && totalWeeks >= 1 && totalWeeks <= 5000 &&
+          dailySalary > 0 && dailySalary <= 100000
+        );
+      }
+      case 2: {
+        const { estimatedRetirementDate, retirementAge } = input.personalData;
+        return (
+          estimatedRetirementDate instanceof Date &&
+          !isNaN(estimatedRetirementDate.getTime()) &&
+          retirementAge >= 60 && retirementAge <= 100 &&
+          Number.isInteger(retirementAge * 2)
+        );
+      }
+      default:
+        return true;
+    }
+  })();
+
   const calculate = async () => {
     const inputWithProjection = importedSbcPeriods.length > 0
       ? { ...input, projectedAverageDailySalary: projectedSBC }
@@ -214,7 +246,7 @@ export default function NewSimulationScreen() {
           Anterior
         </Button>
         {step < STEPS.length - 1 ? (
-          <Button mode="contained" onPress={() => goToStep(1)} style={[styles.btn, styles.primaryBtn]} icon="arrow-right">
+          <Button mode="contained" onPress={() => goToStep(1)} disabled={!canGoToNextStep} style={[styles.btn, styles.primaryBtn]} icon="arrow-right">
             Siguiente
           </Button>
         ) : (

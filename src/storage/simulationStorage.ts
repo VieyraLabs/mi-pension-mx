@@ -1,12 +1,14 @@
 /**
  * Servicio de almacenamiento local para el historial de simulaciones.
- * Usa AsyncStorage para persistir las últimas 20 simulaciones.
+ * Usa AsyncStorage para persistir las últimas 999 simulaciones.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SavedSimulation } from '../models';
 
 const STORAGE_KEY = '@mi_pension_mx:simulaciones';
-const MAX_SIMULATIONS = 20;
+
+/** Límite de simulaciones conservadas en el historial local. */
+export const MAX_SIMULATIONS = 999;
 
 /** Genera un ID único para la simulación. */
 function generateId(): string {
@@ -51,7 +53,7 @@ export async function getSimulations(): Promise<SavedSimulation[]> {
   }
 }
 
-/** Guarda una nueva simulación. Elimina la más antigua si se superan las 20. */
+/** Guarda una nueva simulación. Elimina la más antigua si se superan las 999. */
 export async function saveSimulation(
   result: SavedSimulation['result'],
   name?: string,

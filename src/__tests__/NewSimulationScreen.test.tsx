@@ -38,6 +38,18 @@ import {
 /** Fecha de nacimiento de referencia: 15 de enero de 1960. */
 const NACIMIENTO = new Date(1960, 0, 15);
 
+function advanceToRetirementStep() {
+  fireEvent.press(screen.getByText('Siguiente'));
+  fireEvent.changeText(screen.getAllByDisplayValue('')[0]!, '500');
+  fireEvent.changeText(screen.getAllByDisplayValue('')[0]!, '200');
+  fireEvent.press(screen.getByText('Siguiente'));
+}
+
+function advanceToUmaStep() {
+  advanceToRetirementStep();
+  fireEvent.press(screen.getByText('Siguiente'));
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -48,6 +60,56 @@ describe('NewSimulationScreen', () => {
 
     expect(screen.getByText('Paso 1 de 4: Datos personales')).toBeTruthy();
     expect(screen.getByText('Información personal')).toBeTruthy();
+  });
+
+  test('en el paso de datos personales «Siguiente» está habilitado con sexo y fecha válidos aunque el nombre quede vacío', () => {
+    renderScreen(<NewSimulationScreen />);
+
+    // El sexo solo ofrece los dos valores válidos y la fecha trae un valor
+    // válido por defecto; el nombre es opcional y vacío, y no bloquea.
+    expect(screen.getAllByText('Nombre (opcional)').length).toBeGreaterThan(0);
+    expect(screen.getByText('Masculino')).toBeTruthy();
+    expect(screen.getByText('Femenino')).toBeTruthy();
+
+    const nextButton = screen.getByText('Siguiente');
+    expect(nextButton).toBeEnabled();
+
+    fireEvent.press(nextButton);
+    expect(screen.getByText('Paso 2 de 4: Historial laboral')).toBeTruthy();
+  });
+
+  test('una fecha de nacimiento inválida se rechaza y el paso conserva el último valor válido', () => {
+    renderScreen(<NewSimulationScreen />);
+
+    // El paso muestra la fecha por defecto con la misma conversión que usa
+    // PersonalDataStep (toISOString), para ser independiente de la zona horaria.
+    const fechaValida = new Date(1965, 0, 1).toISOString().split('T')[0]!;
+    expect(screen.getByDisplayValue(fechaValida)).toBeTruthy();
+
+    fireEvent.changeText(screen.getByPlaceholderText('1965-01-15'), 'no-es-fecha');
+
+    // La entrada inválida no se propaga al estado: el campo conserva el
+    // último valor válido y «Siguiente» permanece habilitado.
+    expect(screen.getByDisplayValue(fechaValida)).toBeTruthy();
+    expect(screen.queryByDisplayValue('no-es-fecha')).toBeNull();
+    expect(screen.getByText('Siguiente')).toBeEnabled();
+  });
+
+  test('bloquea «Siguiente» en el paso laboral hasta completar campos obligatorios válidos', () => {
+    renderScreen(<NewSimulationScreen />);
+    fireEvent.press(screen.getByText('Siguiente'));
+
+    const nextButton = screen.getByText('Siguiente');
+    expect(nextButton).toBeDisabled();
+
+    fireEvent.changeText(screen.getAllByDisplayValue('')[0]!, '500');
+    expect(nextButton).toBeDisabled();
+
+    fireEvent.changeText(screen.getAllByDisplayValue('')[0]!, '200');
+    expect(nextButton).toBeEnabled();
+
+    fireEvent.changeText(screen.getByDisplayValue('500'), '5001');
+    expect(nextButton).toBeDisabled();
   });
 
   test('el botón "Siguiente" avanza al paso de historial laboral', () => {
@@ -98,8 +160,7 @@ describe('NewSimulationScreen', () => {
   test('el paso 3 reúne la edad de retiro y los beneficiarios', () => {
     renderScreen(<NewSimulationScreen />);
 
-    fireEvent.press(screen.getByText('Siguiente'));
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToRetirementStep();
 
     expect(screen.getByText('Paso 3 de 4: Edad de retiro')).toBeTruthy();
     // Edad de retiro (tarjeta).
@@ -113,9 +174,7 @@ describe('NewSimulationScreen', () => {
   test('el paso 4 reúne la UMA y la Modalidad 40', () => {
     renderScreen(<NewSimulationScreen />);
 
-    for (let i = 0; i < 3; i++) {
-      fireEvent.press(screen.getByText('Siguiente'));
-    }
+    advanceToUmaStep();
 
     expect(screen.getByText('Paso 4 de 4: UMA')).toBeTruthy();
     // UMA (tarjeta).
@@ -127,8 +186,7 @@ describe('NewSimulationScreen', () => {
   test('el paso 3 precarga la fecha del cumpleaños a los 65 y muestra la edad en solo lectura', () => {
     renderScreen(<NewSimulationScreen />);
 
-    fireEvent.press(screen.getByText('Siguiente'));
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToRetirementStep();
 
     // La fecha precargada es el cumpleaños a los 65 años (1 de enero de 2030).
     expect(screen.getByDisplayValue('1 de enero de 2030')).toBeTruthy();
@@ -140,8 +198,7 @@ describe('NewSimulationScreen', () => {
   test('elegir una fecha en el calendario actualiza la edad mostrada', () => {
     renderScreen(<NewSimulationScreen />);
 
-    fireEvent.press(screen.getByText('Siguiente'));
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToRetirementStep();
 
     fireEvent.press(screen.getByLabelText('Abrir calendario'));
     // 1 de julio de 2029 → 64 años y 6 meses → 64.5 (medio año de precisión).
@@ -158,8 +215,7 @@ describe('NewSimulationScreen', () => {
   test('para el 1 de julio de 2025 muestra 60.5 años y aclara la edad para el factor de Cesantía', () => {
     renderScreen(<NewSimulationScreen />);
 
-    fireEvent.press(screen.getByText('Siguiente'));
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToRetirementStep();
 
     fireEvent.press(screen.getByLabelText('Abrir calendario'));
     fireEvent.press(screen.getByLabelText('Año 2025'));
@@ -179,8 +235,7 @@ describe('NewSimulationScreen', () => {
   test('para el 1 de julio de 2030 muestra 65 años sin fracción ni nota de edad legal', () => {
     renderScreen(<NewSimulationScreen />);
 
-    fireEvent.press(screen.getByText('Siguiente'));
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToRetirementStep();
 
     fireEvent.press(screen.getByLabelText('Abrir calendario'));
     fireEvent.press(screen.getByLabelText('Año 2030'));
@@ -196,8 +251,7 @@ describe('NewSimulationScreen', () => {
   test('tocar el campo de fecha abre el calendario', () => {
     renderScreen(<NewSimulationScreen />);
 
-    fireEvent.press(screen.getByText('Siguiente'));
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToRetirementStep();
 
     expect(screen.queryByText('Selecciona la fecha')).toBeNull();
     fireEvent.press(screen.getByDisplayValue('1 de enero de 2030'));
@@ -207,8 +261,7 @@ describe('NewSimulationScreen', () => {
   test('el motor recibe la EDAD DE PRESENTACIÓN (con medios años): la consume para la edad legal', () => {
     renderScreen(<NewSimulationScreen />);
 
-    fireEvent.press(screen.getByText('Siguiente'));
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToRetirementStep();
 
     // 1 de julio de 2029 con nacimiento 1 de enero de 1965 → 64.5 en pantalla.
     fireEvent.press(screen.getByLabelText('Abrir calendario'));
@@ -251,9 +304,7 @@ describe('NewSimulationScreen', () => {
     renderScreen(<NewSimulationScreen />);
 
     // Ir al paso 4 (UMA + Modalidad 40).
-    for (let i = 0; i < 3; i++) {
-      fireEvent.press(screen.getByText('Siguiente'));
-    }
+    advanceToUmaStep();
     expect(screen.getByText('Paso 4 de 4: UMA')).toBeTruthy();
 
     // Activar Modalidad 40.

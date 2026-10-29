@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
+import { MAX_SIMULATIONS } from '../storage/simulationStorage';
 import { formatCurrency, formatDateShort, formatInteger, formatWeeksTargetText, getWeeksLabel } from '../utils/format';
 import { DataRow } from '../components/DataRow';
 
@@ -57,7 +58,7 @@ export default function HistoryScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
         <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>
-          Historial de simulaciones ({simulations.length}/20)
+          Historial de simulaciones ({simulations.length}/{MAX_SIMULATIONS})
         </Text>
         {simulations.length > 0 && (
           <Button onPress={handleClear} textColor={theme.colors.error} compact>

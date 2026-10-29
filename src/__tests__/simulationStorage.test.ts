@@ -183,14 +183,22 @@ describe('saveSimulation', () => {
     expect(all[1]?.name).toBe('Primera');
   });
 
-  test('conserva como máximo 20 simulaciones, descartando la más antigua', async () => {
-    for (let i = 0; i < 21; i++) {
-      await saveSimulation(buildResult(), `Sim ${i}`);
-    }
+  test('conserva las 999 simulaciones más recientes y descarta la más antigua al guardar', async () => {
+    const result = buildResult();
+    const existing = Array.from({ length: 999 }, (_, i) => ({
+      id: `sim_${998 - i}`,
+      name: `Sim ${998 - i}`,
+      creationDate: '2025-01-01T00:00:00.000Z',
+      result,
+    }));
+    await AsyncStorage.setItem('@mi_pension_mx:simulaciones', JSON.stringify(existing));
+
+    await saveSimulation(result, 'Sim nueva');
 
     const all = await getSimulations();
-    expect(all).toHaveLength(20);
-    expect(all[0]?.name).toBe('Sim 20');
+    expect(all).toHaveLength(999);
+    expect(all[0]?.name).toBe('Sim nueva');
+    expect(all[1]?.name).toBe('Sim 998');
     expect(all.some((s) => s.name === 'Sim 0')).toBe(false);
   });
 });
