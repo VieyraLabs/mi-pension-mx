@@ -9,10 +9,21 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
 import { MAX_SIMULATIONS } from '../storage/simulationStorage';
-import { formatCurrency, formatDateShort, formatInteger, formatWeeksTargetText, getWeeksLabel } from '../utils/format';
+import { formatAge, formatCurrency, formatDateLong, formatDateShort, formatInteger, formatWeeksTargetText, getWeeksLabel } from '../utils/format';
 import { DataRow } from '../components/DataRow';
+import { normalizeLocalCalendarDate } from '../utils/weeksProjection';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+/**
+ * Fecha de retiro guardada en la simulación (misma fuente que ResultScreen).
+ * El storage JSON revive los campos Date del modelo como strings ISO.
+ */
+function getRetirementDate(personalData: { estimatedRetirementDate: Date | string }): Date {
+  return normalizeLocalCalendarDate(
+    new Date(personalData.estimatedRetirementDate as unknown as string),
+  );
+}
 
 export default function HistoryScreen() {
   const theme = useTheme();
@@ -139,7 +150,11 @@ export default function HistoryScreen() {
                     }
                     theme={theme}
                   />
-                  <DataRow label="Edad de retiro" value={`${sim.result.input.personalData.retirementAge} años`} theme={theme} />
+                  <DataRow
+                    label="Fecha de retiro"
+                    value={`${formatDateLong(getRetirementDate(sim.result.input.personalData))} (${formatAge(sim.result.input.personalData.retirementAge)} años)`}
+                    theme={theme}
+                  />
                   <DataRow label="Tipo" value={sim.result.pensionType === 'vejez' ? 'Vejez' : 'Cesantía'} theme={theme} />
                 </View>
               </Card.Content>
