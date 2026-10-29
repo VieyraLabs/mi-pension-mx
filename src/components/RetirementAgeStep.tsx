@@ -201,13 +201,10 @@ export function RetirementAgeStep({ personalData, onChange, theme, projectedSBC 
           highlight
           prominent
         />
-        <TextInput
+        <DataRow
           label="Salario Base de Cotización proyectado"
           value={formatCurrency(projectedSBC)}
-          editable={false}
-          mode="outlined"
-          style={styles.input}
-          accessibilityLabel="Salario Base de Cotización proyectado"
+          theme={theme}
         />
         <HelperText type="info">
           60–64 = Cesantía en Edad Avanzada (con reducción). 65+ = Vejez (sin reducción).

@@ -106,8 +106,8 @@ describe('NewSimulationScreen', () => {
     expect(screen.getAllByText(/Edad de retiro/).length).toBeGreaterThan(0);
     // Beneficiarios (misma pantalla).
     expect(screen.getAllByText('Beneficiarios').length).toBeGreaterThan(0);
-    const projectedSBC = screen.getByLabelText('Salario Base de Cotización proyectado');
-    expect(projectedSBC.props.editable).toBe(false);
+    expect(screen.getByText('Salario Base de Cotización proyectado')).toBeTruthy();
+    expect(screen.queryByLabelText('Salario Base de Cotización proyectado')).toBeNull();
   });
 
   test('el paso 4 reúne la UMA y la Modalidad 40', () => {
