@@ -108,6 +108,15 @@ Nombre del patrón EMPRESA DE PRUEBA SA DE CV`;
     expect(result.data?.sex).toBe('masculino');
   });
 
+  test('extrae el sexo "femenino" cuando el CURP lleva M en el 10° carácter', () => {
+    const conCurpFemenino = TEXTO_CONSTANCIA.replace(
+      'CURP: XEXX010101HNEXXX04',
+      'CURP: XEXX010101MNEXXX04',
+    );
+    const result = ConstanciaIMSSParser.parse(conCurpFemenino);
+    expect(result.data?.sex).toBe('femenino');
+  });
+
   test('deriva la fecha de nacimiento del CURP cuando el documento no la incluye directamente', () => {
     // CURP de prueba "XEXX010101...": los primeros 6 dígitos (AAMMDD) son
     // 01/01/01 → como este documento no trae un campo explícito de fecha de
@@ -191,13 +200,19 @@ describe('ConstanciaIMSSParser — historial laboral y SBC promedio', () => {
     ).toBe(true);
   });
 
-  test('no reconstruye el historial si las etiquetas no cuadran en cantidad (evita adivinar)', () => {
-    // Un "$" de más (p. ej. un monto que no es un SBC) rompe el supuesto de
-    // que cada patrón tiene exactamente un alta, un monto y un nombre.
+  test('un monto que no corresponde a ningún patrón ni movimiento NO descarta el historial: se advierte', () => {
+    // El SBC de cada patrón se ancla a SU etiqueta ("Salario Base de
+    // Cotización *"), así que un monto suelto —p. ej. la fila de un tipo de
+    // movimiento que el parser todavía no conoce— ya no tira el historial
+    // completo: se reporta como monto sin atribuir. Antes este caso
+    // abandonaba la reconstrucción por completo.
     const textoConMontoExtra = TEXTO_CONSTANCIA.replace('$ 500.0', '$ 500.0\n$ 999.0');
     const result = ConstanciaIMSSParser.parse(textoConMontoExtra);
-    expect(result.data?.employmentRelations).toEqual([]);
-    expect(result.data?.averageSBC).toBeUndefined();
+
+    expect(result.data?.employmentRelations).toHaveLength(2);
+    expect(
+      result.warnings.some((a) => /no correspondieron ni a un patrón ni a un movimiento/i.test(a)),
+    ).toBe(true);
   });
 });
 
@@ -376,6 +391,97 @@ REINGRESO 01/01/2010 $ 300.0
 });
 
 // ─────────────────────────────────────────────
+// Fila de movimiento ALTA (regresión del PDF real)
+// ─────────────────────────────────────────────
+//
+// El IMSS emite una fila "ALTA" para el alta original de un empleo (con su
+// SBC inicial). El parser no la reconocía, y el efecto era total: su monto
+// no contaba como movimiento, se colaba en la lista de SBC de encabezado, el
+// conteo de montos ya no cuadraba con el número de patrones y el parser
+// descartaba TODO el historial — el documento que trae la tabla completa
+// terminaba sin SBC promedio.
+//
+// El fixture reproduce el bloque real del patrón "GEMA DIAZ MEZA, A. EN P."
+// (página 8 de la constancia): ALTA del 19/06/1990 con $8.78, y un patrón
+// más reciente que cierra con BAJA.
+//
+// Determinista: no hay "Vigente", así que la fecha de referencia es la BAJA
+// más reciente (01/09/2026) y el resultado no depende del día en que corra
+// la prueba. La ventana de 250 semanas cae entera en el periodo de $131.77
+// del patrón reciente.
+const TEXTO_FILA_ALTA = `Instituto Mexicano del Seguro Social
+NSS:
+JUAN PEREZ LOPEZ
+98765432101
+CURP: XEXX010101HNEXXX04
+Semanas cotizadas IMSS
+Estimado(a),
+Tu historia laboral
+01/09/2003
+VERACRUZ DE IGNACIO DE LA LLAVE
+Salario Base de Cotización *
+Fecha de alta Fecha de baja 19/06/1990
+Entidad federativa
+$ 51.64
+Nombre del patrón GEMA DIAZ MEZA, A. EN P.
+Registro Patronal F542391410
+Tipo de movimiento Fecha de movimiento Salario Base
+01/09/2003 BAJA $ 51.64
+01/06/2003 MODIFICACION DE SALARIO $ 51.64
+16/11/1990 MODIFICACION DE SALARIO $ 13.45
+19/06/1990 ALTA $ 8.78
+* Valor del último salario base de cotización diario en pesos.
+01/04/2017
+VERACRUZ DE IGNACIO DE LA LLAVE
+Salario Base de Cotización *
+Fecha de alta Fecha de baja 01/04/2017
+Entidad federativa
+$ 449.27
+Nombre del patrón COMERCIALIZADORA FARMACEUTICA DE CHIAPAS, SAPI DE CV
+Registro Patronal F545700510
+Tipo de movimiento Fecha de movimiento Salario Base
+01/09/2026 BAJA $ 449.27
+01/09/2026 MODIFICACION DE SALARIO $ 449.27
+01/04/2017 REINGRESO $ 131.77
+* Valor del último salario base de cotización diario en pesos.
+
+|||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:1892||`;
+
+describe('ConstanciaIMSSParser — fila de movimiento ALTA', () => {
+  test('reconstruye el historial y calcula el SBC promedio aunque la constancia traiga una fila ALTA', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_FILA_ALTA);
+
+    expect(result.missingFields).not.toContain('SBC promedio (250 semanas)');
+    expect(result.data?.employmentRelations).toHaveLength(2);
+    expect(result.data?.averageSBC).toBe(131.77);
+    expect(result.data?.contributionSummary?.selectedWeeks).toBe(250);
+    expect(result.data?.contributionSummary?.isComplete).toBe(true);
+
+    // La fila ALTA abre un periodo: el historial empieza el 19/06/1990 (el
+    // alta original), no el 16/11/1990 (la primera modificación de salario).
+    expect(result.data?.employmentRelations[0]?.employerName).toBe('GEMA DIAZ MEZA, A. EN P.');
+    expect(result.data?.employmentRelations[0]?.startDate.toISOString().split('T')[0]).toBe(
+      '1990-06-19',
+    );
+    expect(result.data?.contributionSummary?.totalWeeksInHistory).toBe(1889);
+  });
+
+  test('el monto de la fila ALTA no se confunde con el SBC de encabezado de un patrón', () => {
+    const result = ConstanciaIMSSParser.parse(TEXTO_FILA_ALTA);
+
+    // El encabezado del patrón dice $51.64; el $8.78 de la fila ALTA es un
+    // movimiento, no otro encabezado.
+    expect(result.data?.employmentRelations[0]?.contributionBaseSalary).toBe(51.64);
+    expect(result.data?.employmentRelations[1]?.contributionBaseSalary).toBe(449.27);
+    // Ningún monto del documento queda sin atribuir.
+    expect(
+      result.warnings.some((a) => /no correspondieron ni a un patrón ni a un movimiento/i.test(a)),
+    ).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // Exposición del detalle SBC en ExtractedData (CHG-20261024-001 / US-001)
 // ─────────────────────────────────────────────
 //
@@ -406,6 +512,76 @@ MODIFICACION DE SALARIO 01/01/2021 $ 148.1
 REINGRESO 01/07/2018 $ 103.23
 
 |||Apellido Paterno:PEREZ|Apellido Materno:LOPEZ|Nombre del Asegurado:JUAN|Número total de semanas cotizadas:1048||`;
+
+// ─────────────────────────────────────────────
+// Estructura del documento: el parser sigue sin adivinar
+// ─────────────────────────────────────────────
+//
+// El emparejamiento por patrón abandonaba la reconstrucción cuando los
+// CONTEOS no cuadraban. Ahora el SBC de encabezado se ancla a su etiqueta, así
+// que un monto suelto no la tumba; pero cuando la ESTRUCTURA del documento no
+// se entiende (faltan altas, nombres o montos de encabezado), el parser
+// sigue sin adivinar a qué patrón pertenece cada dato.
+describe('ConstanciaIMSSParser — estructura del documento', () => {
+  const textoConEstructuraRota = TEXTO_DETALLE_COMPLETO.replace('Fecha de alta 01/07/2018 ', '');
+
+  test('no reconstruye el historial si las etiquetas del patrón no cuadran (no adivina)', () => {
+    const result = ConstanciaIMSSParser.parse(textoConEstructuraRota);
+
+    expect(result.data?.employmentRelations).toEqual([]);
+    expect(result.data?.averageSBC).toBeUndefined();
+    expect(result.missingFields).toContain('SBC promedio (250 semanas)');
+  });
+
+  test('no acusa al documento de no traer el historial cuando sí lo trae', () => {
+    const result = ConstanciaIMSSParser.parse(textoConEstructuraRota);
+
+    // El aviso de siempre ("no incluye el historial detallado…") solo aplica
+    // a los documentos que de verdad no traen la tabla de movimientos: aquí
+    // el documento sí la trae y lo que falló fue nuestra lectura de él.
+    expect(result.warnings.some((a) => /no incluye el historial detallado/i.test(a))).toBe(false);
+    expect(result.warnings.some((a) => /sí trae el historial de movimientos/i.test(a))).toBe(true);
+  });
+
+  test('lee el encabezado aunque la etiqueta venga sin acento y sin asterisco', () => {
+    // Algunas constancias escriben "Salario Base de Cotizacion" (sin tilde y
+    // sin el asterisco que remite a la nota al pie). El SBC de encabezado se
+    // ancla a esa etiqueta, así que si el anclaje la exige con asterisco, el
+    // historial completo se descarta y el documento "parece" no traer datos.
+    const textoSinAcentoNiAsterisco = TEXTO_DETALLE_COMPLETO.replace(
+      'Salario Base de Cotización *',
+      'Salario Base de Cotizacion',
+    ).replace('Nombre del patrón', 'Nombre del patron');
+
+    const result = ConstanciaIMSSParser.parse(textoSinAcentoNiAsterisco);
+
+    expect(result.data?.employmentRelations).toHaveLength(1);
+    expect(result.data?.averageSBC).toBe(148.1);
+    expect(result.missingFields).not.toContain('SBC promedio (250 semanas)');
+  });
+
+  test('la nota al pie no cuenta como una etiqueta de encabezado', () => {
+    // "* Valor del último salario base de cotización diario en pesos." repite
+    // la palabra "cotización" una vez por patrón: si contara como etiqueta,
+    // el conteo de encabezados no quadraría con el de patrones.
+    const texto = `${TEXTO_DETALLE_COMPLETO}
+* Valor del último salario base de cotización diario en pesos.`;
+
+    const result = ConstanciaIMSSParser.parse(texto);
+
+    expect(result.data?.employmentRelations).toHaveLength(1);
+    expect(result.data?.averageSBC).toBe(148.1);
+  });
+
+  test('no reconstruye el historial si un encabezado no trae su monto (no adivina)', () => {
+    const textoSinMonto = TEXTO_DETALLE_COMPLETO.replace('$ 999.0', 'monto no disponible');
+
+    const result = ConstanciaIMSSParser.parse(textoSinMonto);
+
+    expect(result.data?.employmentRelations).toEqual([]);
+    expect(result.data?.averageSBC).toBeUndefined();
+  });
+});
 
 describe('ConstanciaIMSSParser — exposición del detalle SBC (CHG-20261024-001)', () => {
   test('expone sbcPeriods y contributionSummary cuando la constancia trae historial detallado', () => {

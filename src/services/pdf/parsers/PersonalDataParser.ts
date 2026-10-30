@@ -132,7 +132,7 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
 
     // ─── SBC promedio (últimas 250 semanas) ───────────────────────────────
     // Solo se calcula cuando la constancia trae, por cada patrón, la tabla
-    // de movimientos (REINGRESO / MODIFICACIÓN DE SALARIO / BAJA) con el
+    // de movimientos (REINGRESO / ALTA / MODIFICACIÓN DE SALARIO / BAJA) con el
     // historial completo de cambios salariales. Sin esa tabla, la única
     // alternativa sería aproximar con el último SBC de cada patrón — pero
     // eso puede diferir mucho del promedio real, así que se prefiere no
@@ -143,6 +143,16 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
       warnings.push(
         'No se pudo determinar cuándo terminó tu empleo más reciente (no aparece marcado como "Vigente"), ' +
           'así que no se incluyó en el cálculo del SBC promedio. Verifica el promedio manualmente.',
+      );
+    }
+    if (workHistoryResult.unattributedAmounts > 0) {
+      // Montos que no sabemos a qué patrón ni a qué movimiento pertenecen:
+      // casi siempre es una fila de un tipo de movimiento que el parser aún
+      // no conoce. Se dice en voz alta en vez de ignorarlo en silencio.
+      const cuantos = workHistoryResult.unattributedAmounts;
+      warnings.push(
+        `Detectamos ${cuantos} ${cuantos === 1 ? 'monto' : 'montos'} del documento que no correspondieron ni a un patrón ni a un movimiento reconocido; ` +
+          'es posible que la constancia traiga un tipo de movimiento que la app todavía no conoce. Verifica el SBC promedio.',
       );
     }
     if (workHistoryResult.usedDetailedData) {
@@ -196,11 +206,23 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
       }
     } else {
       missingFields.push('SBC promedio (250 semanas)');
-      warnings.push(
-        'Esta constancia no incluye el historial detallado de modificaciones salariales por patrón, solo el último SBC de cada uno. ' +
-          'No es posible calcular tu SBC promedio de forma confiable con estos datos. ' +
-          'Descarga la "Constancia de Semanas Cotizadas e Historial de Registros Afiliatorios" en el portal del IMSS para obtenerlo automáticamente, o complétalo manualmente.',
-      );
+      if (workHistoryResult.hasMovementTable) {
+        // El documento SÍ trae la tabla de movimientos: no lo rechazó el
+        // formato del archivo, lo rechazó nuestra lectura de él. Decirle a
+        // la persona que descargue otro documento la haría descargar de nuevo
+        // un PDF que sí servía.
+        warnings.push(
+          'El documento sí trae el historial de movimientos salariales, pero no pudimos reconstruirlo: ' +
+            'las etiquetas de cada patrón no cuadran entre sí. ' +
+            'Revisa el SBC promedio o complétalo manualmente.',
+        );
+      } else {
+        warnings.push(
+          'Esta constancia no incluye el historial detallado de modificaciones salariales por patrón, solo el último SBC de cada uno. ' +
+            'No es posible calcular tu SBC promedio de forma confiable con estos datos. ' +
+            'Descarga la "Constancia de Semanas Cotizadas e Historial de Registros Afiliatorios" en el portal del IMSS para obtenerlo automáticamente, o complétalo manualmente.',
+        );
+      }
     }
 
     // ─── Último patrón ───────────────────────────────────────────
@@ -314,10 +336,27 @@ interface WorkHistoryParseResult {
   referenceDate: Date;
   /** Si `referenceDate` es una fecha pasada (no "hoy") — para poder avisarlo. */
   usesPastReferenceDate: boolean;
+  /**
+   * Si el documento trae la tabla de movimientos. Distingue "esta constancia
+   * no trae el historial detallado" (el aviso de siempre) de "sí lo trae pero
+   * no pudimos reconstruirlo": el segundo caso exige un aviso distinto, porque
+   * descargar otro documento no lo arregla.
+   */
+  hasMovementTable: boolean;
+  /**
+   * Montos del documento que no correspondieron ni al SBC de un patrón ni a
+   * una fila de movimiento reconocida. Suelen ser filas de un tipo de
+   * movimiento que el parser todavía no conoce.
+   */
+  unattributedAmounts: number;
 }
 
 interface SalaryMovement {
-  type: 'REINGRESO' | 'MODIFICACION' | 'BAJA';
+  /**
+   * `ALTA` es el alta original de un empleo: abre un periodo salarial igual
+   * que `REINGRESO`. `BAJA` es la única que cierra el historial.
+   */
+  type: 'REINGRESO' | 'ALTA' | 'MODIFICACION' | 'BAJA';
   date: Date;
   salary: number;
 }
@@ -326,7 +365,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Agrupa las filas de la tabla "Tipo de movimiento / Fecha de movimiento /
- * Salario Base" (REINGRESO, MODIFICACIÓN DE SALARIO, BAJA) por patrón,
+ * Salario Base" (REINGRESO, ALTA, MODIFICACIÓN DE SALARIO, BAJA) por patrón,
  * asignando cada fila al patrón cuyo "Nombre del patrón" la antecede más de
  * cerca en el texto. No se asume que las 3 columnas de una fila queden
  * adyacentes por posición de columna vs. fila (el orden de dibujado del PDF
@@ -336,9 +375,15 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * $MONTO" — el orden de la tabla visual "Tipo de movimiento | Fecha de
  * movimiento | Salario Base" no siempre coincide con el orden de dibujado
  * del PDF). Por eso el regex acepta ambos órdenes.
+ *
+ * La lista de tipos es la que emite el IMSS en la columna "Tipo de movimiento":
+ * REINGRESO, ALTA (el alta original de un empleo, con su SBC inicial),
+ * MODIFICACION DE SALARIO y BAJA. Un tipo que falte aquí NO es inocuo: su
+ * monto se cuela en la lista de SBC de encabezado, el emparejamiento por
+ * patrón deja de cuadrar y el parser descarta TODO el historial.
  */
 const MOVEMENT_REGEX =
-  /(?:(?<day1>\d{2})\/(?<month1>\d{2})\/(?<year1>\d{4})\s+(?<type1>REINGRESO|MODIFICACION DE SALARIO|BAJA)|(?<type2>REINGRESO|MODIFICACION DE SALARIO|BAJA)\s+(?<day2>\d{2})\/(?<month2>\d{2})\/(?<year2>\d{4}))\s+\$\s*(?<amount>\d{1,6}(?:[.,]\d{1,4})?)/gi;
+  /(?:(?<day1>\d{2})\/(?<month1>\d{2})\/(?<year1>\d{4})\s+(?<type1>REINGRESO|ALTA|MODIFICACION DE SALARIO|BAJA)|(?<type2>REINGRESO|ALTA|MODIFICACION DE SALARIO|BAJA)\s+(?<day2>\d{2})\/(?<month2>\d{2})\/(?<year2>\d{4}))\s+\$\s*(?<amount>\d{1,6}(?:[.,]\d{1,4})?)/gi;
 
 /** Extrae las filas crudas de la tabla de movimientos en todo el documento. */
 function extractRawMovements(text: string): RegExpMatchArray[] {
@@ -376,7 +421,9 @@ function groupMovementsByEmployer(
       ? 'REINGRESO'
       : typeRaw.startsWith('BAJA')
         ? 'BAJA'
-        : 'MODIFICACION';
+        : typeRaw.startsWith('ALTA')
+          ? 'ALTA'
+          : 'MODIFICACION';
     const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
     const salary = parseFloat(amountRaw.replace(',', '.'));
     if (isNaN(salary) || salary <= 0) continue;
@@ -394,7 +441,7 @@ function groupMovementsByEmployer(
 /**
  * Construye los periodos de SBC de un patrón a partir de su tabla de
  * movimientos (ya ordenada cronológicamente). Cada evento de tipo
- * REINGRESO/MODIFICACIÓN abre un periodo que termina donde empieza el
+ * REINGRESO/ALTA/MODIFICACIÓN abre un periodo que termina donde empieza el
  * siguiente; el último periodo termina en la fecha de la fila BAJA (si
  * existe) o "hoy" (si el patrón está vigente). Devuelve [] si no hay
  * eventos utilizables o si no se puede determinar cuándo termina el último
@@ -441,18 +488,96 @@ function detectOverlap(periods: SBCPeriod[]): boolean {
 }
 
 /**
+ * SBC de encabezado de cada patrón, anclado a SU ETIQUETA ("Salario Base de
+ * Cotización *").
+ *
+ * Antes se identificaba contando todo monto "$" del documento que no
+ * estuviera dentro de una fila de movimiento. Eso hace que el parser dependa
+ * de adivinar qué montos son encabezados: un solo tipo de movimiento que no
+ * se reconozca (la fila "ALTA" que emite el IMSS, por ejemplo) se cuela en
+ * esa lista, el conteo deja de cuadrar con el número de patrones y el
+ * historial COMPLETO se descarta — un solo dato desconocido tumbaba el
+ * cálculo del SBC promedio. Con el anclaje, cada encabezado toma su propio
+ * monto y un monto que no sabemos a qué pertenece ya no destruye nada: se
+ * reporta aparte como monto sin atribuir.
+ *
+ * La ventana de búsqueda se acota al siguiente "Nombre del patrón" (o 200
+ * caracteres) porque más allá hay datos que no son el SBC de este patrón, y
+ * los montos que caen dentro de una fila de movimiento se descartan: si el
+ * encabezado no trae monto, se devuelve null y el emparejamiento se rechaza
+ * por estructura (no se adivina).
+ *
+ * La etiqueta se reconoce sin exigir el asterisco (algunas constancias no lo
+ * traen) y se EXCLUYE la nota al pie ("* Valor del último salario base de
+ * cotización diario en pesos"), que repetiría la etiqueta una vez por
+ * patrón y descuadraría el conteo.
+ */
+function extractHeaderSbc(
+  text: string,
+  isInsideMovement: (index: number) => boolean,
+): { amounts: (number | null)[]; indexes: number[] } {
+  const amounts: (number | null)[] = [];
+  const indexes: number[] = [];
+
+  for (const label of text.matchAll(/salario base de cotizaci[oó]n(?!\s*diario)/gi)) {
+    if (label.index === undefined) continue;
+    const start = label.index + label[0].length;
+
+    const nextEmployer = /nombre del patr[oó]n/i.exec(text.slice(start));
+    const end =
+      nextEmployer?.index !== undefined
+        ? Math.min(start + nextEmployer.index, start + 200)
+        : Math.min(text.length, start + 200);
+
+    const found = [...text.slice(start, end).matchAll(/\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/g)].find(
+      (amount) => !isInsideMovement(start + amount.index),
+    );
+
+    const monto = found?.[1];
+    if (!found || found.index === undefined || monto === undefined) {
+      amounts.push(null);
+      indexes.push(-1);
+      continue;
+    }
+    amounts.push(parseFloat(monto.replace(',', '.')));
+    indexes.push(start + found.index);
+  }
+
+  return { amounts, indexes };
+}
+
+/**
+ * Montos del documento que no correspondieron ni al SBC de un patrón ni a una
+ * fila de movimiento reconocida. Suelen ser filas de un tipo de movimiento
+ * que el parser todavía no conoce: se informan en vez de ignorarse en
+ * silencio.
+ */
+function countUnattributedAmounts(
+  text: string,
+  isInsideMovement: (index: number) => boolean,
+  headerIndexes: number[],
+): number {
+  return [...text.matchAll(/\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/g)].filter(
+    (amount) =>
+      amount.index !== undefined &&
+      !isInsideMovement(amount.index) &&
+      !headerIndexes.includes(amount.index),
+  ).length;
+}
+
+/**
  * Reconstruye el historial laboral (patrón, fechas, SBC) a partir de la
  * Constancia de Semanas Cotizadas, y los periodos de SBC para el promedio
  * ponderado de las últimas 250 semanas.
  *
  * Para cada patrón se intenta primero la reconstrucción PRECISA a partir de
- * su tabla de movimientos (REINGRESO / MODIFICACIÓN DE SALARIO / BAJA),
+ * su tabla de movimientos (REINGRESO / ALTA / MODIFICACIÓN DE SALARIO / BAJA),
  * cuando el documento la incluye. Si no está disponible, se cae a una
  * APROXIMACIÓN de un solo periodo con el SBC del encabezado del patrón (ese
  * encabezado solo trae el ÚLTIMO SBC registrado, no el historial completo).
  *
- * Estrategia para el encabezado de cada patrón: "Fecha de alta", los montos
- * "$" y "Nombre del patrón" quedan de forma fiable en el mismo orden
+ * Estrategia para el encabezado de cada patrón: "Fecha de alta", el SBC de
+ * encabezado y "Nombre del patrón" quedan de forma fiable en el mismo orden
  * relativo en el texto extraído (a diferencia de "Fecha de baja", cuyo
  * valor puede quedar intercalado en cualquier parte por el orden de
  * dibujado del PDF). Se toman esas listas en orden y se emparejan por
@@ -477,16 +602,24 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
     .map((m) => [m.index, m.index + m[0].length] as const);
   const isInsideMovement = (index: number) => movementRanges.some(([start, end]) => index >= start && index < end);
 
-  // Los montos "$" de la tabla de movimientos (REINGRESO/MODIFICACIÓN/BAJA)
-  // no cuentan como el SBC de encabezado de cada patrón.
-  const sbcAmounts = [...text.matchAll(/\$\s*(\d{1,6}(?:[.,]\d{1,4})?)/g)].filter(
-    (m) => m.index === undefined || !isInsideMovement(m.index),
-  );
+  // SBC de encabezado de cada patrón, anclado a su propia etiqueta.
+  const headerSbc = extractHeaderSbc(text, isInsideMovement);
+  const sbcAmounts = headerSbc.amounts;
+  const unattributedAmounts = countUnattributedAmounts(text, isInsideMovement, headerSbc.indexes);
+  const hasMovementTable = /tipo\s+de\s+movimiento/i.test(text);
 
-  const count = hireDates.length;
-  if (count === 0 || sbcAmounts.length !== count || employers.length !== count) {
-    // Las listas no cuadran: el documento no sigue la estructura esperada
-    // (o hay más/menos patrones de los detectados). Evitar adivinar.
+  const count = employers.length;
+  if (
+    count === 0 ||
+    hireDates.length !== count ||
+    sbcAmounts.length !== count ||
+    sbcAmounts.some((amount) => amount === null)
+  ) {
+    // La ESTRUCTURA no cuadra: el documento no tiene la forma que el parser
+    // entiende (faltan o sobran altas, nombres o montos de encabezado). Se
+    // abandona la reconstrucción en vez de adivinar a qué patrón pertenece
+    // cada dato. Un monto suelto que no sabemos a qué pertenece NO dispara
+    // este abandono: se reporta aparte.
     return {
       relations: [],
       periods: [],
@@ -495,6 +628,8 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
       hadOverlap: false,
       referenceDate: new Date(),
       usesPastReferenceDate: false,
+      hasMovementTable,
+      unattributedAmounts,
     };
   }
 
@@ -511,13 +646,12 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
 
   for (let i = 0; i < count; i++) {
     const hireMatch = hireDates[i];
-    const sbcMatch = sbcAmounts[i];
+    const sbcHeader = sbcAmounts[i];
     const employerMatch = employers[i];
-    if (!hireMatch || !sbcMatch || !employerMatch) continue;
+    if (!hireMatch || sbcHeader === null || sbcHeader === undefined || !employerMatch) continue;
 
     const hireDate = hireDateOf(hireMatch);
     const isActive = i === 0 && isCurrentlyActiveGlobal;
-    const sbcHeader = parseFloat((sbcMatch[1] as string).replace(',', '.'));
     const employerName =
       employerMatch[1]?.split(/\s+(?=registro\s+patronal\b|registro\s+patr\s*$|tipo\s+de\s+movimiento\b|fecha\s+de\s+movimi)/i)[0]?.trim() ?? '';
 
@@ -603,6 +737,8 @@ function extractWorkHistory(text: string): WorkHistoryParseResult {
     hadOverlap: detectOverlap(periods),
     referenceDate,
     usesPastReferenceDate: referenceDate !== today,
+    hasMovementTable,
+    unattributedAmounts,
   };
 }
 
