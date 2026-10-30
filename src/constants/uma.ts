@@ -107,13 +107,15 @@ export const TABLA_UMA_SMG: readonly UMARecord[] = [
     monthlyUMA: 3566.22,
     annualUMA: 42818.15,
     smgCdmx: 315.04,
-    // ESTIMACIÓN — VERIFICAR: Zona Libre Frontera Norte 2026 (~13% sobre 2025).
-    smgFronteraNorte: 474.46,
+    // SMG de la Zona Libre de la Frontera Norte 2026.
+    smgFronteraNorte: 440.87,
     isEstimate: false,
     source:
       'DOF 09-ene-2026 (INEGI) — valor diario corroborado en valoruma.com. ' +
       'SMG ZSMG 2026 oficial CONASAMI, Tabla de Salarios Mínimos 2026 (PDF gob.mx). ' +
-      'SMG Frontera Norte 2026 estimado — verificar CONASAMI.',
+      'SMG Frontera Norte 2026: calculadora oficial del IMSS para Personas Trabajadoras ' +
+      'Independientes (calculadoraPTI-0326.js, marzo 2026); confirmar contra la tabla ' +
+      'de CONASAMI.',
   },
 ] as const;
 

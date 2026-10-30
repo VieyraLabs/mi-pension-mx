@@ -29,6 +29,7 @@ cambia, se marca como `Sustituida` y se escribe una nueva que la reemplaza.
 | [0012](0012-proyeccion-de-semanas-hasta-la-edad-de-retiro.md) | El motor proyecta las semanas hasta la edad de retiro y calcula con esas semanas | Sustituida por ADR-0013 | 2026-10-26 |
 | [0013](0013-proyeccion-de-semanas-por-fecha.md) | Proyectar semanas por fecha calendario de retiro | Aceptada | 2026-10-28 |
 | [0014](0014-modalidad-10-incorporacion-voluntaria-al-régimen-obligatorio.md) | Usar la Modalidad 10 como incorporación voluntaria y proyectar sus meses dentro del SBC promedio | Aceptada | 2026-10-30 |
+| [0015](0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md) | Calcular la cuota de la Modalidad 10 con la estructura de financiamiento oficial del IMSS | Aceptada | 2026-10-30 |
 
 ## Formato
 

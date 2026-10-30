@@ -38,14 +38,20 @@ En `src/constants/ley73.ts`:
 
 - `SBC_CAP_TIMES_UMA` (tope de cotización, 25 UMA por el Art. 28 LSS vigente).
 - `MODALIDAD_10_CAP_TIMES_UMA` (tope de la Modalidad 10: 25 UMA).
-- `MODALIDAD_10_BASE_CUOTA_PCT` (cuota base de la Modalidad 10 sin INFONAVIT ni Riesgos de
-  Trabajo): verificar en el Acuerdo de la Junta Directiva y marcar como estimación mientras
-  no se confirme.
 - `MODALIDAD_10_RT_PRIMA` (primas de Riesgos de Trabajo por clase I–V, Art. 71 LSS vigente).
-- `smgFronteraNorte` de `TABLA_UMA_SMG` (SMG de la Zona Libre de la Frontera Norte): hoy es
-  estimación 2026; verificar en CONASAMI. El SMG de cada zona es el **piso del SBC declarado
-  en la Modalidad 10** (salario mínimo del área geográfica, Art. 28 LSS vigente): al cambiarlo
-  hay que revisar el mínimo en UMAs que muestra el paso 4.
+- En `src/constants/modalidad10Cuota.ts`, la estructura de la cuota de la Modalidad 10:
+  `M10_CUOTA_RATES` (tasas por ramo), `M10_SEM_EXCEDENTE_UMAS` (el excedente de 3 UMA),
+  `M10_CESANTIA_BANDS` y `M10_CESANTIA_FIRST_YEAR` (la tabla de cesantía y vejez, con columna
+  por año). **Al cambiar el año hay que añadir la columna nueva** a cada banda y extender
+  `M10_CESANTIA_FIRST_YEAR` si cambia el primer año publicado. La fuente es la calculadora
+  oficial del IMSS para Personas Trabajadoras Independientes
+  (`https://www.imss.gob.mx/sites/all/statics/trabajadores-independientes/calculadoraPTI-*.js`,
+  revisar la versión del archivo) y el Cuadro A.3 del Anexo A al Informe al Consejo Técnico.
+- `smgFronteraNorte` de `TABLA_UMA_SMG` (SMG de la Zona Libre de la Frontera Norte): el valor
+  vigente sale de la calculadora oficial del IMSS y debe confirmarse contra la tabla de
+  salarios mínimos de CONASAMI. El SMG de cada zona es el **piso del SBC declarado en la
+  Modalidad 10** (salario mínimo del área geográfica, Art. 28 LSS vigente): al cambiarlo hay
+  que revisar el mínimo en UMAs que muestra el paso 4.
 - El mínimo de la pensión garantizada, si cambió.
 
 ### 4. Actualizar el catálogo de ocupaciones (clase de riesgo)
@@ -63,9 +69,11 @@ En `src/constants/ocupaciones.ts`:
 
 ### 5. Registrar la provenancia documental (obligatorio)
 
-Toda constante nueva o modificada en `src/constants/ley73.ts`, `src/constants/uma.ts` y
-`src/constants/ocupaciones.ts` debe quedar con su comentario de provenancia: fuente (artículo de la Ley o del
-Reglamento; INEGI/CONASAMI para UMA/SMG), publicación de origen (DOF, con fecha)
+Toda constante nueva o modificada en `src/constants/ley73.ts`, `src/constants/uma.ts`,
+`src/constants/ocupaciones.ts` y `src/constants/modalidad10Cuota.ts` debe quedar con su
+comentario de proveniencia: fuente (artículo de la Ley o del
+Reglamento; INEGI/CONASAMI para UMA/SMG; Cuadro A.3 del Anexo A al Informe al Consejo Técnico
+y calculadora oficial del IMSS para la cuota), publicación de origen (DOF, con fecha)
 y vigencia o año aplicable. Si el valor es una estimación o un criterio operativo
 (no proviene del texto legal), se marca explícitamente como tal.
 

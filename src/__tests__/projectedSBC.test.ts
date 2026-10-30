@@ -4,7 +4,6 @@ import { buildM10ContributionPeriod, getM10StartDate } from '../utils/modalidad1
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const REFERENCE_DATE = new Date(2025, 0, 1);
-const UMA = 113.14;
 
 function segment(startDate: Date, endDate: Date, sbc: number): SBCPeriodSegment {
   return {
@@ -48,7 +47,6 @@ function m10Period(params: {
     m10DailySalary: params.m10DailySalary,
     ordinaryDailySalary: params.ordinaryDailySalary,
     continuesWorking: params.continuesWorking,
-    dailyUMA: UMA,
   });
 }
 

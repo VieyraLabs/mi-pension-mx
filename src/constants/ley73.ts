@@ -444,27 +444,12 @@ export const MODALIDAD_10_MINIMUM_IS_SMG_OF_ZONE = true;
 export const MODALIDAD_10_CAP_TIMES_UMA = 25;
 
 /**
- * Cuota base de la Modalidad 10 sobre el SBC mensual, SIN prima de Riesgos de
- * Trabajo (RT) y SIN la aportación a INFONAVIT.
- *
- * ESTIMACIÓN — VERIFICAR: 18.30% es la cuota base (ramos distintos a Riesgos
- * de Trabajo). Con 25 UMA 2026 ($117.31/día) equivale a $16,315.47/mes. La
- * fuente primaria es el Acuerdo de la Junta Directiva que fija las primas de
- * financiamiento por ramo (DOF); hasta confirmarlo ahí, la UI lo presenta
- * como estimado.
- *
- * Contexto legal del criterio: Art. 228 LSS vigente — a las bases de
- * cotización "se les aplicarán las primas de financiamiento… reduciendo la
- * parte proporcional relativa a las prestaciones que se excluyen". Excluir
- * INFONAVIT es exactamente esa reducción: la aportación al fondo de vivienda
- * es un ahorro adicional, no una prima de financiamiento.
- */
-export const MODALIDAD_10_BASE_CUOTA_PCT = 0.183;
-
-/**
  * Prima de Riesgos de Trabajo por clase laboral (Art. 71 LSS vigente, tabla de
  * primas de RT). Es el componente de la cuota de Modalidad 10 que varía según
  * la ocupación de la persona asegurada. Valores oficiales.
+ *
+ * La estructura completa de la cuota (tasas por ramo, excedente sobre 3 UMA y
+ * tabla de cesantía y vejez) vive en `src/constants/modalidad10Cuota.ts`.
  */
 export const MODALIDAD_10_RT_PRIMA: Record<RiskClass, number> = {
   1: 0.0054355,
@@ -482,12 +467,6 @@ export const MODALIDAD_10_RISK_CLASS_LABELS: Record<RiskClass, string> = {
   4: 'Clase IV — riesgo alto',
   5: 'Clase V — riesgo máximo',
 };
-
-/**
- * La cuota mostrada NO incluye la aportación opcional a INFONAVIT.
- * Ver el comentario de `MODALIDAD_10_BASE_CUOTA_PCT`.
- */
-export const MODALIDAD_10_CUOTA_EXCLUDES_INFONAVIT = true;
 
 /**
  * Contexto normativo (no altera el cálculo de esta app): el Acuerdo

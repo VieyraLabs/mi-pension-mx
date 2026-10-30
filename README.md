@@ -209,10 +209,17 @@ autorizado y el aprobador. **La publicación en producción es un procedimiento 
 | Art. 182 LSS 1973 | Conservación de derechos |
 | Art. 28 LSS vigente | Tope de 25 UMA del SBC |
 | Arts. 222 a 233 LSS vigente | Modalidad 10 (incorporación voluntaria) |
+| Art. 39 LSS 1973 / Art. 33 LSS vigente | Suma de los salarios concurrentes para el goce de prestaciones |
 
 > **Nota sobre la tabla del Art. 167**: los porcentajes de cuantía básica e incrementos
 > anuales son de referencia bibliográfica. El IMSS puede aplicar criterios operativos
 > distintos. Los resultados siempre se marcan como ESTIMACIONES.
+
+> **Nota sobre la cuota de la Modalidad 10**: se calcula con la estructura de financiamiento
+> oficial del IMSS —Cuadro A.3 del Anexo A al Informe al Consejo Técnico 2025-2026 y la
+> calculadora oficial para Personas Trabajadoras Independientes—, sin la aportación a
+> INFONAVIT. Lo que sigue estimado es la clase de riesgo, porque el catálogo de
+> ocupaciones captura División → Grupo y el RACERF asigna la clase por fracción.
 
 ---
 

@@ -99,7 +99,6 @@ export default function NewSimulationScreen() {
       ordinaryDailySalary: lastRegisteredSBC,
       continuesWorking: input.modalidad10.continuesWorkingWhileContributing ?? true,
       annualSalaryIncreasePct: input.modalidad10.annualSalaryIncrease,
-      dailyUMA: input.uma.dailyUMA,
     });
   }, [
     input.modalidad10.active,
@@ -107,7 +106,6 @@ export default function NewSimulationScreen() {
     input.modalidad10.continuesWorkingWhileContributing,
     input.modalidad10.annualSalaryIncrease,
     input.personalData.estimatedRetirementDate.getTime(),
-    input.uma.dailyUMA,
     lastRegisteredSBC,
   ]);
 
@@ -266,6 +264,7 @@ export default function NewSimulationScreen() {
               onChangeSalary={setModalidad10ContributionSalary}
               onChangeUMAs={setModalidad10UMAs}
               dailyUMA={input.uma.dailyUMA}
+              umaYear={input.uma.year}
               minimumDailySalary={getMinimumDailySalary(input.uma, input.modalidad10.salaryZone)}
               theme={theme}
             />

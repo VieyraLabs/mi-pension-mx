@@ -31,8 +31,21 @@ fila.
 - **Los porcentajes de la tabla del Art. 167 están marcados como referencia
   bibliográfica** en el propio archivo de constantes. La app no afirma tener la tabla
   oficial verificada.
+- **La cuota de la Modalidad 10 tiene fuente primaria y la app lo dice.** La estructura
+  reproducida es la de la calculadora oficial del IMSS para Personas Trabajadoras
+  Independientes y la del Cuadro A.3 del Anexo A al Informe al Consejo Técnico 2025-2026;
+  lo que la app **no** afirma es que la clase de riesgo sea exacta: se estima con el
+  catálogo de ocupaciones (División → Grupo), que no sustituye la asignación por fracción
+  del RACERF ([ADR-0015](../adr/0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md)).
+- **La diferencia entre la cuota mostrada y la línea de captura del IMSS está declarada.**
+  La calculadora oficial multiplica por los días reales del mes de pago y la app usa 30.4
+  días por mes (su convención para el SBC mensual). La fórmula se comprobó contra una
+  línea de captura real de 30 días (25 UMA, clase III): $18,584.02 contra los $18,584
+  observados; con los 30.4 días de la app la cuota es $18,831.81.
 - **El texto educativo de la sección de información** (`infoLegal.ts`) explica el marco
-  normativo y los conceptos que la app usa (UMA, SMG, Modalidad 10, pensión de vejez).
+  normativo y los conceptos que la app usa (UMA, SMG, Modalidad 10, pensión de vejez),
+  incluida la duda de si el salario del patrón y el de la Modalidad 10 se suman en el
+  promedio de las 250 semanas.
 
 ## Fuera de alcance
 

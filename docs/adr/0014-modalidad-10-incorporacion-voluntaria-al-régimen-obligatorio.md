@@ -57,18 +57,22 @@ UMAs.**
   mismo número que alimenta el cálculo.
 - **Si la persona sigue trabajando, su último salario registrado se suma.** El SBC del
   periodo de M10 es `último salario registrado + SBC de M10` (dos cotizaciones en el mismo
-  mes, como dos patrones simultáneos, acotado a 25 UMA). Si ya no trabaja, el SBC del periodo
-  es solo el de M10. La pregunta se hace en el paso 4 y su respuesta se declara en el paso 1
-  del desglose.
+  mes, como dos patrones simultáneos). Si ya no trabaja, el SBC del periodo es solo el de M10.
+  La pregunta se hace en el paso 4 y su respuesta se declara en el paso 1 del desglose.
+  La suma **no** se topa en este punto: el Art. 39 LSS 1973 (Art. 33 LSS vigente) clasifica al
+  asegurado por la suma de los salarios percibidos, y el tope de 25 UMA opera sobre los
+  aportes y sobre el promedio del SBC, que es donde lo aplica el motor.
 - **Un solo lugar calcula la mezcla.** `calculateProjectedSBC` devuelve el promedio **y el
   reparto de semanas** (ordinarias y de M10); ese reparto viaja en la entrada para que el
   motor narre los mismos números. Se elimina la fórmula duplicada.
 - **Los meses proyectados no son editables.** "Meses cotizando en M10" es texto de solo
   lectura, con el mismo patrón que la edad de retiro: se derivan de la fecha exacta de retiro.
-- **Costo mensual de solo lectura, sin INFONAVIT y desglosado.** `costo = SBC mensual ×
-  (cuota base + prima de Riesgos de Trabajo de la clase)`. La cuota base es una constante
-  marcada como estimación; la prima de RT depende de la clase de riesgo laboral (I–V), que se
-  deriva de la ocupación (División/Grupo) y se muestra junto con el desglose base + prima.
+- **Costo mensual de solo lectura, sin INFONAVIT y desglosado.** La cuota se arma con la
+  estructura de financiamiento oficial del IMSS, rama por rama (cuota fija y excedente del
+  SEM, prestaciones en dinero, gastos médicos para pensionados, Invalidez y Vida, Guarderías,
+  Retiro y cesantía y vejez por banda de UMAs) más la prima de Riesgos de Trabajo de la clase
+  (I–V), que se deriva de la ocupación (División/Grupo). El detalle de esa decisión y de sus
+  fuentes está en [ADR-0015](0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md).
 - **Sin meses retroactivos.** M10 arranca el 1º del mes siguiente a la fecha de referencia
   (Art. 224 LSS vigente: la cuota se paga por adelantado, sin actualizaciones ni recargos).
 
@@ -94,9 +98,10 @@ UMAs.**
 - El Art. 194 de la Ley 73 permite quedarse en el mismo *grupo de salario* o en el inmediato
   inferior o superior; la app deja elegir el SBC de forma continua y **no modela** esas
   bandas. Se declara como supuesto.
-- La cuota base mostrada depende de una constante marcada como estimación, y el catálogo
-  División/Grupo → clase (10 divisiones del RACERF) es una aproximación de dos niveles que no
-  sustituye la asignación por fracción: hay que confirmar ambos antes de publicar la app.
+- La **clase de riesgo** del catálogo División/Grupo → clase (10 divisiones del RACERF) es
+  una aproximación de dos niveles que no sustituye la asignación por fracción: hay que
+  confirmarla antes de publicar la app. La estructura de la cuota, en cambio, ya tiene fuente
+  primaria ([ADR-0015](0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md)).
 - Las simulaciones guardadas por versiones anteriores se normalizan **en memoria** al leer
   (la clave vieja `modalidad40` se lee como `modalidad10`); no se reescribe lo que la persona
   tiene guardado (ADR-0013).

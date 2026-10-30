@@ -127,7 +127,12 @@ Reglas transversales:
     como proxy del piso, por no conocer la zona del trabajador.
   - Si la persona **sigue trabajando** mientras cotiza, el SBC del periodo de M10 es
     `último salario registrado + SBC de M10` (dos cotizaciones en el mismo mes); si ya no
-    trabaja, es solo el SBC de M10. En ambos casos se topa a 25 UMA.
+    trabaja, es solo el SBC de M10. La suma **no se topa**: el Art. 39 LSS 1973 (Art. 33 LSS
+    vigente) clasifica al asegurado para el goce de prestaciones en dinero por la **suma** de
+    los salarios percibidos. El tope de 25 UMA opera sobre los aportes y sobre el **promedio**
+    del SBC, y lo aplica el paso 1, que avisa cuando lo rebasa.
+  - La cuota mensual que muestra el paso 4 se calcula con la estructura de financiamiento
+    oficial del IMSS, rama por rama y sin INFONAVIT ([ADR-0015](../adr/0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md)).
   - El desglose de las 250 semanas (cuántas ordinarias y cuántas de M10, con qué SBC) viaja
     en la entrada para que el paso 1 narre los mismos números que se usaron.
   - La decisión vigente se documenta en

@@ -6,18 +6,25 @@
  * (capítulo IX de la LSS vigente, Arts. 222 a 233): la base de cotización son
  * los ingresos declarados por la persona asegurada, acotados por los límites
  * del Art. 28 —el salario mínimo del área geográfica como piso y 25 UMA como
- * techo— y la cuota se calcula sin la aportación a INFONAVIT.
+ * techo— y la cuota se calcula con la estructura de financiamiento oficial
+ * del IMSS y sin la aportación a INFONAVIT.
  *
  * Todo es función pura: aquí no hay UI ni estado.
  */
 import {
   AVERAGE_DAYS_PER_MONTH,
-  MODALIDAD_10_BASE_CUOTA_PCT,
   MODALIDAD_10_CAP_TIMES_UMA,
   MODALIDAD_10_RT_PRIMA,
 } from '../constants/ley73';
+import {
+  M10_CESANTIA_BANDS,
+  M10_CESANTIA_BAND_THRESHOLDS_UMAS,
+  M10_CESANTIA_FIRST_YEAR,
+  M10_CUOTA_RATES,
+  M10_SEM_EXCEDENTE_UMAS,
+} from '../constants/modalidad10Cuota';
 import type { RiskClass } from '../models';
-import { round2 } from './format';
+import { round2, round4 } from './format';
 import { countCotizedWeeksInDateRange } from './weeksProjection';
 
 /**
@@ -128,7 +135,7 @@ export interface M10ContributionPeriod {
   startDate: Date;
   /** Último día cotizable (fecha de retiro). */
   endDate: Date;
-  /** SBC diario efectivo del periodo (ya combinado y topado). */
+  /** SBC diario efectivo del periodo (la suma de las cotizaciones que conviven). */
   dailySalary: number;
   /** SBC diario declarado en la Modalidad 10, sin combinar. */
   declaredDailySalary: number;
@@ -149,9 +156,19 @@ export interface M10ContributionPeriod {
  *   patrones simultáneos); o
  * - `salario de M10` solamente si ya no trabaja.
  *
- * En ambos casos se topa a 25 UMA (Art. 28 LSS vigente) y, si se declara un
- * incremento salarial anual esperado, se aplica como factor de punto medio
- * sobre el horizonte completo (aproximación declarada como estimación).
+ * **La suma NO se topa aquí.** El Art. 39 de la Ley 73 dice que para el goce
+ * de las prestaciones en dinero el asegurado se clasifica "en el grupo
+ * correspondiente a la suma de los salarios percibidos en los distintos
+ * empleos" y que, cuando la suma alcanza el límite superior, los aportes se
+ * cubren sobre el salario máximo de cotización (el Art. 33 de la LSS vigente
+ * lo dice igual, con la salvedad de que la suma se toma "cuando ésta sea
+ * menor al límite superior"). El tope de 25 UMA se aplica, por tanto, a los
+ * aportes y al promedio del SBC, no a la suma que entra al promedio: ese
+ * último lo aplica el motor (paso 1) y lo avisa cuando lo rebasa.
+ *
+ * Si se declara un incremento salarial anual esperado, se aplica como factor
+ * de punto medio sobre el horizonte completo (aproximación declarada como
+ * estimación).
  *
  * Devuelve `null` cuando no hay un mes contractual completo por delante.
  */
@@ -166,8 +183,6 @@ export function buildM10ContributionPeriod(params: {
   continuesWorking: boolean;
   /** Incremento salarial anual esperado (%). */
   annualSalaryIncreasePct?: number;
-  /** UMA diaria vigente (para el tope). */
-  dailyUMA: number;
 }): M10ContributionPeriod | null {
   const months = estimateM10Months(params.referenceDate, params.retirementDate);
   if (months === 0) return null;
@@ -188,8 +203,6 @@ export function buildM10ContributionPeriod(params: {
     dailySalary = combined * (1 + (increasePct / 100) * (years / 2));
   }
 
-  dailySalary = Math.min(dailySalary, MODALIDAD_10_CAP_TIMES_UMA * params.dailyUMA);
-
   return {
     startDate,
     endDate,
@@ -202,24 +215,62 @@ export function buildM10ContributionPeriod(params: {
 }
 
 /**
- * Cuota total de la Modalidad 10 para una clase de riesgo: la cuota base
- * (ramos distintos a Riesgos de Trabajo) más la prima de RT de la clase.
+ * Banda de la tasa de cesantía y vejez que corresponde a un SBC dado.
+ *
+ * Reproduce la selección de banda de la calculadora oficial del IMSS: la
+ * banda 0 es el salario mínimo exacto de la zona y las siguientes se abren
+ * por tramos de UMA (1.51, 2.01, 2.51, 3.01, 3.51 y 4.01 UMA).
  */
-export function m10CuotaPctForRiskClass(riskClass: RiskClass): number {
-  return MODALIDAD_10_BASE_CUOTA_PCT + MODALIDAD_10_RT_PRIMA[riskClass];
+export function resolveM10CesantiaBand(
+  dailySalary: number,
+  dailyUMA: number,
+  minimumDailySalary: number,
+): number {
+  if (round2(dailySalary) === round2(minimumDailySalary)) return 0;
+
+  const thresholds = M10_CESANTIA_BAND_THRESHOLDS_UMAS.map((t) => round2(t * dailyUMA));
+
+  if (dailySalary > minimumDailySalary && dailySalary < thresholds[0]!) return 1;
+
+  for (let i = 0; i < thresholds.length; i += 1) {
+    const lower = thresholds[i]!;
+    const upper = thresholds[i + 1];
+    if (upper === undefined) {
+      if (dailySalary >= lower) return 7;
+      continue;
+    }
+    if (dailySalary >= lower && dailySalary < upper) return i + 2;
+  }
+
+  return 7;
 }
 
 /**
- * Costo mensual estimado de la Modalidad 10, SIN la aportación a INFONAVIT
- * (que es un ahorro adicional y no una prima de financiamiento; Art. 228 de
- * la LSS vigente). La clase de riesgo laboral determina la prima de RT.
+ * Tasa de cesantía y vejez (%) de la banda y el año indicados.
+ * Para los años anteriores a 2022 se usa la columna de 2022, la más antigua
+ * publicada en la tabla.
  */
-export function calculateM10MonthlyCost(
-  dailySalary: number,
-  riskClass: RiskClass = 1,
-): number {
-  const monthlySalary = round2(dailySalary * AVERAGE_DAYS_PER_MONTH);
-  return round2(monthlySalary * m10CuotaPctForRiskClass(riskClass));
+export function m10CesantiaPct(bandIndex: number, year: number): number {
+  const band = M10_CESANTIA_BANDS[Math.min(Math.max(bandIndex, 0), M10_CESANTIA_BANDS.length - 1)]!;
+  const column = Math.min(
+    Math.max(year - M10_CESANTIA_FIRST_YEAR, 0),
+    band.rates.length - 1,
+  );
+  return band.rates[column]!;
+}
+
+/** Datos de entrada para el cálculo de la cuota mensual de la Modalidad 10. */
+export interface M10MonthlyCostParams {
+  /** SBC diario declarado en la Modalidad 10. */
+  dailySalary: number;
+  /** Clase de riesgo laboral: fija la prima de Riesgos de Trabajo. */
+  riskClass: RiskClass;
+  /** UMA diaria vigente. */
+  dailyUMA: number;
+  /** Salario mínimo de la zona: piso del SBC y base de la banda 0. */
+  minimumDailySalary: number;
+  /** Año de la UMA vigente: fija la columna de la tabla de cesantía y vejez. */
+  year: number;
 }
 
 /** Desglose del costo mensual de la Modalidad 10 para auditar el cálculo. */
@@ -230,40 +281,125 @@ export interface M10MonthlyCostBreakdown {
   monthlySalary: number;
   /** Clase de riesgo laboral. */
   riskClass: RiskClass;
-  /** Cuota base (ramos distintos a RT), sin INFONAVIT. */
-  baseCuotaPct: number;
-  /** Prima de Riesgos de Trabajo de la clase. */
+  /** Prima de Riesgos de Trabajo de la clase (fracción). */
   riskPrimaPct: number;
-  /** Cuota total (base + prima RT). */
-  totalCuotaPct: number;
-  /** Monto de la cuota base (mensual). */
-  baseCuotaAmount: number;
-  /** Monto de la prima de RT (mensual). */
-  riskPrimaAmount: number;
-  /** Costo total mensual (base + RT). */
+  /** Banda de cesantía y vejez aplicada. */
+  cesantiaBandLabel: string;
+  /** Tasa de cesantía y vejez aplicada (%). */
+  cesantiaPct: number;
+  /** SEM — cuota fija (20.40 % de la UMA). */
+  semCuotaFija: number;
+  /** SEM — cuota excedente (sobre el excedente de 3 UMA). */
+  semCuotaExcedente: number;
+  /** SEM — prestaciones en dinero. */
+  semPrestacionesDinero: number;
+  /** SEM — gastos médicos para pensionados. */
+  semGastosMedicosPensionados: number;
+  /** Prima de Riesgos de Trabajo. */
+  riesgosTrabajo: number;
+  /** Seguro de Invalidez y Vida. */
+  invalidezVida: number;
+  /** Seguro de Guarderías y Prestaciones Sociales. */
+  guarderiasPrestacionesSociales: number;
+  /** Seguro de Retiro. */
+  retiro: number;
+  /** Seguro de Cesantía y Vejez. */
+  cesantiaVejez: number;
+  /** Total de la cuota mensual, sin INFONAVIT. */
   total: number;
+  /** Tasa efectiva total sobre el SBC mensual (fracción). */
+  effectivePct: number;
 }
 
 /**
- * Desglose del costo mensual de la Modalidad 10: cuota base + prima de RT.
- * Sirve para mostrar en pantalla y en el PDF los mismos componentes y total.
+ * Desglose de la cuota mensual de la Modalidad 10, rama por rama.
+ *
+ * Reproduce la fórmula de la calculadora oficial del IMSS para Personas
+ * Trabajadoras Independientes: la persona asegurada cotiza por sí misma y
+ * paga las dos partes de cada ramo (patronal y obrera). **No** incluye el
+ * 5 % de INFONAVIT, que es ahorro para vivienda y se paga aparte.
  */
 export function calculateM10MonthlyBreakdown(
-  dailySalary: number,
-  riskClass: RiskClass = 1,
+  params: M10MonthlyCostParams,
 ): M10MonthlyCostBreakdown {
-  const monthlySalary = round2(dailySalary * AVERAGE_DAYS_PER_MONTH);
-  const riskPrimaPct = MODALIDAD_10_RT_PRIMA[riskClass];
-  const totalCuotaPct = MODALIDAD_10_BASE_CUOTA_PCT + riskPrimaPct;
+  const rates = M10_CUOTA_RATES;
+  const monthlySalary = round2(params.dailySalary * AVERAGE_DAYS_PER_MONTH);
+  const riskPrimaPct = MODALIDAD_10_RT_PRIMA[params.riskClass];
+
+  const bandIndex = resolveM10CesantiaBand(
+    params.dailySalary,
+    params.dailyUMA,
+    params.minimumDailySalary,
+  );
+  const cesantiaPct = m10CesantiaPct(bandIndex, params.year);
+
+  // Excedente sobre 3 UMA: base de la cuota excedente del SEM.
+  const excedenteBase = Math.max(
+    0,
+    params.dailySalary - M10_SEM_EXCEDENTE_UMAS * params.dailyUMA,
+  ) * AVERAGE_DAYS_PER_MONTH;
+
+  const semCuotaFija = round2(params.dailyUMA * AVERAGE_DAYS_PER_MONTH * rates.semCuotaFijaUmaPct);
+  const semCuotaExcedente = round2(
+    excedenteBase * (rates.semCuotaExcedentePatronalPct + rates.semCuotaExcedenteObreraPct),
+  );
+  const semPrestacionesDinero = round2(
+    monthlySalary * (rates.semPrestacionesDineroPatronalPct + rates.semPrestacionesDineroObreraPct),
+  );
+  const semGastosMedicosPensionados = round2(
+    monthlySalary *
+      (rates.semGastosMedicosPensionadosPatronalPct + rates.semGastosMedicosPensionadosObreraPct),
+  );
+  const riesgosTrabajo = round2(monthlySalary * riskPrimaPct);
+  const invalidezVida = round2(
+    monthlySalary * (rates.invalidezVidaPatronalPct + rates.invalidezVidaObreraPct),
+  );
+  const guarderiasPrestacionesSociales = round2(
+    monthlySalary * rates.guarderiasPrestacionesSocialesPct,
+  );
+  const retiro = round2(monthlySalary * rates.retiroPct);
+  const cesantiaVejez = round2(
+    monthlySalary * (cesantiaPct / 100 + rates.cesantiaVejezObreraPct),
+  );
+
+  const total = round2(
+    semCuotaFija +
+      semCuotaExcedente +
+      semPrestacionesDinero +
+      semGastosMedicosPensionados +
+      riesgosTrabajo +
+      invalidezVida +
+      guarderiasPrestacionesSociales +
+      retiro +
+      cesantiaVejez,
+  );
+
   return {
-    dailySalary,
+    dailySalary: params.dailySalary,
     monthlySalary,
-    riskClass,
-    baseCuotaPct: MODALIDAD_10_BASE_CUOTA_PCT,
+    riskClass: params.riskClass,
     riskPrimaPct,
-    totalCuotaPct,
-    baseCuotaAmount: round2(monthlySalary * MODALIDAD_10_BASE_CUOTA_PCT),
-    riskPrimaAmount: round2(monthlySalary * riskPrimaPct),
-    total: round2(monthlySalary * totalCuotaPct),
+    cesantiaBandLabel: M10_CESANTIA_BANDS[bandIndex]!.label,
+    cesantiaPct,
+    semCuotaFija,
+    semCuotaExcedente,
+    semPrestacionesDinero,
+    semGastosMedicosPensionados,
+    riesgosTrabajo,
+    invalidezVida,
+    guarderiasPrestacionesSociales,
+    retiro,
+    cesantiaVejez,
+    total,
+    effectivePct: monthlySalary > 0 ? round4(total / monthlySalary) : 0,
   };
+}
+
+/**
+ * Cuota mensual de la Modalidad 10, SIN la aportación a INFONAVIT (que es un
+ * ahorro para vivienda y no una prima de financiamiento; Art. 228 de la LSS
+ * vigente).
+ */
+export function calculateM10MonthlyCost(params: M10MonthlyCostParams): number {
+  return calculateM10MonthlyBreakdown(params).total;
 }

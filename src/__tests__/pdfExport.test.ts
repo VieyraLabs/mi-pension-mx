@@ -154,7 +154,7 @@ describe('exportPensionResultToPdf', () => {
     expect(html).toContain('2.65 UMA');
     expect(html).toContain('Meses que planeas cotizar');
     expect(html).toContain('7 meses');
-    expect(html).toContain('Costo mensual estimado (sin INFONAVIT)');
+    expect(html).toContain('Costo mensual (sin INFONAVIT)');
     expect(html).toContain('¿Sigues trabajando mientras citas?');
     expect(html).not.toContain('aprox. por meses');
   });

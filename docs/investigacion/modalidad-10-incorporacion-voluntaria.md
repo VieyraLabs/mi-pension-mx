@@ -20,6 +20,8 @@ hecho.
 | 5 | **Reglamento de la Ley del Seguro Social** (el artículo que nombra "Modalidad 10") | — | **Pendiente**: no se pudo abrir el texto reglamentario |
 | 6 | **UMA 2026** (INEGI, DOF 09-ene-2026) | `https://www.inegi.org.mx/contenidos/saladeprensa/boletines/2026/uma/uma2026.pdf` | Valor diario $117.31 corroborado en `valoruma.com`; el PDF oficial existe pero su texto no se pudo extraer directamente |
 | 7 | **RACERF — Catálogo de Actividades** (art. 196 del Reglamento de Afiliación, Clasificación de Empresas, Recaudación y Fiscalización) | Clasificador oficial IMSS `https://serviciosdigitales.imss.gob.mx/clasificador/` | Clases por fracción leídas (412, 611, 711–713, 841, etc.); lista íntegra de divisiones 0–9 corroborada con fuente secundaria |
+| 8 | **Anexo A — Informe del Consejo Técnico del IMSS 2025-2026**, Cuadro A.3 "Esquema de financiamiento por tipo de seguro, diciembre de 2025" (p. 242) | `https://www.imss.gob.mx/sites/all/statics/pdf/informes/20252026/15-anexos.pdf` | Texto leído: tasas por ramo y tabla de cesantía y vejez (nota 6) |
+| 9 | **Calculadora oficial del IMSS para Personas Trabajadoras Independientes** (Modalidad 10), versión de marzo de 2026 | `https://www.imss.gob.mx/sites/all/statics/trabajadores-independientes/calculadoraPTI-0326.js` | Texto leído: la fórmula `calculoCuotas` rama por rama, la tabla de bandas de cesantía y vejez (`tablaCPat`) y el SMG por zona |
 
 ---
 
@@ -126,6 +128,106 @@ y la 10 es la del trabajador permanente y eventual; en las guías de
 incorporación voluntaria del trabajador independiente**. El producto usa este segundo
 significado, que es el que corresponde al sujeto del Art. 13 fr. I.
 
+### 2.7 La suma de los salarios concurrentes — Art. 39 LSS 1973
+
+> **Artículo 39.-** En caso de que el asegurado preste servicios a varios patrones se le
+> clasificará, para el disfrute de prestaciones en dinero, en el grupo correspondiente a la
+> **suma de los salarios percibidos en los distintos empleos**. Los patrones cubrirán
+> separadamente los aportes a que estén obligados con base en el salario que cada uno de
+> ellos pague al asegurado.
+>
+> Cuando la suma de los salarios que percibe un trabajador llegue o sobrepase el límite
+> superior establecido en el Artículo 34 de esta Ley, a petición de los patrones éstos
+> cubrirán los aportes del **salario máximo de cotización**, pagando entre ellos la parte
+> proporcional que resulte entre el salario que cubre individualmente y la suma total de los
+> salarios que percibe el trabajador.
+
+La LSS vigente lo dice en el **Art. 33**, con una salvedad en la redacción:
+
+> **Artículo 33.** Para el disfrute de las prestaciones en dinero, en caso que el asegurado
+> preste servicios a varios patrones se tomará en cuenta la **suma de los salarios
+> percibidos en los distintos empleos, cuando ésta sea menor al límite superior
+> establecido en el artículo 28**; los patrones cubrirán separadamente los aportes a que
+> estén obligados con base en el salario que cada uno de ellos pague al asegurado.
+
+**Qué se deduce para el código:** es la duda de si el salario del patrón y el de la Modalidad 10
+se suman en el promedio de las 250 semanas. **Sí se suman**: la clasificación para el goce de
+prestaciones en dinero es por la **suma**. El tope de 25 UMA opera en otro lugar —los
+**aportes** (cada patrón cubre hasta el máximo de cotización) y el **promedio** del SBC—, no
+como un recorte de la suma dentro del periodo. Por eso el tramo de M10 **no** se topa en
+`buildM10ContributionPeriod`: el tope del promedio lo aplica el motor (paso 1), que además
+avisa cuando lo rebasa. En la LSS vigente la redacción del Art. 33 sí satura la suma en el
+límite superior; en la Ley 73 —que es la ley que calcula esta app— no hay esa salvedad.
+
+### 2.8 La estructura de la cuota — Cuadro A.3 y calculadora oficial del IMSS
+
+El Cuadro A.3 "Esquema de financiamiento por tipo de seguro, diciembre de 2025" del Anexo A
+del Informe al Consejo Técnico 2025-2026 (p. 242) publica las tasas por ramo, con la parte
+patronal, la parte de la persona trabajadora y la del Gobierno Federal separadas. La
+calculadora oficial para Personas Trabajadoras Independientes (marzo de 2026) implementa la
+fórmula completa en su función `calculoCuotas(salario, numDias)`:
+
+| Componente | Tasa | Base |
+|---|---|---|
+| SEM — cuota fija | 20.40 % | la UMA (parte patronal) |
+| SEM — cuota excedente | 1.10 % + 0.40 % | el excedente del SBC sobre 3 UMA |
+| SEM — prestaciones en dinero | 0.70 % + 0.25 % | el SBC |
+| SEM — gastos médicos para pensionados | 1.05 % + 0.375 % | el SBC |
+| Invalidez y Vida | 1.75 % + 0.625 % | el SBC |
+| Guarderías y Prestaciones Sociales | 1.00 % | el SBC |
+| Retiro | 2.00 % | el SBC |
+| Cesantía y Vejez | tabla por banda de UMAs (3.15 % a 7.513 % en 2026) + 1.125 % obrero | el SBC |
+| Riesgos de Trabajo | prima de la clase I–V | el SBC |
+
+La tabla de cesantía y vejez crece por tramos de nivel salarial y tiene **columna por año**;
+el Cuadro A.3 publica los valores de diciembre de 2025 en su nota 6:
+
+> **6/** Con la reforma del 16 de diciembre de 2020, para 1 salario mínimo, la cuota en 2025
+> es del 3.15 % (artículo 168, fracción II). Dicha tasa se incrementa dependiendo del nivel
+> salarial de la persona asegurada en número de veces el salario de referencia, de la
+> siguiente manera: de 1.01 SM a 1.5 UMA = 3.544 %, de 1.51 UMA a 2 UMA = 4.426 %, de 2.01 UMA
+> a 2.5 UMA = 4.954 %, de 2.51 UMA a 3 UMA = 5.307 %, de 3.01 UMA a 3.5 UMA = 5.559 %, de 3.51
+> UMA a 4 UMA = 5.747 % y de 4.01 UMA en adelante, 6.422 %.
+
+**Qué se deduce para el código:** la cuota ya **no es una estimación de un porcentaje
+plano**. Se calcula rama por rama con estas tasas, con la columna del año de la UMA vigente
+para la banda de cesantía y vejez, y la persona asegurada paga las dos partes de cada ramo
+(patronal y obrera) porque en la Modalidad 10 no hay patrón. **INFONAVIT queda fuera**: es
+ahorro para vivienda, no una prima de financiamiento, y el Art. 228 ordena reducir la parte
+proporcional de las prestaciones excluidas.
+
+Dos diferencias entre la app y la calculadora oficial quedan declaradas:
+
+- la oficial multiplica por los **días reales del mes de pago** y la app usa 30.4 días
+  (su convención para el SBC mensual), así que el monto puede diferir unos puntos;
+- la oficial **no** suma la cuota fija obrera del SEM (14.833 % de la UMA) que sí aparece en
+  el Cuadro A.3; la app reproduce lo que la oficial cobra.
+
+### 2.9 Comprobación contra una línea de captura real
+
+La fórmula reconstruida se comprobó contra un costo **real observado**: la línea de
+captura de una Modalidad 10 con el SBC tope de 25 UMA, clase de riesgo III y un periodo de
+**30 días**, que era de **$18,584 al mes**. La fórmula da **$18,584.02** para ese mismo
+periodo:
+
+| Componente | Monto del periodo de 30 días |
+|---|---|
+| SEM — cuota fija (20.40 % de la UMA) | $717.94 |
+| SEM — cuota excedente (1.50 % sobre el excedente de 3 UMA) | $1,161.37 |
+| SEM — prestaciones en dinero (0.95 %) | $835.83 |
+| SEM — gastos médicos para pensionados (1.425 %) | $1,253.75 |
+| Riesgos de Trabajo, clase III (2.5984 %) | $2,286.14 |
+| Invalidez y Vida (2.375 %) | $2,089.08 |
+| Guarderías y Prestaciones Sociales (1.00 %) | $879.83 |
+| Retiro (2.00 %) | $1,759.65 |
+| Cesantía y Vejez (7.513 % + 1.125 %) | $7,599.93 |
+| **Total** | **$18,584.02** |
+
+La coincidencia al peso confirma a la vez las tasas por ramo, la banda de cesantía y vejez
+del 2026, el excedente sobre 3 UMA y la prima de Riesgos de Trabajo. También explica por
+qué la app muestra un poco más: con su convención de 30.4 días por mes la cuota es
+$18,831.81 (un 1.3 % por encima del periodo de 30 días).
+
 ---
 
 ## 3. El acuerdo de octubre de 2026 (contexto)
@@ -158,22 +260,21 @@ mes siguiente a la fecha de referencia.
    (el fundamento de la incorporación voluntaria, verificado) y **no** un artículo
    reglamentario sin comprobar. Si al abrir el texto reglamentario se confirma un artículo
    específico, se documenta en la constante con su fecha de publicación.
-2. **La cuota base de la Modalidad 10 sin INFONAVIT ni Riesgos de Trabajo.** La constante
-   `MODALIDAD_10_BASE_CUOTA_PCT` (18.30 %) viene de fuentes secundarias y de la calculadora
-   pública del IMSS; la fuente primaria es el **Acuerdo de la Junta Directiva** que fija las
-   cuotas y las primas de financiamiento por ramo, publicado en el DOF. Hasta confirmarlo, el
-   campo de costo se presenta como **estimado**.
-3. **La clase de riesgo laboral y su prima de Riesgos de Trabajo.** Las primas por clase
+2. **La clase de riesgo laboral y su prima de Riesgos de Trabajo.** Las primas por clase
    (`MODALIDAD_10_RT_PRIMA`) son oficiales (Art. 71 LSS vigente). El catálogo
    (`src/constants/ocupaciones.ts`) ya sigue las 10 divisiones del RACERF y marca con
    `sourceFraction` las clases confirmadas contra el Clasificador oficial del IMSS; queda
    pendiente completar la clase por FRACCIÓN de los grupos sin confirmar (la captura sigue
-   siendo División → Grupo, no fracción).
-4. **La UMA 2026 y el SMG de la Frontera Norte.** La UMA 2026 está publicada: $117.31/día
-   (DOF 09-ene-2026, INEGI), y `UMA_ACTUAL` ya la usa sin marca de estimación. Queda por
-   verificar el **SMG de la Frontera Norte 2026** (`smgFronteraNorte`), que sigue marcado
-   como estimación en `src/constants/uma.ts`. El piso de la Modalidad 10 depende del SMG de
-   la zona, no de la UMA.
+   siendo División → Grupo, no fracción). **Es lo único que queda estimado en la cuota.**
+3. **El SMG de la Frontera Norte 2026.** La calculadora oficial del IMSS lo publica en
+   $440.87/día para 2026 (y $419.88 para 2025), que es el valor que ahora usa
+   `smgFronteraNorte` en `src/constants/uma.ts`. Queda por **confirmarlo contra la tabla de
+   salarios mínimos de CONASAMI** (la calculadora del IMSS no es la fuente primaria del
+   salario mínimo). El piso de la Modalidad 10 depende del SMG de la zona, no de la UMA.
+4. **La cuota ya tiene fuente primaria** (ver §2.8): el Cuadro A.3 del Anexo A al Informe al
+   Consejo Técnico 2025-2026 y la calculadora oficial del IMSS. Lo que queda por confirmar
+   en cada actualización anual es la **columna nueva** de la tabla de cesantía y vejez (la
+   calculadora publica columnas por año) y la versión vigente del archivo de la calculadora.
 
 ---
 
@@ -184,8 +285,10 @@ mes siguiente a la fecha de referencia.
 | Piso = SMG y techo = 25 UMA | `src/constants/ley73.ts` (`MODALIDAD_10_CAP_TIMES_UMA`), `src/utils/modalidad10.ts` (`m10SalaryRange`, `clampM10Salary`) | `src/__tests__/modalidad10.test.ts` |
 | Ingreso declarado como base | `src/hooks/usePensionForm.ts` (`setModalidad10ContributionSalary`, `setModalidad10UMAs`) | `src/__tests__/usePensionForm.test.ts` |
 | Cotización por adelantado, sin meses retroactivos | `src/utils/modalidad10.ts` (`getM10StartDate`) | `src/__tests__/modalidad10.test.ts` |
-| Prima de financiamiento sin INFONAVIT | `src/constants/ley73.ts` (`MODALIDAD_10_BASE_CUOTA_PCT`, `MODALIDAD_10_CUOTA_EXCLUDES_INFONAVIT`) | `src/__tests__/modalidad10.test.ts` |
+| Prima de financiamiento sin INFONAVIT | `src/constants/modalidad10Cuota.ts` (`M10_CUOTA_RATES`, `MODALIDAD_10_CUOTA_EXCLUDES_INFONAVIT`) | `src/__tests__/modalidad10.test.ts` |
+| Cuota por ramo y banda de cesantía y vejez | `src/utils/modalidad10.ts` (`calculateM10MonthlyBreakdown`, `resolveM10CesantiaBand`, `m10CesantiaPct`) | `src/__tests__/modalidad10.test.ts` |
 | Prima de Riesgos de Trabajo por clase | `src/constants/ley73.ts` (`MODALIDAD_10_RT_PRIMA`, `MODALIDAD_10_RISK_CLASS_LABELS`) | `src/__tests__/modalidad10.test.ts` |
+| La suma de salarios concurrentes no se topa | `src/utils/modalidad10.ts` (`buildM10ContributionPeriod`), `src/services/pension/steps/AverageSalaryStep.ts` | `src/__tests__/modalidad10.test.ts`, `src/__tests__/pensionCalculator.test.ts` |
 | Ocupación → clase de riesgo | `src/constants/ocupaciones.ts` (`M10_OCCUPATION_CATALOG`, `resolveRiskClass`) | `src/__tests__/ocupaciones.test.ts` |
 | Promedio de 250 semanas cotizadas con los meses de M10 | `src/services/pension/history/projectedSBC.ts` | `src/__tests__/projectedSBC.test.ts` |
 | El desglose narra los mismos números | `src/services/pension/steps/AverageSalaryStep.ts` | `src/__tests__/pensionCalculator.test.ts` |

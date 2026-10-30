@@ -34,7 +34,9 @@ export interface Modalidad10StepProps {
   onChangeUMAs: (umas: number) => void;
   /** UMA diaria vigente. */
   dailyUMA: number;
-  /** Salario mínimo de referencia: Zona A (CDMX). */
+  /** Año de la UMA vigente: fija la columna de la tabla de cesantía y vejez. */
+  umaYear: number;
+  /** Salario mínimo de la zona geográfica elegida (piso del SBC). */
   minimumDailySalary: number;
   theme: MD3Theme;
 }
@@ -45,6 +47,7 @@ export function Modalidad10Step({
   onChangeSalary,
   onChangeUMAs,
   dailyUMA,
+  umaYear,
   minimumDailySalary,
   theme,
 }: Modalidad10StepProps) {
@@ -53,7 +56,13 @@ export function Modalidad10Step({
   const umas = modalidad10.contributionSalaryInUMAs ?? range.minimumUMAs;
   const salaryZone = modalidad10.salaryZone ?? 'general';
   const riskClass = modalidad10.riskClass ?? 1;
-  const costBreakdown = calculateM10MonthlyBreakdown(salary, riskClass);
+  const costBreakdown = calculateM10MonthlyBreakdown({
+    dailySalary: salary,
+    riskClass,
+    dailyUMA,
+    minimumDailySalary,
+    year: umaYear,
+  });
   const selectedDivision = getOccupationDivision(modalidad10.occupationDivision);
   const months = modalidad10.expectedMonths ?? 0;
 
@@ -210,25 +219,28 @@ export function Modalidad10Step({
             </HelperText>
 
             <DataRow
-              label="Costo mensual estimado de la Modalidad 10"
+              label="Costo mensual de la Modalidad 10"
               value={`${formatCurrency(costBreakdown.total)}/mes`}
               theme={theme}
               highlight
               prominent
             />
             <DataRow
-              label={`Cuota base (sin RT ni INFONAVIT, ${formatPercent(costBreakdown.baseCuotaPct * 100)})`}
-              value={`${formatCurrency(costBreakdown.baseCuotaAmount)}/mes`}
+              label="Tasa efectiva sobre el SBC declarado"
+              value={formatPercent(costBreakdown.effectivePct * 100)}
               theme={theme}
             />
             <DataRow
               label={`Prima de Riesgos de Trabajo (${MODALIDAD_10_RISK_CLASS_LABELS[riskClass]}, ${formatPercent(costBreakdown.riskPrimaPct * 100)})`}
-              value={`${formatCurrency(costBreakdown.riskPrimaAmount)}/mes`}
+              value={`${formatCurrency(costBreakdown.riesgosTrabajo)}/mes`}
               theme={theme}
             />
             <HelperText type="info" style={{ marginBottom: 12 }}>
-              Estimado, sobre el SBC declarado y sin la aportación a INFONAVIT. La clase de
-              riesgo proviene de la ocupación elegida (catálogo aproximado, verificar RACERF).
+              Cuota calculada con la estructura de financiamiento oficial del IMSS (Cuadro A.3
+              del Anexo A al Informe del Consejo Técnico 2025-2026), sin la aportación
+              opcional a INFONAVIT (5 % del SBC). Cesantía y vejez: {costBreakdown.cesantiaBandLabel}
+              {' '}({formatPercent(costBreakdown.cesantiaPct)}). La clase de riesgo se estima con
+              el catálogo de ocupaciones (verificar RACERF).
             </HelperText>
 
             <DataRow

@@ -103,10 +103,15 @@ esa fecha es la que queda.
   interruptor suma su último salario registrado al SBC de M10 en el SBC promedio proyectado;
   si ya no trabaja, el SBC del periodo es solo el de M10. La respuesta se declara en el
   propio paso y viaja al desglose del cálculo.
-- **El costo mensual de la Modalidad 10 se muestra, no se captura.** Es un dato derivado
-  (SBC mensual × cuota, sin INFONAVIT) y se presenta como texto de solo lectura, marcado
-  como estimado: la cuota es una constante legal pendiente de confirmar en su fuente
-  primaria.
+- **El costo mensual de la Modalidad 10 se muestra, no se captura.** Es un dato derivado y se
+  presenta como texto de solo lectura. La cuota se arma con la estructura de financiamiento
+  oficial del IMSS —rama por rama: cuota fija y excedente del Seguro de Enfermedades y
+  Maternidad, prestaciones en dinero, gastos médicos para pensionados, Invalidez y Vida,
+  Guarderías y Prestaciones Sociales, Retiro y cesantía y vejez por banda de UMAs— más la
+  prima de Riesgos de Trabajo de la clase elegida; **sin la aportación a INFONAVIT**. Se
+  muestran el total, la tasa efectiva sobre el SBC declarado y la prima de RT, con el texto
+  auxiliar que declara la fuente de la estructura y que la clase de riesgo se estima con el
+  catálogo de ocupaciones ([ADR-0015](../adr/0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md)).
 - **La edad de retiro va de 60 a 100 años**, con el mínimo justificado por la cesantía en
   edad avanzada, y admite **fracciones de medio año** (60, 60.5, 61, …): el esquema
   rechaza, con mensaje, las edades que no son múltiplos de medio año.

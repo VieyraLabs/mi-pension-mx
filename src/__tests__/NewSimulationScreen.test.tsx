@@ -366,16 +366,22 @@ describe('NewSimulationScreen', () => {
     expect(screen.getByDisplayValue(String(round2(1000 / UMA_ACTUAL.dailyUMA)))).toBeTruthy();
   });
 
-  test('muestra el costo mensual estimado y el rango legal de UMAs', () => {
+  test('muestra el costo mensual y el rango legal de UMAs', () => {
     renderScreen(<NewSimulationScreen />);
     advanceToUmaStep();
     fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 10? Toca aquí'));
 
-    expect(screen.getByText('Costo mensual estimado de la Modalidad 10')).toBeTruthy();
+    expect(screen.getByText('Costo mensual de la Modalidad 10')).toBeTruthy();
     expect(
       screen.getByText(
         `${formatCurrency(
-          calculateM10MonthlyCost(round2(25 * UMA_ACTUAL.dailyUMA)),
+          calculateM10MonthlyCost({
+            dailySalary: round2(25 * UMA_ACTUAL.dailyUMA),
+            riskClass: 1,
+            dailyUMA: UMA_ACTUAL.dailyUMA,
+            minimumDailySalary: UMA_ACTUAL.smgCdmx,
+            year: UMA_ACTUAL.year,
+          }),
         )}/mes`,
       ),
     ).toBeTruthy();

@@ -145,6 +145,18 @@ export const FAQ_ITEMS: readonly InfoSection[] = [
     source: 'Art. 28 LSS vigente; Art. 170 LSS 1973',
   },
   {
+    id: 'faq_modalidad10_25_umas',
+    title: '¿Qué pasa si sigo trabajando y contrato la Modalidad 10 con 25 UMAs? ¿Se suman mis salarios?',
+    content: [
+      'Sí: si sigues trabajando, en los mismos meses coexisten tu cotización como trabajador asalariado y la de la Modalidad 10, y el Art. 39 de la Ley 73 (Art. 33 de la LSS vigente) clasifica al asegurado, para el disfrute de prestaciones en dinero, "en el grupo correspondiente a la suma de los salarios percibidos en los distintos empleos".',
+      'Por eso, en el promedio de las últimas 250 semanas entra la SUMA: el SBC de la Modalidad 10 más tu salario registrado. La parte que rebasa las 25 UMA no se descarta dentro de ese periodo.',
+      'El tope de 25 UMA (Art. 28 LSS vigente) opera en otro lugar: es el límite hasta el que se pagan los aportes y el tope del PROMEDIO del SBC. Esta app aplica ese tope al promedio y te avisa cuando lo rebasa.',
+      'Si ya no trabajas y solo cotizas en la Modalidad 10, el promedio de esas semanas se calcula únicamente con el SBC de la Modalidad 10.',
+      'El detalle de la suma y de los topes lo aplica el IMSS con tu expediente completo: esta app es una estimación.',
+    ],
+    source: 'Arts. 39 y 167 LSS 1973; Arts. 28 y 33 LSS vigente',
+  },
+  {
     id: 'faq_estimacion',
     title: '¿Por qué el resultado es una "estimación"?',
     content: [

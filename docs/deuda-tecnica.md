@@ -209,7 +209,7 @@ promedio = promedio de las últimas 250 semanas cotizadas de esa línea temporal
 Con un horizonte de M10 largo (p. ej. 420 meses hasta la fecha de retiro), las últimas 250
 semanas cotizadas **son** las de Modalidad 10: el promedio converge al SBC de M10 y el
 historial previo queda fuera de la ventana. Ese es el comportamiento que pide el Art. 167
-—las últimas 250 semanas cotizadas—, pero no es lo que una persona ожиera al leer «promedio
+—las últimas 250 semanas cotizadas—, pero no es lo que una persona espera al leer «promedio
 de las últimas 250 semanas» en el formulario.
 
 Lo que **no** se modela:
@@ -218,8 +218,11 @@ Lo que **no** se modela:
   en el inmediato inferior o superior, y la app deja elegir el SBC de forma continua.
 - El **historial previo** cuando no hay constancia importada: se sintetiza un tramo plano
   con el SBC capturado, que es una aproximación.
-- La **cuota**: el porcentaje aplicado al SBC declarado es una estimación pendiente de
-  confirmar en el Acuerdo de la Junta Directiva (ver la
+- La **cuota**: ya no es un porcentaje plano. ADR-0015 la calcula con la estructura de
+  financiamiento oficial del IMSS (Cuadro A.3 del Anexo A al Informe al Consejo Técnico
+  2025-2026 y la calculadora oficial de Personas Trabajadoras Independientes), sin
+  INFONAVIT. Lo que queda estimado es la **clase de riesgo**, porque el catálogo de
+  ocupaciones captura División → Grupo y el RACERF asigna la clase por fracción (ver la
   [nota de investigación](investigacion/modalidad-10-incorporacion-voluntaria.md)).
 
 ### Por qué importa

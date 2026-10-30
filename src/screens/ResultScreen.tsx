@@ -23,6 +23,7 @@ import {
 } from '../utils/format';
 import { showAlert } from '../utils/alert';
 import { calculateM10MonthlyBreakdown } from '../utils/modalidad10';
+import { getMinimumDailySalary } from '../constants/uma';
 import { MODALIDAD_10_RISK_CLASS_LABELS } from '../constants/ley73';
 import { normalizeLocalCalendarDate } from '../utils/weeksProjection';
 import { getBannerColors, getBrandGradient, BRAND_ON_COLOR } from '../theme';
@@ -186,7 +187,13 @@ export default function ResultScreen() {
             const m10 = result.input.modalidad10;
             const breakdown = result.input.projectedAverageBreakdown;
             const riskClass = m10.riskClass ?? 1;
-            const costBreakdown = calculateM10MonthlyBreakdown(m10.contributionSalary ?? 0, riskClass);
+            const costBreakdown = calculateM10MonthlyBreakdown({
+              dailySalary: m10.contributionSalary ?? 0,
+              riskClass,
+              dailyUMA: result.input.uma.dailyUMA,
+              minimumDailySalary: getMinimumDailySalary(result.input.uma, m10.salaryZone),
+              year: result.input.uma.year,
+            });
             return (
               <View style={[styles.m10Block, { borderTopColor: theme.colors.outlineVariant }]}>
                 <Text
@@ -211,18 +218,18 @@ export default function ResultScreen() {
                   theme={theme}
                 />
                 <SummaryRow
-                  label="Costo mensual estimado (sin INFONAVIT)"
+                  label="Costo mensual (sin INFONAVIT)"
                   value={`${formatCurrency(costBreakdown.total)}/mes`}
                   theme={theme}
                 />
                 <SummaryRow
-                  label={`Cuota base (${formatPercent(costBreakdown.baseCuotaPct * 100)})`}
-                  value={`${formatCurrency(costBreakdown.baseCuotaAmount)}/mes`}
+                  label="Tasa efectiva sobre el SBC declarado"
+                  value={formatPercent(costBreakdown.effectivePct * 100)}
                   theme={theme}
                 />
                 <SummaryRow
                   label={`Prima de Riesgos de Trabajo (${MODALIDAD_10_RISK_CLASS_LABELS[riskClass]})`}
-                  value={`${formatCurrency(costBreakdown.riskPrimaAmount)}/mes`}
+                  value={`${formatCurrency(costBreakdown.riesgosTrabajo)}/mes`}
                   theme={theme}
                 />
                 <SummaryRow

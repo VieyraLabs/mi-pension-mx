@@ -212,7 +212,7 @@ describe('ResultScreen', () => {
     expect(screen.getByText('2.65 UMA')).toBeTruthy();
     expect(screen.getByText('Meses que planeas cotizar')).toBeTruthy();
     expect(screen.getByText('2 meses')).toBeTruthy();
-    expect(screen.getByText('Costo mensual estimado (sin INFONAVIT)')).toBeTruthy();
+    expect(screen.getByText('Costo mensual (sin INFONAVIT)')).toBeTruthy();
     expect(screen.getByText('¿Sigues trabajando mientras citas?')).toBeTruthy();
   });
 
