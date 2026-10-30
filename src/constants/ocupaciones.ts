@@ -2,125 +2,203 @@
  * Catálogo de ocupaciones para derivar la clase de riesgo laboral (I–V) que
  * determina la prima de Riesgos de Trabajo de la Modalidad 10.
  *
- * FUENTE: Catálogo de Actividades para la Clasificación de las Empresas en el
- * Seguro de Riesgos de Trabajo, del Reglamento de la Ley del Seguro Social en
- * materia de Afiliación, Clasificación de Empresas, Recaudación y Fiscalización
- * (RACERF, art. 196). La clasificación oficial llega hasta FRACCIÓN, que es
- * donde se asigna la clase. Para la captura se reduce a dos niveles
- * (División → Grupo) y se conserva la clase PREDOMINANTE de cada grupo.
+ * FUENTE PRIMARIA: el **catálogo de ocupaciones de la calculadora oficial del
+ * IMSS para Personas Trabajadoras Independientes** (Modalidad 10):
+ * - Divisiones: `https://www.imss.gob.mx/personas-trabajadoras-independientes/calculadora`
+ *   (las opciones del selector "División").
+ * - Grupos y clase: `https://www.imss.gob.mx/sites/all/statics/trabajadores-independientes/catalogoSINCO-0326.js`
+ *   (variable `arrayValoresSINCO`: división, grupo, nombre y clase de riesgo).
  *
- * - Las 10 divisiones (códigos 0–9) y sus nombres siguen al RACERF.
- * - Los grupos con `sourceFraction` tienen la clase confirmada contra el
- *   Clasificador oficial del IMSS (serviciosdigitales.imss.gob.mx/clasificador/).
- * - Los grupos sin `sourceFraction` son una aproximación y deben verificarse
- *   contra la fracción que corresponda (docs/runbooks/05-actualizar-uma-y-constantes-legales.md).
+ * En el catálogo oficial **la clase de riesgo viene publicada junto con el
+ * grupo**: es el valor que la calculadora del IMSS envía al calcular la cuota,
+ * y el que determina la prima de Riesgos de Trabajo. Por eso la app ya no
+ * aproxima la clase: reproduce la clasificación oficial.
  *
- * LIMITACIÓN DECLARADA: la clase real se asigna por FRACCIÓN; un mismo grupo
- * puede contener fracciones de distinta clase. Para el costo exacto hace falta
- * capturar la fracción, no solo división y grupo.
+ * LIMITACIÓN DECLARADA: el catálogo clasifica por **ocupación** y cada grupo
+ * agrupa a varias ocupaciones que el IMSS considera equivalentes en riesgo. La
+ * clase que se aplica es, por tanto, la del grupo que la persona elija; si su
+ * actividad real no aparece en la lista, corresponde elegir el grupo más
+ * cercano y verificarlo con el IMSS.
  *
  * Solo lectura y función pura: aquí no hay UI ni estado.
  */
 import type { RiskClass } from '../models';
 
 export interface OccupationGroup {
-  /** Código del grupo dentro de su división (cadena para permitir ceros a la izquierda). */
+  /** Código del grupo dentro de su división (código del catálogo oficial). */
   code: string;
   name: string;
-  /** Clase de riesgo PREDOMINANTE del grupo (aproximación de la fracción). */
+  /** Clase de riesgo que el catálogo oficial asigna a este grupo. */
   riskClass: RiskClass;
-  /** Fracción RACERF de la que se tomó la clase, cuando está confirmada. */
-  sourceFraction?: string;
 }
 
 export interface OccupationDivision {
-  /** Código de división (0–9, cadena para permitir ceros a la izquierda). */
+  /** Código de división (código del catálogo oficial). */
   code: string;
   name: string;
   groups: OccupationGroup[];
 }
 
-/** Catálogo de 10 divisiones del RACERF con sus grupos y clase predominante. */
+/**
+ * Catálogo de ocupaciones de la Modalidad 10: 13 divisiones y sus grupos con
+ * la clase de riesgo oficial.
+ *
+ * El orden de las divisiones y de los grupos es el del catálogo oficial, para
+ * que la lista de la app sea la misma que la de la calculadora del IMSS. Los
+ * nombres se reproducen literalmente (incluidas las erratas del original).
+ */
 export const M10_OCCUPATION_CATALOG: readonly OccupationDivision[] = [
   {
-    code: '0',
-    name: 'Agricultura, ganadería, silvicultura, pesca y caza',
+    code: '110',
+    name: 'Mexicanos en el extranjero',
     groups: [
-      { code: '01', name: 'Agricultura', riskClass: 3, sourceFraction: '011' },
-      { code: '02', name: 'Ganadería', riskClass: 3, sourceFraction: '021' },
-      { code: '03', name: 'Silvicultura', riskClass: 3 },
-      { code: '04', name: 'Pesca y caza', riskClass: 4 },
+      {
+        code: '101',
+        name: 'Trabajadores independientes que radican y laboran en el extranjero',
+        riskClass: 1,
+      },
     ],
   },
   {
-    code: '1',
-    name: 'Industrias extractivas',
+    code: '115',
+    name: 'Plataformas digitales',
+    groups: [{ code: '01', name: 'Conductores y repartidores', riskClass: 4 }],
+  },
+  {
+    code: '111',
+    name: 'Ministros de culto',
+    groups: [{ code: '111', name: 'Sacerdotes, pastores y otros teólogos', riskClass: 1 }],
+  },
+  {
+    code: '12',
+    name: 'Profesionistas y técnicos',
     groups: [
-      { code: '11', name: 'Minería', riskClass: 5 },
-      { code: '12', name: 'Extracción de petróleo y gas', riskClass: 4, sourceFraction: '121' },
+      {
+        code: '21',
+        name: 'Profesionistas y técnicos en ciencias económico-administrativas, ciencias sociales, humanistas y en artes',
+        riskClass: 1,
+      },
+      {
+        code: '22',
+        name: 'Investigadores, técnicos y profesionistas en ciencias exactas, biológicas, ingeniería, informática y en telecomunicaciones',
+        riskClass: 1,
+      },
+      {
+        code: '23',
+        name: 'Profesores, técnicos y especialistas en docencia',
+        riskClass: 1,
+      },
+      {
+        code: '24',
+        name: 'Médicos, enfermeras, técnicos, otros especialistas en salud y trabajadores de apoyo',
+        riskClass: 2,
+      },
     ],
   },
   {
-    code: '2',
-    name: 'Industrias de transformación',
+    code: '14',
+    name: 'Comerciantes y agentes de ventas',
     groups: [
-      { code: '21', name: 'Alimentos y bebidas', riskClass: 2 },
-      { code: '22', name: 'Textil y confección', riskClass: 3 },
-      { code: '23', name: 'Madera, papel e imprenta', riskClass: 3 },
-      { code: '24', name: 'Química, plástico y derivados', riskClass: 4 },
-      { code: '25', name: 'Metalúrgica, maquinaria y equipo', riskClass: 4 },
+      { code: '41', name: 'Comerciantes', riskClass: 3 },
+      {
+        code: '43',
+        name: 'Trabajadores de alquiler de bienes muebles y de bienes raíces',
+        riskClass: 2,
+      },
+      { code: '42', name: 'Vendedores ambulantes', riskClass: 2 },
     ],
   },
   {
-    code: '3',
-    name: 'Industrias de transformación (continuación)',
-    groups: [{ code: '31', name: 'Otras manufacturas', riskClass: 3 }],
-  },
-  {
-    code: '4',
-    name: 'Industria de la construcción',
+    code: '15',
+    name: 'Trabajadores en servicios personales y de vigilancia',
     groups: [
-      { code: '41', name: 'Edificación e infraestructura', riskClass: 5, sourceFraction: '412' },
+      {
+        code: '51',
+        name: 'Trabajadores en la preparación y servicio de alimentos y bebidas, así como en servicios de esparcimiento y de hotelería',
+        riskClass: 3,
+      },
+      { code: '52', name: 'Trabajadores independientes en cuidados personales', riskClass: 1 },
+      { code: '53', name: 'Trabajadores en servicios de protección y vigilancia', riskClass: 3 },
     ],
   },
   {
-    code: '5',
-    name: 'Industria eléctrica y captación de agua',
-    groups: [{ code: '51', name: 'Electricidad y agua', riskClass: 4 }],
-  },
-  {
-    code: '6',
-    name: 'Comercio',
+    code: '16',
+    name: 'Trabajadores en actividades agrícolas, ganaderas, forestales, caza y pesca',
     groups: [
-      { code: '61', name: 'Comercio al por menor', riskClass: 2, sourceFraction: '611' },
-      { code: '62', name: 'Comercio al por mayor', riskClass: 2 },
+      { code: '61', name: 'Trabajadores en actividades agrícolas y ganaderas', riskClass: 3 },
+      {
+        code: '62',
+        name: 'Trabajadores en actividades pesqueras, forestales, caza y similares',
+        riskClass: 4,
+      },
+      { code: '63', name: 'Operadores de maquinaria agropecuaria y forestal', riskClass: 5 },
     ],
   },
   {
-    code: '7',
-    name: 'Transportes y comunicaciones',
+    code: '17',
+    name: 'Trabajadores artesanos',
     groups: [
-      { code: '71', name: 'Transporte de carga', riskClass: 5, sourceFraction: '712' },
-      { code: '72', name: 'Transporte de pasajeros', riskClass: 4, sourceFraction: '711' },
-      { code: '73', name: 'Transporte ferroviario', riskClass: 5, sourceFraction: '713' },
-      { code: '74', name: 'Comunicaciones', riskClass: 1 },
+      {
+        code: '72',
+        name: 'Artesanos y trabajadores en el tratamiento y elaboracion de productos',
+        riskClass: 5,
+      },
     ],
   },
   {
-    code: '8',
-    name: 'Servicios para empresas, personas y el hogar',
+    code: '114',
+    name: 'Trabajadores de la construcción',
+    groups: [{ code: '114', name: 'Trabajadores de la construcción', riskClass: 5 }],
+  },
+  {
+    code: '18',
+    name: 'Operadores de instalaciones y maquinaria industrial',
     groups: [
-      { code: '81', name: 'Servicios profesionales y técnicos', riskClass: 1, sourceFraction: '841' },
-      { code: '82', name: 'Servicios personales y del hogar', riskClass: 1 },
-      { code: '83', name: 'Restaurantes y hoteles', riskClass: 2 },
+      {
+        code: '81',
+        name: 'Operadores de instalaciones y maquinaria industrial',
+        riskClass: 5,
+      },
+      {
+        code: '82',
+        name: 'Ensambladores y montadores de herramientas, maquinaria, productos metálicos y electrónicos',
+        riskClass: 4,
+      },
     ],
   },
   {
-    code: '9',
-    name: 'Servicios sociales y comunales',
+    code: '112',
+    name: 'Conductores',
     groups: [
-      { code: '91', name: 'Educación', riskClass: 1 },
-      { code: '92', name: 'Salud y asistencia social', riskClass: 2 },
+      { code: '11201', name: 'Conductores de transporte y de maquinaria móvil', riskClass: 4 },
+      {
+        code: '11202',
+        name: 'Conductores de transporte de tracción humana y animal',
+        riskClass: 5,
+      },
+    ],
+  },
+  {
+    code: '19',
+    name: 'Trabajadores en actividades elementales de apoyo y mensajería',
+    groups: [
+      {
+        code: '97',
+        name: 'Trabajadores de paquetería, de apoyo para espectáculos, mensajeros y repartidores de mercancía',
+        riskClass: 4,
+      },
+      { code: '99', name: 'Ocupaciones de apoyo', riskClass: 5 },
+    ],
+  },
+  {
+    code: '113',
+    name: 'Otra división no clasificada anteriormente',
+    groups: [
+      {
+        code: '113',
+        name: 'Otro grupo no clasificado anteriormente',
+        riskClass: 3,
+      },
     ],
   },
 ];

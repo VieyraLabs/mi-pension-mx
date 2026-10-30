@@ -71,8 +71,10 @@ UMAs.**
   estructura de financiamiento oficial del IMSS, rama por rama (cuota fija y excedente del
   SEM, prestaciones en dinero, gastos médicos para pensionados, Invalidez y Vida, Guarderías,
   Retiro y cesantía y vejez por banda de UMAs) más la prima de Riesgos de Trabajo de la clase
-  (I–V), que se deriva de la ocupación (División/Grupo). El detalle de esa decisión y de sus
-  fuentes está en [ADR-0015](0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md).
+  (I–V), que se deriva de la ocupación (División/Grupo) según el catálogo oficial del IMSS.
+  El detalle de esa decisión y de sus fuentes está en
+  [ADR-0015](0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md) y
+  [ADR-0016](0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md).
 - **Sin meses retroactivos.** M10 arranca el 1º del mes siguiente a la fecha de referencia
   (Art. 224 LSS vigente: la cuota se paga por adelantado, sin actualizaciones ni recargos).
 
@@ -98,10 +100,11 @@ UMAs.**
 - El Art. 194 de la Ley 73 permite quedarse en el mismo *grupo de salario* o en el inmediato
   inferior o superior; la app deja elegir el SBC de forma continua y **no modela** esas
   bandas. Se declara como supuesto.
-- La **clase de riesgo** del catálogo División/Grupo → clase (10 divisiones del RACERF) es
-  una aproximación de dos niveles que no sustituye la asignación por fracción: hay que
-  confirmarla antes de publicar la app. La estructura de la cuota, en cambio, ya tiene fuente
-  primaria ([ADR-0015](0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md)).
+- La clase de riesgo viene del **catálogo oficial de ocupaciones del IMSS** y ya no se
+  aproxima ([ADR-0016](0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md)); lo que
+  queda en manos de la persona es elegir el grupo que corresponde a su actividad real. La
+  estructura de la cuota, por su parte, tiene fuente primaria desde
+  [ADR-0015](0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md).
 - Las simulaciones guardadas por versiones anteriores se normalizan **en memoria** al leer
   (la clave vieja `modalidad40` se lee como `modalidad10`); no se reescribe lo que la persona
   tiene guardado (ADR-0013).

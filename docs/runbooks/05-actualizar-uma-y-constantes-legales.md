@@ -58,14 +58,21 @@ En `src/constants/ley73.ts`:
 
 En `src/constants/ocupaciones.ts`:
 
-- El catálogo `M10_OCCUPATION_CATALOG` es una **muestra parcial** de dos niveles
-  (División → Grupo) con la clase predominante de cada grupo. La fuente oficial es el
-  Catálogo de Actividades del RACERF, que asigna la clase por **fracción**.
-- Al confirmar el RACERF vigente, completar divisiones/grupos y corregir las clases
-  predominantes; el comentario de cabecera del archivo debe registrar la publicación DOF
-  consultada (las entradas individuales no llevan fuente propia).
+- El catálogo `M10_OCCUPATION_CATALOG` es el **catálogo oficial de ocupaciones de la
+  Modalidad 10 del IMSS**: 13 divisiones con sus grupos, y la clase de riesgo que el propio
+  catálogo publica para cada grupo.
+- La fuente son dos archivos que cambian por versión (el nombre lleva el mes y el año):
+  - las divisiones: el selector «División» de
+    `https://www.imss.gob.mx/personas-trabajadoras-independientes/calculadora`;
+  - los grupos y su clase: `arrayValoresSINCO` en
+    `https://www.imss.gob.mx/sites/all/statics/trabajadores-independientes/catalogoSINCO-*.js`.
+- **Al actualizar**: cambiar las divisiones y los grupos con la clase publicada, conservar
+  el orden del catálogo oficial (es el que ve la persona en el IMSS) y actualizar el
+  comentario de cabecera con la versión del archivo consultada. Las entradas no llevan fuente
+  propia: la fuente es el catálogo.
 - `resolveRiskClass` deriva la clase a partir de división y grupo; si la forma del catálogo
-  cambia, revisar también `src/__tests__/ocupaciones.test.ts`.
+  cambia, revisar también `src/__tests__/ocupaciones.test.ts` y la normalización de
+  simulaciones guardadas en `src/storage/simulationStorage.ts`.
 
 ### 5. Registrar la provenancia documental (obligatorio)
 

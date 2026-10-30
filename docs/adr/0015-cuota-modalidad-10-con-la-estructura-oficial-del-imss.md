@@ -86,8 +86,9 @@ días. La diferencia está declarada, no oculta.
 - **La banda de cesantía y vejez es un supuesto de la LSS vigente**, no de la Ley 73: la
   app calcula la pensión por la Ley 73 (Arts. 167 y ss.) y cotiza la Modalidad 10 con el
   esquema de financiamiento vigente. Es una mezcla declarada, no un error.
-- La clase de riesgo sigue siendo aproximada: la captura es División → Grupo del catálogo
-  RACERF, y el RACERF asigna la clase por fracción.
+- Lo que la persona tiene que acertar es **qué grupo del catálogo de ocupaciones le
+  corresponde**: el catálogo es oficial y su clase ya no se aproxima
+  ([ADR-0016](0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md)).
 
 ## Alternativas descartadas
 

@@ -34,9 +34,11 @@ fila.
 - **La cuota de la Modalidad 10 tiene fuente primaria y la app lo dice.** La estructura
   reproducida es la de la calculadora oficial del IMSS para Personas Trabajadoras
   Independientes y la del Cuadro A.3 del Anexo A al Informe al Consejo Técnico 2025-2026;
-  lo que la app **no** afirma es que la clase de riesgo sea exacta: se estima con el
-  catálogo de ocupaciones (División → Grupo), que no sustituye la asignación por fracción
-  del RACERF ([ADR-0015](../adr/0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md)).
+  la clase de riesgo también viene del catálogo oficial de ocupaciones del IMSS
+  ([ADR-0015](../adr/0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md),
+  [ADR-0016](../adr/0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md)). Lo que la
+  app **no** afirma es que el grupo elegido por la persona sea el correcto: de eso depende
+  la prima, y el IMSS lo determina con su expediente.
 - **La diferencia entre la cuota mostrada y la línea de captura del IMSS está declarada.**
   La calculadora oficial multiplica por los días reales del mes de pago y la app usa 30.4
   días por mes (su convención para el SBC mensual). La fórmula se comprobó contra una

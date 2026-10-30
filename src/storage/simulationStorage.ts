@@ -5,6 +5,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Modalidad10, PensionInput, SavedSimulation } from '../models';
 import { getMinimumDailySalary } from '../constants/uma';
+import { getOccupationDivision, getOccupationGroup } from '../constants/ocupaciones';
 
 const STORAGE_KEY = '@mi_pension_mx:simulaciones';
 
@@ -42,10 +43,12 @@ type LegacyPensionInput = Partial<PensionInput> & {
 /**
  * Normaliza una simulación guardada por una versión anterior de la app.
  *
- * La Modalidad 40 pasó a llamarse Modalidad 10 y la configuración de UMA ahora
- * trae el salario mínimo de referencia (el piso del SBC declarado). Sin esta
+ * La Modalidad 40 pasó a llamarse Modalidad 10, la configuración de UMA ahora
+ * trae el salario mínimo de referencia (el piso del SBC declarado) y el
+ * catálogo de ocupaciones pasó a ser el oficial del IMSS. Sin esta
  * normalización, los resultados ya guardados se mostrarían sin el bloque de
- * Modalidad 10 y con un piso desconocido.
+ * Modalidad 10, con un piso desconocido y sin la ocupación que determina la
+ * prima de Riesgos de Trabajo.
  *
  * La normalización ocurre en memoria: no se reescribe lo que el usuario tiene
  * guardado (ADR-0013).
@@ -55,6 +58,14 @@ function normalizeSavedSimulation(saved: SavedSimulation): SavedSimulation {
   if (!input) return saved;
 
   const legacy = input.modalidad40;
+  const occupationDivision = input.modalidad10?.occupationDivision;
+  const occupationGroup = input.modalidad10?.occupationGroup;
+  // La ocupación guardada puede venir del catálogo anterior (RACERF): si ya no
+  // resuelve en el catálogo vigente se limpia la selección, pero se conserva
+  // la clase de riesgo, que es la que determina el costo.
+  const keepsDivision = getOccupationDivision(occupationDivision) != null;
+  const keepsGroup = getOccupationGroup(occupationDivision, occupationGroup) != null;
+
   const modalidad10: Modalidad10 = {
     active: input.modalidad10?.active ?? legacy?.active ?? false,
     contributionSalary: input.modalidad10?.contributionSalary ?? legacy?.contributionSalary,
@@ -66,6 +77,10 @@ function normalizeSavedSimulation(saved: SavedSimulation): SavedSimulation {
     expectedMonths: input.modalidad10?.expectedMonths ?? legacy?.expectedMonths,
     annualSalaryIncrease:
       input.modalidad10?.annualSalaryIncrease ?? legacy?.annualSalaryIncrease,
+    riskClass: input.modalidad10?.riskClass ?? legacy?.riskClass,
+    occupationDivision: keepsDivision ? occupationDivision : undefined,
+    occupationGroup: keepsGroup ? occupationGroup : undefined,
+    salaryZone: input.modalidad10?.salaryZone ?? legacy?.salaryZone,
   };
 
   const normalizedInput = {

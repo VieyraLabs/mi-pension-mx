@@ -30,6 +30,7 @@ cambia, se marca como `Sustituida` y se escribe una nueva que la reemplaza.
 | [0013](0013-proyeccion-de-semanas-por-fecha.md) | Proyectar semanas por fecha calendario de retiro | Aceptada | 2026-10-28 |
 | [0014](0014-modalidad-10-incorporacion-voluntaria-al-régimen-obligatorio.md) | Usar la Modalidad 10 como incorporación voluntaria y proyectar sus meses dentro del SBC promedio | Aceptada | 2026-10-30 |
 | [0015](0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md) | Calcular la cuota de la Modalidad 10 con la estructura de financiamiento oficial del IMSS | Aceptada | 2026-10-30 |
+| [0016](0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md) | Usar el catálogo oficial de ocupaciones del IMSS para la Modalidad 10 | Aceptada | 2026-10-30 |
 
 ## Formato
 

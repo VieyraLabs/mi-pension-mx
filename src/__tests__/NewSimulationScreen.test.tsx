@@ -387,6 +387,36 @@ describe('NewSimulationScreen', () => {
     ).toBeTruthy();
     expect(screen.getByText(/Rango legal \(Art\. 28 LSS vigente\)/)).toBeTruthy();
   });
+
+  test('elegir la ocupación fija la clase de riesgo y con ella el costo', () => {
+    renderScreen(<NewSimulationScreen />);
+    advanceToUmaStep();
+    fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 10? Toca aquí'));
+
+    const costoClaseI = calculateM10MonthlyCost({
+      dailySalary: round2(25 * UMA_ACTUAL.dailyUMA),
+      riskClass: 1,
+      dailyUMA: UMA_ACTUAL.dailyUMA,
+      minimumDailySalary: UMA_ACTUAL.smgCdmx,
+      year: UMA_ACTUAL.year,
+    });
+
+    // Comerciantes y agentes de ventas → Comerciantes → clase III.
+    fireEvent.press(screen.getByText('Comerciantes y agentes de ventas'));
+    fireEvent.press(screen.getByText('Comerciantes'));
+
+    const costoClaseIII = calculateM10MonthlyCost({
+      dailySalary: round2(25 * UMA_ACTUAL.dailyUMA),
+      riskClass: 3,
+      dailyUMA: UMA_ACTUAL.dailyUMA,
+      minimumDailySalary: UMA_ACTUAL.smgCdmx,
+      year: UMA_ACTUAL.year,
+    });
+
+    expect(screen.getByText(`${formatCurrency(costoClaseIII)}/mes`)).toBeTruthy();
+    expect(screen.queryByText(`${formatCurrency(costoClaseI)}/mes`)).toBeNull();
+    expect(screen.getByText(/Clase III/)).toBeTruthy();
+  });
 });
 
 describe('RetirementAgeStep — reglas de presentación de la edad', () => {

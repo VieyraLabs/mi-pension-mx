@@ -19,9 +19,10 @@ hecho.
 | 4 | **Acuerdo ACDO.AS2.HCT.101026/302.P.DG** (Consejo Técnico del IMSS, aprobado 10-oct-2026, DOF 21-oct-2026, vigente 22-oct-2026) | DOF / SIDOF nota 5801708 | **Pendiente**: no se pudo abrir el articulado; el resumen proviene de la nota de prensa de Infobae del 22-oct-2026 |
 | 5 | **Reglamento de la Ley del Seguro Social** (el artículo que nombra "Modalidad 10") | — | **Pendiente**: no se pudo abrir el texto reglamentario |
 | 6 | **UMA 2026** (INEGI, DOF 09-ene-2026) | `https://www.inegi.org.mx/contenidos/saladeprensa/boletines/2026/uma/uma2026.pdf` | Valor diario $117.31 corroborado en `valoruma.com`; el PDF oficial existe pero su texto no se pudo extraer directamente |
-| 7 | **RACERF — Catálogo de Actividades** (art. 196 del Reglamento de Afiliación, Clasificación de Empresas, Recaudación y Fiscalización) | Clasificador oficial IMSS `https://serviciosdigitales.imss.gob.mx/clasificador/` | Clases por fracción leídas (412, 611, 711–713, 841, etc.); lista íntegra de divisiones 0–9 corroborada con fuente secundaria |
+| 7 | **RACERF — Catálogo de Actividades** (art. 196 del Reglamento de Afiliación, Clasificación de Empresas, Recaudación y Fiscalización) | Clasificador oficial IMSS `https://serviciosdigitales.imss.gob.mx/clasificador/` | Clases por fracción leídas (412, 611, 711–713, 841, etc.); lista íntegra de divisiones 0–9 corroborada con fuente secundaria. **Dejar de usar**: el catálogo de ocupaciones de la Modalidad 10 es el del catálogo oficial del IMSS (fuente 10) |
 | 8 | **Anexo A — Informe del Consejo Técnico del IMSS 2025-2026**, Cuadro A.3 "Esquema de financiamiento por tipo de seguro, diciembre de 2025" (p. 242) | `https://www.imss.gob.mx/sites/all/statics/pdf/informes/20252026/15-anexos.pdf` | Texto leído: tasas por ramo y tabla de cesantía y vejez (nota 6) |
 | 9 | **Calculadora oficial del IMSS para Personas Trabajadoras Independientes** (Modalidad 10), versión de marzo de 2026 | `https://www.imss.gob.mx/sites/all/statics/trabajadores-independientes/calculadoraPTI-0326.js` | Texto leído: la fórmula `calculoCuotas` rama por rama, la tabla de bandas de cesantía y vejez (`tablaCPat`) y el SMG por zona |
+| 10 | **Catálogo de ocupaciones de la calculadora oficial** (Modalidad 10), versión de marzo de 2026 | `https://www.imss.gob.mx/sites/all/statics/trabajadores-independientes/catalogoSINCO-0326.js` + el selector «División» de `https://www.imss.gob.mx/personas-trabajadoras-independientes/calculadora` | Texto leído: 13 divisiones y 25 grupos, cada uno con su clase de riesgo oficial |
 
 ---
 
@@ -228,6 +229,44 @@ del 2026, el excedente sobre 3 UMA y la prima de Riesgos de Trabajo. También ex
 qué la app muestra un poco más: con su convención de 30.4 días por mes la cuota es
 $18,831.81 (un 1.3 % por encima del periodo de 30 días).
 
+### 2.10 El catálogo de ocupaciones de la Modalidad 10
+
+La calculadora oficial pide dos niveles: la **división** y el **grupo principal** de la
+actividad. El catálogo oficial (`arrayValoresSINCO`) trae, para cada grupo, la clase de
+riesgo que el IMSS le asigna:
+
+| División | Grupo | Clase |
+|---|---|---|
+| 110 Mexicanos en el extranjero | 101 Trabajadores independientes que radican y laboran en el extranjero | I |
+| 115 Plataformas digitales | 01 Conductores y repartidores | IV |
+| 111 Ministros de culto | 111 Sacerdotes, pastores y otros teólogos | I |
+| 12 Profesionistas y técnicos | 21 …en ciencias económico-administrativas, sociales, humanistas y en artes | I |
+| | 22 Investigadores, técnicos y profesionistas en ciencias exactas, biológicas, ingeniería, informática y telecomunicaciones | I |
+| | 23 Profesores, técnicos y especialistas en docencia | I |
+| | 24 Médicos, enfermeras, técnicos, otros especialistas en salud y trabajadores de apoyo | II |
+| **14 Comerciantes y agentes de ventas** | **41 Comerciantes** | **III** |
+| | 43 Trabajadores de alquiler de bienes muebles y de bienes raíces | II |
+| | 42 Vendedores ambulantes | II |
+| 15 Trabajadores en servicios personales y de vigilancia | 51 …en la preparación y servicio de alimentos y bebidas, esparcimiento y hotelería | III |
+| | 52 Trabajadores independientes en cuidados personales | I |
+| | 53 Trabajadores en servicios de protección y vigilancia | III |
+| 16 Actividades agrícolas, ganaderas, forestales, caza y pesca | 61 Trabajadores en actividades agrícolas y ganaderas | III |
+| | 62 …en actividades pesqueras, forestales, caza y similares | IV |
+| | 63 Operadores de maquinaria agropecuaria y forestal | V |
+| 17 Trabajadores artesanos | 72 Artesanos y trabajadores en el tratamiento y elaboracion de productos | V |
+| 114 Trabajadores de la construcción | 114 Trabajadores de la construcción | V |
+| 18 Operadores de instalaciones y maquinaria industrial | 81 Operadores de instalaciones y maquinaria industrial | V |
+| | 82 Ensambladores y montadores de herramientas, maquinaria, productos metálicos y electrónicos | IV |
+| 112 Conductores | 11201 Conductores de transporte y de maquinaria móvil | IV |
+| | 11202 Conductores de transporte de tracción humana y animal | V |
+| 19 Actividades elementales de apoyo y mensajería | 97 Trabajadores de paquetería, de apoyo para espectáculos, mensajeros y repartidores de mercancía | IV |
+| | 99 Ocupaciones de apoyo | V |
+| 113 Otra división no clasificada anteriormente | 113 Otro grupo no clasificado anteriormente | III |
+
+**Qué se deduce para el código:** la clase **no se aproxima**, se toma del catálogo. La
+división y el grupo se guardan por separado porque el grupo solo significa algo dentro de su
+división.
+
 ---
 
 ## 3. El acuerdo de octubre de 2026 (contexto)
@@ -261,11 +300,12 @@ mes siguiente a la fecha de referencia.
    reglamentario sin comprobar. Si al abrir el texto reglamentario se confirma un artículo
    específico, se documenta en la constante con su fecha de publicación.
 2. **La clase de riesgo laboral y su prima de Riesgos de Trabajo.** Las primas por clase
-   (`MODALIDAD_10_RT_PRIMA`) son oficiales (Art. 71 LSS vigente). El catálogo
-   (`src/constants/ocupaciones.ts`) ya sigue las 10 divisiones del RACERF y marca con
-   `sourceFraction` las clases confirmadas contra el Clasificador oficial del IMSS; queda
-   pendiente completar la clase por FRACCIÓN de los grupos sin confirmar (la captura sigue
-   siendo División → Grupo, no fracción). **Es lo único que queda estimado en la cuota.**
+   (`MODALIDAD_10_RT_PRIMA`) son oficiales (Art. 71 LSS vigente) y la **clase** ya no se
+   aproxima: el catálogo (`src/constants/ocupaciones.ts`) es el oficial de la calculadora del
+   IMSS para Personas Trabajadoras Independientes, que publica la clase de cada grupo
+   ([ADR-0016](../adr/0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md)). Queda
+   pendiente solo **vigilar la versión del catálogo** cuando el IMSS lo actualice: los
+   archivos llevan la fecha en el nombre (`catalogoSINCO-0326.js`).
 3. **El SMG de la Frontera Norte 2026.** La calculadora oficial del IMSS lo publica en
    $440.87/día para 2026 (y $419.88 para 2025), que es el valor que ahora usa
    `smgFronteraNorte` en `src/constants/uma.ts`. Queda por **confirmarlo contra la tabla de
@@ -289,7 +329,8 @@ mes siguiente a la fecha de referencia.
 | Cuota por ramo y banda de cesantía y vejez | `src/utils/modalidad10.ts` (`calculateM10MonthlyBreakdown`, `resolveM10CesantiaBand`, `m10CesantiaPct`) | `src/__tests__/modalidad10.test.ts` |
 | Prima de Riesgos de Trabajo por clase | `src/constants/ley73.ts` (`MODALIDAD_10_RT_PRIMA`, `MODALIDAD_10_RISK_CLASS_LABELS`) | `src/__tests__/modalidad10.test.ts` |
 | La suma de salarios concurrentes no se topa | `src/utils/modalidad10.ts` (`buildM10ContributionPeriod`), `src/services/pension/steps/AverageSalaryStep.ts` | `src/__tests__/modalidad10.test.ts`, `src/__tests__/pensionCalculator.test.ts` |
-| Ocupación → clase de riesgo | `src/constants/ocupaciones.ts` (`M10_OCCUPATION_CATALOG`, `resolveRiskClass`) | `src/__tests__/ocupaciones.test.ts` |
+| Ocupación → clase de riesgo (catálogo oficial) | `src/constants/ocupaciones.ts` (`M10_OCCUPATION_CATALOG`, `resolveRiskClass`) | `src/__tests__/ocupaciones.test.ts`, `src/__tests__/NewSimulationScreen.test.tsx` |
+| La ocupación y la clase sobreviven a guardar y releer | `src/storage/simulationStorage.ts` (`normalizeSavedSimulation`) | `src/__tests__/simulationStorage.test.ts` |
 | Promedio de 250 semanas cotizadas con los meses de M10 | `src/services/pension/history/projectedSBC.ts` | `src/__tests__/projectedSBC.test.ts` |
 | El desglose narra los mismos números | `src/services/pension/steps/AverageSalaryStep.ts` | `src/__tests__/pensionCalculator.test.ts` |
 | Los límites se validan antes de calcular | `src/validation/pensionSchema.ts` | `src/__tests__/pensionSchema.test.ts` |

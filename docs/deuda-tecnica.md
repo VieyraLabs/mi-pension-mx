@@ -221,8 +221,9 @@ Lo que **no** se modela:
 - La **cuota**: ya no es un porcentaje plano. ADR-0015 la calcula con la estructura de
   financiamiento oficial del IMSS (Cuadro A.3 del Anexo A al Informe al Consejo Técnico
   2025-2026 y la calculadora oficial de Personas Trabajadoras Independientes), sin
-  INFONAVIT. Lo que queda estimado es la **clase de riesgo**, porque el catálogo de
-  ocupaciones captura División → Grupo y el RACERF asigna la clase por fracción (ver la
+  INFONAVIT, y ADR-0016 toma la **clase de riesgo** del catálogo oficial de ocupaciones del
+  IMSS. Lo que queda en manos de la persona es elegir el grupo de ocupación que le
+  corresponde (ver la
   [nota de investigación](investigacion/modalidad-10-incorporacion-voluntaria.md)).
 
 ### Por qué importa

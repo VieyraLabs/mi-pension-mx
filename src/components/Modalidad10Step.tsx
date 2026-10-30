@@ -8,7 +8,7 @@
  */
 import { useEffect, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Card, Chip, HelperText, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
+import { Card, HelperText, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { MD3Theme } from 'react-native-paper';
 import type { Modalidad10, SalaryZone } from '../models';
@@ -153,36 +153,35 @@ export function Modalidad10Step({
             </Text>
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 12 }}>
               Tu clase de riesgo (I–V) determina la prima de Riesgos de Trabajo. Elige la
-              división y el grupo más cercanos a tu actividad (catálogo aproximado).
+              división y el grupo que correspondan a tu actividad: es el mismo catálogo
+              que usa el IMSS para calcular tu cuota.
             </Text>
 
             <Text variant="labelMedium" style={styles.fieldLabel}>División</Text>
-            <View style={styles.chipsWrap}>
+            <View style={styles.optionList} accessibilityRole="radiogroup">
               {M10_OCCUPATION_CATALOG.map((division) => (
-                <Chip
+                <OptionRow
                   key={division.code}
+                  label={division.name}
                   selected={modalidad10.occupationDivision === division.code}
                   onPress={() => handleSelectDivision(division.code)}
-                  style={styles.chip}
-                >
-                  {division.name}
-                </Chip>
+                  theme={theme}
+                />
               ))}
             </View>
 
             {selectedDivision && (
               <>
-                <Text variant="labelMedium" style={styles.fieldLabel}>Grupo</Text>
-                <View style={styles.chipsWrap}>
+                <Text variant="labelMedium" style={styles.fieldLabel}>Grupo principal</Text>
+                <View style={styles.optionList} accessibilityRole="radiogroup">
                   {selectedDivision.groups.map((group) => (
-                    <Chip
+                    <OptionRow
                       key={group.code}
+                      label={group.name}
                       selected={modalidad10.occupationGroup === group.code}
                       onPress={() => handleSelectGroup(group.code)}
-                      style={styles.chip}
-                    >
-                      {group.name}
-                    </Chip>
+                      theme={theme}
+                    />
                   ))}
                 </View>
               </>
@@ -239,8 +238,8 @@ export function Modalidad10Step({
               Cuota calculada con la estructura de financiamiento oficial del IMSS (Cuadro A.3
               del Anexo A al Informe del Consejo Técnico 2025-2026), sin la aportación
               opcional a INFONAVIT (5 % del SBC). Cesantía y vejez: {costBreakdown.cesantiaBandLabel}
-              {' '}({formatPercent(costBreakdown.cesantiaPct)}). La clase de riesgo se estima con
-              el catálogo de ocupaciones (verificar RACERF).
+              {' '}({formatPercent(costBreakdown.cesantiaPct)}). La clase de riesgo es la que el
+              IMSS asigna al grupo elegido en el catálogo oficial de ocupaciones.
             </HelperText>
 
             <DataRow
@@ -280,6 +279,56 @@ export function Modalidad10Step({
   );
 }
 
+/**
+ * Opción seleccionable en lista vertical.
+ *
+ * Los nombres del catálogo oficial son largos —«Trabajadores en actividades
+ * agrícolas, ganaderas, forestales, caza y pesca»— y una etiqueta de chip de
+ * una sola línea los recortaría, dos de ellos con el mismo inicio. La lista
+ * vertical muestra el nombre completo y deja el grupo a un toque.
+ */
+function OptionRow({
+  label,
+  selected,
+  onPress,
+  theme,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+  theme: MD3Theme;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      style={[
+        styles.optionRow,
+        {
+          borderBottomColor: theme.colors.outlineVariant,
+          backgroundColor: selected ? theme.colors.secondaryContainer : 'transparent',
+        },
+      ]}
+    >
+      <Text
+        variant="bodyMedium"
+        style={{
+          flex: 1,
+          color: selected ? theme.colors.onSecondaryContainer : theme.colors.onSurface,
+          fontWeight: selected ? 'bold' : 'normal',
+        }}
+      >
+        {label}
+      </Text>
+      {selected && (
+        <Text variant="labelLarge" style={{ color: theme.colors.primary }}>✓</Text>
+      )}
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
   card: { borderRadius: 12 },
   input: { marginBottom: 12 },
@@ -287,8 +336,14 @@ const styles = StyleSheet.create({
   fieldRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   field: { flex: 1 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
-  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  chip: { marginBottom: 4 },
+  optionList: { marginBottom: 12 },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   fieldLabel: { marginBottom: 6 },
   m10Toggle: {
     flexDirection: 'row',

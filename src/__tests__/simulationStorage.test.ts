@@ -124,6 +124,70 @@ describe('getSimulations', () => {
     expect(input.uma.smgCdmx).toBeGreaterThan(0);
   });
 
+  test('conserva la ocupación y la clase de riesgo al releer una simulación', async () => {
+    const resultado = buildResult();
+    const input = {
+      ...resultado.input,
+      modalidad10: {
+        active: true,
+        contributionSalary: 2932.75,
+        riskClass: 3,
+        occupationDivision: '14',
+        occupationGroup: '41',
+        salaryZone: 'frontera_norte',
+      },
+    };
+    const registro = {
+      id: 'sim_ocupacion',
+      name: 'Simulación con ocupación',
+      creationDate: '2026-01-01T00:00:00.000Z',
+      result: { ...resultado, input },
+    };
+    await AsyncStorage.setItem(
+      '@mi_pension_mx:simulaciones',
+      JSON.stringify([registro]),
+    );
+
+    const all = await getSimulations();
+
+    expect(all[0]!.result.input.modalidad10.riskClass).toBe(3);
+    expect(all[0]!.result.input.modalidad10.occupationDivision).toBe('14');
+    expect(all[0]!.result.input.modalidad10.occupationGroup).toBe('41');
+    expect(all[0]!.result.input.modalidad10.salaryZone).toBe('frontera_norte');
+  });
+
+  test('limpia una ocupación del catálogo anterior pero conserva la clase de riesgo', async () => {
+    const resultado = buildResult();
+    const input = {
+      ...resultado.input,
+      modalidad10: {
+        active: true,
+        contributionSalary: 2932.75,
+        riskClass: 5,
+        // División y grupo del catálogo RACERF, que ya no existe.
+        occupationDivision: '4',
+        occupationGroup: '41',
+      },
+    };
+    const registro = {
+      id: 'sim_ocupacion_vieja',
+      name: 'Simulación con ocupación antigua',
+      creationDate: '2026-01-01T00:00:00.000Z',
+      result: { ...resultado, input },
+    };
+    await AsyncStorage.setItem(
+      '@mi_pension_mx:simulaciones',
+      JSON.stringify([registro]),
+    );
+
+    const all = await getSimulations();
+
+    expect(all[0]!.result.input.modalidad10.occupationDivision).toBeUndefined();
+    expect(all[0]!.result.input.modalidad10.occupationGroup).toBeUndefined();
+    // La clase de riesgo es la que determina el costo: se conserva.
+    expect(all[0]!.result.input.modalidad10.riskClass).toBe(5);
+  });
+
   test('conserva las simulaciones válidas y descarta solo las incompatibles', async () => {
     const valida = await saveSimulation(buildResult(), 'Válida');
     const actual = JSON.parse((await AsyncStorage.getItem('@mi_pension_mx:simulaciones')) ?? '[]');

@@ -21,8 +21,8 @@ export type RetirementType = 'vejez' | 'cesantia';
 export type PensionType = 'vejez' | 'cesantia_edad_avanzada';
 
 /**
- * Clase de riesgo laboral (I–V) del catálogo de clasificación de empresas
- * (RACERF). Determina la prima de Riesgos de Trabajo de la Modalidad 10.
+ * Clase de riesgo laboral (I–V) del catálogo de ocupaciones de la Modalidad 10
+ * del IMSS. Determina la prima de Riesgos de Trabajo.
  */
 export type RiskClass = 1 | 2 | 3 | 4 | 5;
 
@@ -139,7 +139,7 @@ export interface Modalidad10 {
   annualSalaryIncrease?: number;
   /** Clase de riesgo laboral (I–V) que determina la prima de Riesgos de Trabajo. */
   riskClass?: RiskClass;
-  /** División de actividad económica (catálogo de ocupaciones RACERF). */
+  /** División de actividad económica (catálogo de ocupaciones del IMSS). */
   occupationDivision?: string;
   /** Grupo principal de actividad dentro de la división. */
   occupationGroup?: string;

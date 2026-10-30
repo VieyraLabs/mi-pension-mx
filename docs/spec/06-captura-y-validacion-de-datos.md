@@ -99,6 +99,15 @@ esa fecha es la que queda.
   elegir las UMAs recalcula el monto. El rango es el del Art. 28 LSS vigente: **salario
   mínimo del área geográfica** (la app usa el SMG de la Zona A) y **25 UMA** como techo; el
   valor por omisión es el techo. El texto auxiliar declara el rango.
+- **La ocupación se elige del catálogo oficial del IMSS.** El paso 4 ofrece la división y
+  el grupo principal de la actividad, con el mismo catálogo (13 divisiones y 25 grupos) y la
+  misma clase de riesgo I–V que usa la calculadora oficial para Personas Trabajadoras
+  Independientes. Al elegir el grupo se fija la clase, que determina la prima de Riesgos de
+  Trabajo y con ella el costo mensual; cambiar de división limpia el grupo y la clase
+  ([ADR-0016](../adr/0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md)).
+  Las dos listas son **verticales y con el nombre completo**: los nombres oficiales son
+  largos y dos divisiones empiezan igual («Trabajadores en actividades…»), de modo que una
+  etiqueta de una sola línea las volvería indistinguibles.
 - **La persona declara si sigue trabajando mientras cotiza en la Modalidad 10.** El
   interruptor suma su último salario registrado al SBC de M10 en el SBC promedio proyectado;
   si ya no trabaja, el SBC del periodo es solo el de M10. La respuesta se declara en el
@@ -110,8 +119,9 @@ esa fecha es la que queda.
   Guarderías y Prestaciones Sociales, Retiro y cesantía y vejez por banda de UMAs— más la
   prima de Riesgos de Trabajo de la clase elegida; **sin la aportación a INFONAVIT**. Se
   muestran el total, la tasa efectiva sobre el SBC declarado y la prima de RT, con el texto
-  auxiliar que declara la fuente de la estructura y que la clase de riesgo se estima con el
-  catálogo de ocupaciones ([ADR-0015](../adr/0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md)).
+  auxiliar que declara la fuente de la estructura y que la clase de riesgo es la del catálogo
+  oficial de ocupaciones ([ADR-0015](../adr/0015-cuota-modalidad-10-con-la-estructura-oficial-del-imss.md),
+  [ADR-0016](../adr/0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md)).
 - **La edad de retiro va de 60 a 100 años**, con el mínimo justificado por la cesantía en
   edad avanzada, y admite **fracciones de medio año** (60, 60.5, 61, …): el esquema
   rechaza, con mensaje, las edades que no son múltiplos de medio año.
