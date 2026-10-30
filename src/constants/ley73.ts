@@ -12,8 +12,10 @@
  * lleva comentario de fuente (artículo de la Ley o Reglamento, publicación DOF
  * de origen) y vigencia aplicable. Al agregar o modificar una constante, ese
  * registro es un paso OBLIGATORIO del procedimiento: ver
- * docs/runbooks/05-actualizar-uma-y-constantes-legales.md (paso 4).
+ * docs/runbooks/05-actualizar-uma-y-constantes-legales.md (paso 5).
  */
+
+import type { RiskClass } from '../models';
 
 // ─────────────────────────────────────────────
 // Tabla del Artículo 167 LSS 1973
@@ -442,14 +444,14 @@ export const MODALIDAD_10_MINIMUM_IS_SMG_OF_ZONE = true;
 export const MODALIDAD_10_CAP_TIMES_UMA = 25;
 
 /**
- * Cuota de la Modalidad 10 sobre el salario de cotización, SIN la aportación
- * a INFONAVIT.
+ * Cuota base de la Modalidad 10 sobre el SBC mensual, SIN prima de Riesgos de
+ * Trabajo (RT) y SIN la aportación a INFONAVIT.
  *
- * Calibrada contra el costo real observado en octubre de 2026: con el SBC
- * tope de 25 UMA (UMA 2026 $117.70/día) el costo mensual sin INFONAVIT fue de
- * $18,584, equivalente al 20.775% del SBC mensual. La fuente primaria sigue
- * siendo el Acuerdo de la Junta Directiva que fija las primas de financiamiento
- * por ramo (DOF); hasta confirmarlo ahí, la UI lo presenta como estimado.
+ * ESTIMACIÓN — VERIFICAR: 18.30% reproduce exactamente el costo base que la
+ * app mostraba antes de descomponer la prima de RT (25 UMA 2026 → $16,369.72,
+ * solo ramos distintos a Riesgos de Trabajo). La fuente primaria es el Acuerdo
+ * de la Junta Directiva que fija las primas de financiamiento por ramo (DOF);
+ * hasta confirmarlo ahí, la UI lo presenta como estimado.
  *
  * Contexto legal del criterio: Art. 228 LSS vigente — a las bases de
  * cotización "se les aplicarán las primas de financiamiento… reduciendo la
@@ -457,11 +459,33 @@ export const MODALIDAD_10_CAP_TIMES_UMA = 25;
  * INFONAVIT es exactamente esa reducción: la aportación al fondo de vivienda
  * es un ahorro adicional, no una prima de financiamiento.
  */
-export const MODALIDAD_10_CUOTA_PCT = 0.20775;
+export const MODALIDAD_10_BASE_CUOTA_PCT = 0.183;
+
+/**
+ * Prima de Riesgos de Trabajo por clase laboral (Art. 71 LSS vigente, tabla de
+ * primas de RT). Es el componente de la cuota de Modalidad 10 que varía según
+ * la ocupación de la persona asegurada. Valores oficiales.
+ */
+export const MODALIDAD_10_RT_PRIMA: Record<RiskClass, number> = {
+  1: 0.0054355,
+  2: 0.0113065,
+  3: 0.025984,
+  4: 0.0465325,
+  5: 0.0758875,
+};
+
+/** Etiquetas legibles de cada clase de riesgo laboral. */
+export const MODALIDAD_10_RISK_CLASS_LABELS: Record<RiskClass, string> = {
+  1: 'Clase I — riesgo mínimo',
+  2: 'Clase II — riesgo bajo',
+  3: 'Clase III — riesgo medio',
+  4: 'Clase IV — riesgo alto',
+  5: 'Clase V — riesgo máximo',
+};
 
 /**
  * La cuota mostrada NO incluye la aportación opcional a INFONAVIT.
- * Ver el comentario de `MODALIDAD_10_CUOTA_PCT`.
+ * Ver el comentario de `MODALIDAD_10_BASE_CUOTA_PCT`.
  */
 export const MODALIDAD_10_CUOTA_EXCLUDES_INFONAVIT = true;
 

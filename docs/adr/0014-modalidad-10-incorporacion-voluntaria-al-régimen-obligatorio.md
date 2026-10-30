@@ -2,7 +2,7 @@
 
 - **Estado**: Aceptada
 - **Fecha**: 2026-10-30
-- **Ámbito**: `src/constants/ley73.ts`, `src/utils/modalidad10.ts`, `src/services/pension/history/projectedSBC.ts`, `src/services/pension/steps/AverageSalaryStep.ts`, `src/validation/pensionSchema.ts`, `src/hooks/usePensionForm.ts`, `src/components/Modalidad10Step.tsx`, `src/components/UMAStepper.tsx`
+- **Ámbito**: `src/constants/ley73.ts`, `src/constants/ocupaciones.ts`, `src/constants/uma.ts`, `src/utils/modalidad10.ts`, `src/services/pension/history/projectedSBC.ts`, `src/services/pension/steps/AverageSalaryStep.ts`, `src/validation/pensionSchema.ts`, `src/hooks/usePensionForm.ts`, `src/components/Modalidad10Step.tsx`, `src/components/UMAStepper.tsx`
 
 ## Contexto
 
@@ -43,10 +43,9 @@ UMAs.**
   El artículo reglamentario que la nombra queda **pendiente de verificación** en el DOF: la
   constante lo declara como tal y no cita un artículo no comprobado.
 - **Rango del SBC declarado (Art. 28 LSS vigente).** El piso es el **salario mínimo general
-  del área geográfica** y el techo son **25 UMA**. La app no conoce la zona del trabajador y
-  usa el **SMG de la Zona A (CDMX)**, el más alto y por tanto el piso más restrictivo —el
-  mismo criterio que ya aplica a la pensión mínima garantizada. El valor por omisión es el
-  **máximo legal: 25 UMA**.
+  del área geográfica** y el techo son **25 UMA**. La app captura la zona geográfica
+  (`salaryZone`: resto del país o Frontera Norte) y usa el SMG de esa zona como piso. El
+  valor por omisión es el **máximo legal: 25 UMA**.
 - **UMAs como unidad de entrada.** El control del paso 4 es un *stepper* (`−` / `+`) con el
   valor editable a dos decimales: sube y baja **de UMA en UMA** dentro del rango legal. El
   monto en pesos y su equivalente en UMAs se mantienen sincronizados en las dos direcciones;
@@ -66,9 +65,10 @@ UMAs.**
   motor narre los mismos números. Se elimina la fórmula duplicada.
 - **Los meses proyectados no son editables.** "Meses cotizando en M10" es texto de solo
   lectura, con el mismo patrón que la edad de retiro: se derivan de la fecha exacta de retiro.
-- **Costo mensual de solo lectura y sin INFONAVIT.** `costo = SBC mensual × cuota`, con la
-  cuota como constante legal marcada como estimación hasta confirmar el Acuerdo de la Junta
-  Directiva que fija las primas de financiamiento.
+- **Costo mensual de solo lectura, sin INFONAVIT y desglosado.** `costo = SBC mensual ×
+  (cuota base + prima de Riesgos de Trabajo de la clase)`. La cuota base es una constante
+  marcada como estimación; la prima de RT depende de la clase de riesgo laboral (I–V), que se
+  deriva de la ocupación (División/Grupo) y se muestra junto con el desglose base + prima.
 - **Sin meses retroactivos.** M10 arranca el 1º del mes siguiente a la fecha de referencia
   (Art. 224 LSS vigente: la cuota se paga por adelantado, sin actualizaciones ni recargos).
 
@@ -94,8 +94,9 @@ UMAs.**
 - El Art. 194 de la Ley 73 permite quedarse en el mismo *grupo de salario* o en el inmediato
   inferior o superior; la app deja elegir el SBC de forma continua y **no modela** esas
   bandas. Se declara como supuesto.
-- La cuota mostrada depende de una constante marcada como estimación: hay que confirmar el
-  Acuerdo de la Junta Directiva antes de publicar la app.
+- La cuota base mostrada depende de una constante marcada como estimación, y el catálogo
+  División/Grupo → clase es una muestra parcial que no sustituye al RACERF: hay que confirmar
+  ambos antes de publicar la app.
 - Las simulaciones guardadas por versiones anteriores se normalizan **en memoria** al leer
   (la clave vieja `modalidad40` se lee como `modalidad10`); no se reescribe lo que la persona
   tiene guardado (ADR-0013).

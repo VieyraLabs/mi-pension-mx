@@ -22,7 +22,8 @@ import {
   getWeeksLabel,
 } from '../utils/format';
 import { showAlert } from '../utils/alert';
-import { calculateM10MonthlyCost } from '../utils/modalidad10';
+import { calculateM10MonthlyBreakdown } from '../utils/modalidad10';
+import { MODALIDAD_10_RISK_CLASS_LABELS } from '../constants/ley73';
 import { normalizeLocalCalendarDate } from '../utils/weeksProjection';
 import { getBannerColors, getBrandGradient, BRAND_ON_COLOR } from '../theme';
 import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
@@ -184,7 +185,8 @@ export default function ResultScreen() {
           {result.input.modalidad10.active && (() => {
             const m10 = result.input.modalidad10;
             const breakdown = result.input.projectedAverageBreakdown;
-            const monthlyCost = calculateM10MonthlyCost(m10.contributionSalary ?? 0);
+            const riskClass = m10.riskClass ?? 1;
+            const costBreakdown = calculateM10MonthlyBreakdown(m10.contributionSalary ?? 0, riskClass);
             return (
               <View style={[styles.m10Block, { borderTopColor: theme.colors.outlineVariant }]}>
                 <Text
@@ -210,7 +212,17 @@ export default function ResultScreen() {
                 />
                 <SummaryRow
                   label="Costo mensual estimado (sin INFONAVIT)"
-                  value={`${formatCurrency(monthlyCost)}/mes`}
+                  value={`${formatCurrency(costBreakdown.total)}/mes`}
+                  theme={theme}
+                />
+                <SummaryRow
+                  label={`Cuota base (${formatPercent(costBreakdown.baseCuotaPct * 100)})`}
+                  value={`${formatCurrency(costBreakdown.baseCuotaAmount)}/mes`}
+                  theme={theme}
+                />
+                <SummaryRow
+                  label={`Prima de Riesgos de Trabajo (${MODALIDAD_10_RISK_CLASS_LABELS[riskClass]})`}
+                  value={`${formatCurrency(costBreakdown.riskPrimaAmount)}/mes`}
                   theme={theme}
                 />
                 <SummaryRow

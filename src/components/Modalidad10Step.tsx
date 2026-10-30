@@ -8,13 +8,19 @@
  */
 import { useEffect, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Card, HelperText, Switch, Text, TextInput } from 'react-native-paper';
+import { Card, Chip, HelperText, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { MD3Theme } from 'react-native-paper';
-import type { Modalidad10 } from '../models';
+import type { Modalidad10, SalaryZone } from '../models';
+import { MODALIDAD_10_RISK_CLASS_LABELS } from '../constants/ley73';
+import {
+  M10_OCCUPATION_CATALOG,
+  getOccupationDivision,
+  resolveRiskClass,
+} from '../constants/ocupaciones';
 import { BRAND_ON_COLOR, getBrandGradient } from '../theme';
-import { formatCurrency, round2 } from '../utils/format';
-import { calculateM10MonthlyCost, m10SalaryRange } from '../utils/modalidad10';
+import { formatCurrency, formatPercent, round2 } from '../utils/format';
+import { calculateM10MonthlyBreakdown, m10SalaryRange } from '../utils/modalidad10';
 import { DataRow } from './DataRow';
 import { UMAStepper } from './UMAStepper';
 
@@ -45,8 +51,19 @@ export function Modalidad10Step({
   const range = m10SalaryRange(dailyUMA, minimumDailySalary);
   const salary = modalidad10.contributionSalary ?? range.minimumDailySalary;
   const umas = modalidad10.contributionSalaryInUMAs ?? range.minimumUMAs;
-  const monthlyCost = calculateM10MonthlyCost(salary);
+  const salaryZone = modalidad10.salaryZone ?? 'general';
+  const riskClass = modalidad10.riskClass ?? 1;
+  const costBreakdown = calculateM10MonthlyBreakdown(salary, riskClass);
+  const selectedDivision = getOccupationDivision(modalidad10.occupationDivision);
   const months = modalidad10.expectedMonths ?? 0;
+
+  const handleSelectDivision = (code: string) =>
+    onChange({ occupationDivision: code, occupationGroup: undefined, riskClass: undefined });
+  const handleSelectGroup = (code: string) => {
+    const resolved = resolveRiskClass(modalidad10.occupationDivision, code);
+    onChange({ occupationGroup: code, riskClass: resolved });
+  };
+  const handleSelectZone = (zone: SalaryZone) => onChange({ salaryZone: zone });
 
   // El monto se escribe como lo captura la persona; el texto se sincroniza
   // cuando el valor cambia desde afuera.
@@ -122,6 +139,61 @@ export function Modalidad10Step({
               {' '}({formatCurrency(range.maximumDailySalary)}/día).
             </HelperText>
 
+            <Text variant="labelLarge" style={{ color: theme.colors.onSurface, marginBottom: 6 }}>
+              Ocupación y clase de riesgo
+            </Text>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 12 }}>
+              Tu clase de riesgo (I–V) determina la prima de Riesgos de Trabajo. Elige la
+              división y el grupo más cercanos a tu actividad (catálogo aproximado).
+            </Text>
+
+            <Text variant="labelMedium" style={styles.fieldLabel}>División</Text>
+            <View style={styles.chipsWrap}>
+              {M10_OCCUPATION_CATALOG.map((division) => (
+                <Chip
+                  key={division.code}
+                  selected={modalidad10.occupationDivision === division.code}
+                  onPress={() => handleSelectDivision(division.code)}
+                  style={styles.chip}
+                >
+                  {division.name}
+                </Chip>
+              ))}
+            </View>
+
+            {selectedDivision && (
+              <>
+                <Text variant="labelMedium" style={styles.fieldLabel}>Grupo</Text>
+                <View style={styles.chipsWrap}>
+                  {selectedDivision.groups.map((group) => (
+                    <Chip
+                      key={group.code}
+                      selected={modalidad10.occupationGroup === group.code}
+                      onPress={() => handleSelectGroup(group.code)}
+                      style={styles.chip}
+                    >
+                      {group.name}
+                    </Chip>
+                  ))}
+                </View>
+              </>
+            )}
+
+            <Text variant="labelMedium" style={styles.fieldLabel}>Zona geográfica</Text>
+            <SegmentedButtons
+              value={salaryZone}
+              onValueChange={(v) => handleSelectZone(v as SalaryZone)}
+              buttons={[
+                { value: 'general', label: 'Resto del país' },
+                { value: 'frontera_norte', label: 'Frontera Norte' },
+              ]}
+              style={{ marginBottom: 8 }}
+            />
+            <HelperText type="info" style={{ marginBottom: 12 }}>
+              Determina el salario mínimo que sirve de piso del SBC declarado.
+              {salaryZone === 'frontera_norte' ? ' Frontera Norte usa un salario mínimo mayor.' : ''}
+            </HelperText>
+
             <View style={styles.switchRow}>
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, flex: 1 }}>
                 ¿Continúas trabajando mientras citas en Modalidad 10?
@@ -139,13 +211,24 @@ export function Modalidad10Step({
 
             <DataRow
               label="Costo mensual estimado de la Modalidad 10"
-              value={`${formatCurrency(monthlyCost)}/mes`}
+              value={`${formatCurrency(costBreakdown.total)}/mes`}
               theme={theme}
               highlight
               prominent
             />
+            <DataRow
+              label={`Cuota base (sin RT ni INFONAVIT, ${formatPercent(costBreakdown.baseCuotaPct * 100)})`}
+              value={`${formatCurrency(costBreakdown.baseCuotaAmount)}/mes`}
+              theme={theme}
+            />
+            <DataRow
+              label={`Prima de Riesgos de Trabajo (${MODALIDAD_10_RISK_CLASS_LABELS[riskClass]}, ${formatPercent(costBreakdown.riskPrimaPct * 100)})`}
+              value={`${formatCurrency(costBreakdown.riskPrimaAmount)}/mes`}
+              theme={theme}
+            />
             <HelperText type="info" style={{ marginBottom: 12 }}>
-              Estimado, sobre el SBC declarado y sin la aportación a INFONAVIT.
+              Estimado, sobre el SBC declarado y sin la aportación a INFONAVIT. La clase de
+              riesgo proviene de la ocupación elegida (catálogo aproximado, verificar RACERF).
             </HelperText>
 
             <DataRow
@@ -192,6 +275,9 @@ const styles = StyleSheet.create({
   fieldRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   field: { flex: 1 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
+  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  chip: { marginBottom: 4 },
+  fieldLabel: { marginBottom: 6 },
   m10Toggle: {
     flexDirection: 'row',
     alignItems: 'center',

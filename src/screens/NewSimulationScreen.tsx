@@ -266,7 +266,7 @@ export default function NewSimulationScreen() {
               onChangeSalary={setModalidad10ContributionSalary}
               onChangeUMAs={setModalidad10UMAs}
               dailyUMA={input.uma.dailyUMA}
-              minimumDailySalary={getMinimumDailySalary(input.uma)}
+              minimumDailySalary={getMinimumDailySalary(input.uma, input.modalidad10.salaryZone)}
               theme={theme}
             />
           </View>

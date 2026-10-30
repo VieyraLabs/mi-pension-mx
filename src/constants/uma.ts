@@ -7,7 +7,7 @@
  * NOTA LEGAL: Los valores de UMA y SMG son utilizados únicamente como referencia
  * para los cálculos. La resolución oficial corresponde al IMSS.
  */
-import type { UMARecord } from '../models';
+import type { UMARecord, SalaryZone } from '../models';
 import { DAYS_PER_YEAR_UMA, AVERAGE_DAYS_PER_MONTH } from './ley73';
 
 /**
@@ -109,10 +109,13 @@ export const TABLA_UMA_SMG: readonly UMARecord[] = [
     monthlyUMA: 3578.28,
     annualUMA: 42960.5,
     smgCdmx: 315.04,
+    // ESTIMACIÓN — VERIFICAR: Zona Libre Frontera Norte 2026 (~13% sobre 2025).
+    smgFronteraNorte: 474.46,
     isEstimate: true,
     source:
       'UMA estimada — verificar publicación DOF enero 2026 (INEGI). ' +
-      'SMG ZSMG 2026 oficial CONASAMI, Tabla de Salarios Mínimos 2026 (PDF gob.mx).',
+      'SMG ZSMG 2026 oficial CONASAMI, Tabla de Salarios Mínimos 2026 (PDF gob.mx). ' +
+      'SMG Frontera Norte 2026 estimado — verificar CONASAMI.',
   },
 ] as const;
 
@@ -134,13 +137,25 @@ export function getMostRecentUMA(): UMARecord {
 }
 
 /**
- * Salario mínimo de referencia (Zona A / CDMX) que la Modalidad 10 usa como
- * piso del SBC declarado (Art. 28 LSS vigente).
+ * Salario mínimo de la zona geográfica seleccionada, que la Modalidad 10 usa
+ * como piso del SBC declarado (Art. 28 LSS vigente: "el salario mínimo general
+ * del área geográfica respectiva").
  *
- * Si la configuración no lo trae —simulaciones guardadas por versiones
+ * - `general` (resto del país): usa el SMG general (históricamente el de la
+ *   Zona A / CDMX que ya registra la tabla).
+ * - `frontera_norte`: usa el SMG de la Zona Libre de la Frontera Norte cuando
+ *   el registro lo trae; si no, cae al SMG general.
+ *
+ * Si la configuración no trae el SMG —simulaciones guardadas por versiones
  * anteriores de la app— se usa el del registro UMA vigente.
  */
-export function getMinimumDailySalary(uma: { smgCdmx?: number }): number {
+export function getMinimumDailySalary(
+  uma: { smgCdmx?: number; smgFronteraNorte?: number },
+  zone: SalaryZone = 'general',
+): number {
+  if (zone === 'frontera_norte' && uma.smgFronteraNorte != null) {
+    return uma.smgFronteraNorte;
+  }
   return uma.smgCdmx ?? UMA_ACTUAL.smgCdmx;
 }
 

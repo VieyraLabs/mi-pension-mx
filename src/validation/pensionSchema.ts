@@ -87,6 +87,7 @@ export const UMAConfigurationSchema = z.object({
   monthlyUMA: z.number().positive(),
   annualUMA: z.number().positive(),
   smgCdmx: z.number().positive().optional(),
+  smgFronteraNorte: z.number().positive().optional(),
   year: z.number().int().min(2017).max(2100),
   isCustom: z.boolean().default(false),
 });
@@ -112,6 +113,13 @@ export const Modalidad10Schema = z.object({
     .optional()
     .nullable(),
   annualSalaryIncrease: z.number().min(0).max(100).optional().nullable(),
+  riskClass: z
+    .union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)])
+    .optional()
+    .nullable(),
+  occupationDivision: z.string().max(10).optional().nullable(),
+  occupationGroup: z.string().max(10).optional().nullable(),
+  salaryZone: z.enum(['general', 'frontera_norte']).optional().nullable(),
 });
 
 export const BeneficiariesSchema = z.object({
@@ -172,7 +180,12 @@ function createPensionInputSchema(referenceDateProvider: () => Date) {
       if (data.modalidad10.active) {
         const salary = data.modalidad10.contributionSalary;
         const maximum = MODALIDAD_10_CAP_TIMES_UMA * data.uma.dailyUMA;
-        const minimum = data.uma.smgCdmx;
+        // Piso por zona sin fallback: si el registro no trae el SMG de la zona,
+        // no se inventa un mínimo de otro año (comportamiento previo a la v2).
+        const minimum =
+          data.modalidad10.salaryZone === 'frontera_norte' && data.uma.smgFronteraNorte != null
+            ? data.uma.smgFronteraNorte
+            : data.uma.smgCdmx;
         if (salary != null) {
           if (salary > maximum) {
             ctx.addIssue({

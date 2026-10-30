@@ -11,7 +11,8 @@
  * ámbar #D97706 y neutros slate.)
  */
 import * as Print from 'expo-print';
-import { calculateM10MonthlyCost } from '../../utils/modalidad10';
+import { calculateM10MonthlyBreakdown } from '../../utils/modalidad10';
+import { MODALIDAD_10_RISK_CLASS_LABELS } from '../../constants/ley73';
 import * as Sharing from 'expo-sharing';
 import type { PensionResult } from '../../models';
 import { formatCurrency, formatPercent, formatDateLong, formatInteger, formatUMAs, formatWeeksTargetText, formatAge, getWeeksLabel } from '../../utils/format';
@@ -36,12 +37,15 @@ function generateHtml(result: PensionResult): string {
 
   const m10 = input.modalidad10;
   const m10Breakdown = input.projectedAverageBreakdown;
+  const m10Cost = calculateM10MonthlyBreakdown(m10.contributionSalary ?? 0, m10.riskClass ?? 1);
   const m10SummaryHtml = m10.active
     ? `
     <tr><td>Salario base declarado</td><td>${formatCurrency(m10.contributionSalary ?? 0)}/día</td></tr>
     <tr><td>Equivalente en UMAs</td><td>${formatUMAs(m10.contributionSalaryInUMAs ?? 0)} UMA</td></tr>
     <tr><td>Meses que planeas cotizar</td><td>${formatInteger(m10.expectedMonths ?? 0)} meses</td></tr>
-    <tr><td>Costo mensual estimado (sin INFONAVIT)</td><td>${formatCurrency(calculateM10MonthlyCost(m10.contributionSalary ?? 0))}/mes</td></tr>
+    <tr><td>Costo mensual estimado (sin INFONAVIT)</td><td>${formatCurrency(m10Cost.total)}/mes</td></tr>
+    <tr><td>Cuota base (${formatPercent(m10Cost.baseCuotaPct * 100)})</td><td>${formatCurrency(m10Cost.baseCuotaAmount)}/mes</td></tr>
+    <tr><td>Prima de Riesgos de Trabajo (${MODALIDAD_10_RISK_CLASS_LABELS[m10Cost.riskClass]})</td><td>${formatCurrency(m10Cost.riskPrimaAmount)}/mes</td></tr>
     <tr><td>¿Sigues trabajando mientras citas?</td><td>${m10.continuesWorkingWhileContributing ?? true ? 'Sí' : 'No'}</td></tr>
     ${m10Breakdown && m10Breakdown.m10Weeks > 0
       ? `<tr><td>Semanas de Modalidad 10 (de las 250)</td><td>${formatInteger(m10Breakdown.m10Weeks)} sem.</td></tr>

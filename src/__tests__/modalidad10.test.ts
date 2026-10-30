@@ -1,5 +1,6 @@
 import {
   buildM10ContributionPeriod,
+  calculateM10MonthlyBreakdown,
   calculateM10MonthlyCost,
   calculateM10PlannedWeeks,
   clampM10Salary,
@@ -135,12 +136,23 @@ describe('Modalidad 10 — periodo de cotización', () => {
 });
 
 describe('Modalidad 10 — costo mensual', () => {
-  test('se calcula sobre el SBC mensual y sin INFONAVIT', () => {
-    // 25 UMA de 2025: $2,828.50/día × 30.4 = $85,986.40/mes × 20.775% = $17,863.67
-    expect(calculateM10MonthlyCost(2828.5)).toBe(17863.67);
+  test('se calcula como cuota base + prima de riesgo de la clase', () => {
+    // 25 UMA de 2025: $2,828.50/día × 30.4 = $85,986.40/mes.
+    // Clase III: base 18.30% ($15,735.51) + prima RT 2.5984% ($2,234.27).
+    expect(calculateM10MonthlyCost(2828.5, 3)).toBe(17969.78);
+    expect(calculateM10MonthlyCost(2828.5, 1)).toBe(16202.89);
+  });
+
+  test('el desglose separa cuota base y prima de Riesgos de Trabajo', () => {
+    const b = calculateM10MonthlyBreakdown(2828.5, 3);
+    expect(b.monthlySalary).toBe(85986.4);
+    expect(b.baseCuotaAmount).toBe(15735.51);
+    expect(b.riskPrimaAmount).toBe(2234.27);
+    expect(b.total).toBe(17969.78);
+    expect(b.baseCuotaAmount + b.riskPrimaAmount).toBeCloseTo(b.total, 2);
   });
 
   test('un SBC menor cuesta menos', () => {
-    expect(calculateM10MonthlyCost(1131.4)).toBeLessThan(calculateM10MonthlyCost(2828.5));
+    expect(calculateM10MonthlyCost(1131.4, 3)).toBeLessThan(calculateM10MonthlyCost(2828.5, 3));
   });
 });

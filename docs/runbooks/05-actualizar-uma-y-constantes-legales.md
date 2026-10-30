@@ -38,17 +38,33 @@ En `src/constants/ley73.ts`:
 
 - `SBC_CAP_TIMES_UMA` (tope de cotización, 25 UMA por el Art. 28 LSS vigente).
 - `MODALIDAD_10_CAP_TIMES_UMA` (tope de la Modalidad 10: 25 UMA).
-- `MODALIDAD_10_CUOTA_PCT` (cuota de la Modalidad 10 sin INFONAVIT): verificar en el
-  Acuerdo de la Junta Directiva y marcar como estimación mientras no se confirme.
-- El SMG de `TABLA_UMA_SMG` es también el **piso del SBC declarado en la Modalidad 10**
-  (salario mínimo del área geográfica, Art. 28 LSS vigente): al cambiarlo hay que revisar
-  el mínimo en UMAs que muestra el paso 4.
+- `MODALIDAD_10_BASE_CUOTA_PCT` (cuota base de la Modalidad 10 sin INFONAVIT ni Riesgos de
+  Trabajo): verificar en el Acuerdo de la Junta Directiva y marcar como estimación mientras
+  no se confirme.
+- `MODALIDAD_10_RT_PRIMA` (primas de Riesgos de Trabajo por clase I–V, Art. 71 LSS vigente).
+- `smgFronteraNorte` de `TABLA_UMA_SMG` (SMG de la Zona Libre de la Frontera Norte): hoy es
+  estimación 2026; verificar en CONASAMI. El SMG de cada zona es el **piso del SBC declarado
+  en la Modalidad 10** (salario mínimo del área geográfica, Art. 28 LSS vigente): al cambiarlo
+  hay que revisar el mínimo en UMAs que muestra el paso 4.
 - El mínimo de la pensión garantizada, si cambió.
 
-### 4. Registrar la provenancia documental (obligatorio)
+### 4. Actualizar el catálogo de ocupaciones (clase de riesgo)
 
-Toda constante nueva o modificada en `src/constants/ley73.ts` y `src/constants/uma.ts`
-debe quedar con su comentario de provenancia: fuente (artículo de la Ley o del
+En `src/constants/ocupaciones.ts`:
+
+- El catálogo `M10_OCCUPATION_CATALOG` es una **muestra parcial** de dos niveles
+  (División → Grupo) con la clase predominante de cada grupo. La fuente oficial es el
+  Catálogo de Actividades del RACERF, que asigna la clase por **fracción**.
+- Al confirmar el RACERF vigente, completar divisiones/grupos y corregir las clases
+  predominantes; el comentario de cabecera del archivo debe registrar la publicación DOF
+  consultada (las entradas individuales no llevan fuente propia).
+- `resolveRiskClass` deriva la clase a partir de división y grupo; si la forma del catálogo
+  cambia, revisar también `src/__tests__/ocupaciones.test.ts`.
+
+### 5. Registrar la provenancia documental (obligatorio)
+
+Toda constante nueva o modificada en `src/constants/ley73.ts`, `src/constants/uma.ts` y
+`src/constants/ocupaciones.ts` debe quedar con su comentario de provenancia: fuente (artículo de la Ley o del
 Reglamento; INEGI/CONASAMI para UMA/SMG), publicación de origen (DOF, con fecha)
 y vigencia o año aplicable. Si el valor es una estimación o un criterio operativo
 (no proviene del texto legal), se marca explícitamente como tal.
@@ -56,7 +72,7 @@ y vigencia o año aplicable. Si el valor es una estimación o un criterio operat
 Este registro **no es opcional**: sin él, el cambio no está completo aunque los
 tests pasen — la suite no valida la fuente; solo una revisión humana puede.
 
-### 5. Revisar el uso del año en el resto del código
+### 6. Revisar el uso del año en el resto del código
 
 La app usa el año de la UMA en:
 
@@ -66,7 +82,7 @@ La app usa el año de la UMA en:
 
 Revisar que el año por omisión apunte al nuevo.
 
-### 6. Actualizar las pruebas
+### 7. Actualizar las pruebas
 
 Los casos del motor fijan valores esperados. Con una UMA nueva, esos valores cambian.
 
@@ -77,7 +93,7 @@ npm run test:run
 **Un test que falla aquí no es un test que se actualiza a ciega.** Hay que comprobar que
 el nuevo valor esperado sale de la fuente oficial, no de "lo que devuelve el código".
 
-### 7. Si cambió una regla de cálculo
+### 8. Si cambió una regla de cálculo
 
 Un cambio en las reglas no es un cambio de constantes: es un cambio de motor. En ese
 caso se sigue el [Runbook-03](03-agregar-una-etapa-al-pipeline.md) y se escribe el ADR

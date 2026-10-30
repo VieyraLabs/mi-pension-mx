@@ -156,14 +156,18 @@ mes siguiente a la fecha de referencia.
    (el fundamento de la incorporación voluntaria, verificado) y **no** un artículo
    reglamentario sin comprobar. Si al abrir el texto reglamentario se confirma un artículo
    específico, se documenta en la constante con su fecha de publicación.
-2. **El porcentaje de la cuota de la Modalidad 10 sin INFONAVIT.** La constante
-   `MODALIDAD_10_CUOTA_PCT` (18.30 %) viene de fuentes secundarias y de la calculadora
+2. **La cuota base de la Modalidad 10 sin INFONAVIT ni Riesgos de Trabajo.** La constante
+   `MODALIDAD_10_BASE_CUOTA_PCT` (18.30 %) viene de fuentes secundarias y de la calculadora
    pública del IMSS; la fuente primaria es el **Acuerdo de la Junta Directiva** que fija las
    cuotas y las primas de financiamiento por ramo, publicado en el DOF. Hasta confirmarlo, el
    campo de costo se presenta como **estimado**.
-3. **La UMA 2026** (`UMA_ACTUAL`) sigue marcada como estimación en `src/constants/uma.ts`;
-   el SMG de la Zona A 2026 sí tiene fuente oficial (CONASAMI). El piso de la Modalidad 10
-   depende del SMG, no de la UMA.
+3. **La clase de riesgo laboral y su prima de Riesgos de Trabajo.** Las primas por clase
+   (`MODALIDAD_10_RT_PRIMA`) son oficiales (Art. 71 LSS vigente); lo que falta verificar es el
+   catálogo **División/Grupo → clase** (`src/constants/ocupaciones.ts`), que es una muestra
+   parcial de dos niveles y no sustituye al RACERF (que asigna la clase por fracción).
+4. **La UMA 2026 y el SMG de la Frontera Norte.** `UMA_ACTUAL` y `smgFronteraNorte` 2026
+   siguen marcadas como estimación en `src/constants/uma.ts`; el SMG general 2026 sí tiene
+   fuente oficial (CONASAMI). El piso de la Modalidad 10 depende del SMG de la zona, no de la UMA.
 
 ---
 
@@ -174,7 +178,9 @@ mes siguiente a la fecha de referencia.
 | Piso = SMG y techo = 25 UMA | `src/constants/ley73.ts` (`MODALIDAD_10_CAP_TIMES_UMA`), `src/utils/modalidad10.ts` (`m10SalaryRange`, `clampM10Salary`) | `src/__tests__/modalidad10.test.ts` |
 | Ingreso declarado como base | `src/hooks/usePensionForm.ts` (`setModalidad10ContributionSalary`, `setModalidad10UMAs`) | `src/__tests__/usePensionForm.test.ts` |
 | Cotización por adelantado, sin meses retroactivos | `src/utils/modalidad10.ts` (`getM10StartDate`) | `src/__tests__/modalidad10.test.ts` |
-| Prima de financiamiento sin INFONAVIT | `src/constants/ley73.ts` (`MODALIDAD_10_CUOTA_PCT`, `MODALIDAD_10_CUOTA_EXCLUDES_INFONAVIT`) | `src/__tests__/modalidad10.test.ts` |
+| Prima de financiamiento sin INFONAVIT | `src/constants/ley73.ts` (`MODALIDAD_10_BASE_CUOTA_PCT`, `MODALIDAD_10_CUOTA_EXCLUDES_INFONAVIT`) | `src/__tests__/modalidad10.test.ts` |
+| Prima de Riesgos de Trabajo por clase | `src/constants/ley73.ts` (`MODALIDAD_10_RT_PRIMA`, `MODALIDAD_10_RISK_CLASS_LABELS`) | `src/__tests__/modalidad10.test.ts` |
+| Ocupación → clase de riesgo | `src/constants/ocupaciones.ts` (`M10_OCCUPATION_CATALOG`, `resolveRiskClass`) | `src/__tests__/ocupaciones.test.ts` |
 | Promedio de 250 semanas cotizadas con los meses de M10 | `src/services/pension/history/projectedSBC.ts` | `src/__tests__/projectedSBC.test.ts` |
 | El desglose narra los mismos números | `src/services/pension/steps/AverageSalaryStep.ts` | `src/__tests__/pensionCalculator.test.ts` |
 | Los límites se validan antes de calcular | `src/validation/pensionSchema.ts` | `src/__tests__/pensionSchema.test.ts` |

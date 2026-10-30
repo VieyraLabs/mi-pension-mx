@@ -73,12 +73,14 @@ const INITIAL_STATE: PensionInput = {
     monthlyUMA: UMA_ACTUAL.monthlyUMA,
     annualUMA: UMA_ACTUAL.annualUMA,
     smgCdmx: UMA_ACTUAL.smgCdmx,
+    smgFronteraNorte: UMA_ACTUAL.smgFronteraNorte,
     year: UMA_ACTUAL.year,
     isCustom: false,
   },
   modalidad10: {
     active: false,
     continuesWorkingWhileContributing: true,
+    salaryZone: 'general',
   },
   beneficiaries: {
     hasSpouse: false,
@@ -171,6 +173,7 @@ export function usePensionForm() {
         monthlyUMA: record.monthlyUMA,
         annualUMA: record.annualUMA,
         smgCdmx: record.smgCdmx,
+        smgFronteraNorte: record.smgFronteraNorte,
         year: record.year,
         isCustom: false,
       };
@@ -196,6 +199,7 @@ export function usePensionForm() {
       const uma = {
         ...values,
         smgCdmx: prev.uma.smgCdmx,
+        smgFronteraNorte: prev.uma.smgFronteraNorte,
         year: new Date().getFullYear(),
         isCustom: true,
       };

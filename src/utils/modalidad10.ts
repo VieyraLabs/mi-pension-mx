@@ -12,9 +12,11 @@
  */
 import {
   AVERAGE_DAYS_PER_MONTH,
+  MODALIDAD_10_BASE_CUOTA_PCT,
   MODALIDAD_10_CAP_TIMES_UMA,
-  MODALIDAD_10_CUOTA_PCT,
+  MODALIDAD_10_RT_PRIMA,
 } from '../constants/ley73';
+import type { RiskClass } from '../models';
 import { round2 } from './format';
 import { countCotizedWeeksInDateRange } from './weeksProjection';
 
@@ -200,14 +202,68 @@ export function buildM10ContributionPeriod(params: {
 }
 
 /**
+ * Cuota total de la Modalidad 10 para una clase de riesgo: la cuota base
+ * (ramos distintos a Riesgos de Trabajo) más la prima de RT de la clase.
+ */
+export function m10CuotaPctForRiskClass(riskClass: RiskClass): number {
+  return MODALIDAD_10_BASE_CUOTA_PCT + MODALIDAD_10_RT_PRIMA[riskClass];
+}
+
+/**
  * Costo mensual estimado de la Modalidad 10, SIN la aportación a INFONAVIT
  * (que es un ahorro adicional y no una prima de financiamiento; Art. 228 de
- * la LSS vigente).
+ * la LSS vigente). La clase de riesgo laboral determina la prima de RT.
  */
 export function calculateM10MonthlyCost(
   dailySalary: number,
-  cuotaPct: number = MODALIDAD_10_CUOTA_PCT,
+  riskClass: RiskClass = 1,
 ): number {
   const monthlySalary = round2(dailySalary * AVERAGE_DAYS_PER_MONTH);
-  return round2(monthlySalary * cuotaPct);
+  return round2(monthlySalary * m10CuotaPctForRiskClass(riskClass));
+}
+
+/** Desglose del costo mensual de la Modalidad 10 para auditar el cálculo. */
+export interface M10MonthlyCostBreakdown {
+  /** SBC diario usado en el cálculo. */
+  dailySalary: number;
+  /** SBC mensual equivalente (diario × 30.4). */
+  monthlySalary: number;
+  /** Clase de riesgo laboral. */
+  riskClass: RiskClass;
+  /** Cuota base (ramos distintos a RT), sin INFONAVIT. */
+  baseCuotaPct: number;
+  /** Prima de Riesgos de Trabajo de la clase. */
+  riskPrimaPct: number;
+  /** Cuota total (base + prima RT). */
+  totalCuotaPct: number;
+  /** Monto de la cuota base (mensual). */
+  baseCuotaAmount: number;
+  /** Monto de la prima de RT (mensual). */
+  riskPrimaAmount: number;
+  /** Costo total mensual (base + RT). */
+  total: number;
+}
+
+/**
+ * Desglose del costo mensual de la Modalidad 10: cuota base + prima de RT.
+ * Sirve para mostrar en pantalla y en el PDF los mismos componentes y total.
+ */
+export function calculateM10MonthlyBreakdown(
+  dailySalary: number,
+  riskClass: RiskClass = 1,
+): M10MonthlyCostBreakdown {
+  const monthlySalary = round2(dailySalary * AVERAGE_DAYS_PER_MONTH);
+  const riskPrimaPct = MODALIDAD_10_RT_PRIMA[riskClass];
+  const totalCuotaPct = MODALIDAD_10_BASE_CUOTA_PCT + riskPrimaPct;
+  return {
+    dailySalary,
+    monthlySalary,
+    riskClass,
+    baseCuotaPct: MODALIDAD_10_BASE_CUOTA_PCT,
+    riskPrimaPct,
+    totalCuotaPct,
+    baseCuotaAmount: round2(monthlySalary * MODALIDAD_10_BASE_CUOTA_PCT),
+    riskPrimaAmount: round2(monthlySalary * riskPrimaPct),
+    total: round2(monthlySalary * totalCuotaPct),
+  };
 }

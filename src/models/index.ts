@@ -20,6 +20,18 @@ export type RetirementType = 'vejez' | 'cesantia';
 
 export type PensionType = 'vejez' | 'cesantia_edad_avanzada';
 
+/**
+ * Clase de riesgo laboral (I–V) del catálogo de clasificación de empresas
+ * (RACERF). Determina la prima de Riesgos de Trabajo de la Modalidad 10.
+ */
+export type RiskClass = 1 | 2 | 3 | 4 | 5;
+
+/**
+ * Zona geográfica de salario mínimo usada como piso del SBC declarado en la
+ * Modalidad 10 (Art. 28 LSS vigente).
+ */
+export type SalaryZone = 'general' | 'frontera_norte';
+
 export type DocumentType =
   | 'constancia_semanas_imss'
   | 'estado_cuenta_afore'
@@ -97,6 +109,8 @@ export interface UMAConfiguration {
   annualUMA: number;
   /** Salario Mínimo General diario aplicable como referencia (ZSMG/CDMX) */
   smgCdmx?: number;
+  /** Salario Mínimo de la Zona Libre de la Frontera Norte (diario, opcional). */
+  smgFronteraNorte?: number;
   /** Año de la UMA seleccionada */
   year: number;
   /** Si fue capturada manualmente por el usuario */
@@ -123,6 +137,14 @@ export interface Modalidad10 {
   expectedMonths?: number;
   /** Incremento salarial anual esperado (%), opcional. */
   annualSalaryIncrease?: number;
+  /** Clase de riesgo laboral (I–V) que determina la prima de Riesgos de Trabajo. */
+  riskClass?: RiskClass;
+  /** División de actividad económica (catálogo de ocupaciones RACERF). */
+  occupationDivision?: string;
+  /** Grupo principal de actividad dentro de la división. */
+  occupationGroup?: string;
+  /** Zona geográfica de salario mínimo (piso del SBC declarado). */
+  salaryZone?: SalaryZone;
 }
 
 // ─────────────────────────────────────────────
@@ -357,6 +379,7 @@ export interface UMARecord {
   monthlyUMA: number;
   annualUMA: number;
   smgCdmx: number; // Salario Mínimo General Ciudad de México
+  smgFronteraNorte?: number; // Salario Mínimo Zona Libre Frontera Norte (opcional)
   isEstimate: boolean;
   source: string;
 }
