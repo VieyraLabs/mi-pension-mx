@@ -34,18 +34,18 @@ export default function DashboardScreen() {
 
   const cards: DashboardCard[] = [
     {
-      id: 'nueva',
-      title: '🧮 Nueva Simulación',
-      description: 'Calcula tu pensión estimada paso a paso con todos los detalles',
-      icon: '🧮',
-      onPress: () => navigation.navigate('NewSimulation'),
-    },
-    {
       id: 'pdf',
       title: '📄 Importar Constancia IMSS',
       description: 'Carga tu constancia de semanas cotizadas en PDF y extrae los datos automáticamente',
       icon: '📄',
       onPress: () => navigation.navigate('PdfImport'),
+    },
+    {
+      id: 'manual',
+      title: '🧮 Ingresar datos manualmente',
+      description: 'Calcula tu pensión estimada paso a paso con todos los detalles',
+      icon: '🧮',
+      onPress: () => navigation.navigate('NewSimulation'),
     },
   ];
 
@@ -68,7 +68,7 @@ export default function DashboardScreen() {
 
       {/* Tarjetas principales */}
       <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>
-        Acciones rápidas
+        Nuevo Cálculo
       </Text>
 
       {cards.map((card) => (
