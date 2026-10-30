@@ -26,13 +26,13 @@ fila.
 - **El aviso legal es parte del resultado, no un elemento opcional de la interfaz.** El
   motor lo agrega a `warnings[]`, de modo que no se puede mostrar un resultado sin él.
 - **Cada supuesto se declara donde ocurre.** Un paso estimado lleva su propio
-  `assumption` (por ejemplo, el promedio ponderado de Modalidad 40), que se muestra en la
+  `assumption` (por ejemplo, el promedio con meses de Modalidad 10), que se muestra en la
   fila del desglose y no en un aviso genérico al final.
 - **Los porcentajes de la tabla del Art. 167 están marcados como referencia
   bibliográfica** en el propio archivo de constantes. La app no afirma tener la tabla
   oficial verificada.
 - **El texto educativo de la sección de información** (`infoLegal.ts`) explica el marco
-  normativo y los conceptos que la app usa (UMA, SMG, Modalidad 40, pensión de vejez).
+  normativo y los conceptos que la app usa (UMA, SMG, Modalidad 10, pensión de vejez).
 
 ## Fuera de alcance
 

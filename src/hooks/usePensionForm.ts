@@ -7,13 +7,21 @@ import type {
   PensionInput,
   PersonalData,
   WorkHistory,
-  Modalidad40,
+  Modalidad10,
   Beneficiaries,
 } from '../models';
 import { UMA_ACTUAL, calculateUMAFromDailyValue, getUMAByYear } from '../constants/uma';
+import { MODALIDAD_10_CAP_TIMES_UMA } from '../constants/ley73';
 import { calculateAge, calculateRetirementDate } from '../utils/date';
-import { dailyToMonthly, monthlyToDaily } from '../utils/format';
-import { calculateM40PlannedWeeks, estimateM40Months } from '../utils/modalidad40';
+import { dailyToMonthly, monthlyToDaily, round2 } from '../utils/format';
+import {
+  M10_MAX_MONTHS,
+  calculateM10PlannedWeeks,
+  estimateM10Months,
+  m10SalaryFromUMAs,
+  m10SalaryInUMAs,
+  m10SalaryRange,
+} from '../utils/modalidad10';
 import {
   calculateWeeksProjection,
   getLocalReferenceDate,
@@ -23,26 +31,23 @@ import {
  * Fecha de nacimiento por defecto del formulario.
  *
  * Exportada para que los campos de fecha de nacimiento (`PersonalDataStep`,
- * `ValidationScreen`) abran su calendario en la misma fecha que precarga el
+ * `ValidationScreen`) abran su calendario en la fecha que precarga el
  * formulario cuando aún no hay una fecha válida.
  */
 export const DEFAULT_BIRTH_DATE = new Date(1965, 0, 1);
 
-/** Rango de meses de Modalidad 40 aceptado por el esquema (Zod). */
-const M40_MAX_MONTHS = 600;
-
-/** Acota los meses M40 a su máximo contractual vigente, permitiendo cero. */
-function clampM40Months(months: number): number {
-  return Math.min(M40_MAX_MONTHS, months);
+/** Acota los meses de Modalidad 10 a su máximo contractual, permitiendo cero. */
+function clampM10Months(months: number): number {
+  return Math.min(M10_MAX_MONTHS, months);
 }
 
 /**
- * Meses de Modalidad 40 DERIVADOS de los meses contractuales entre la
+ * Meses de Modalidad 10 DERIVADOS de los meses contractuales entre la
  * referencia local y la fecha exacta de retiro. El valor cero es válido cuando
- * no hay un mes M40 completo por delante.
+ * no hay un mes contractual completo por delante.
  */
 function expectedMonthsForHorizon(referenceDate: Date, personalData: PersonalData): number {
-  return clampM40Months(estimateM40Months(referenceDate, personalData.estimatedRetirementDate));
+  return clampM10Months(estimateM10Months(referenceDate, personalData.estimatedRetirementDate));
 }
 
 const INITIAL_STATE: PensionInput = {
@@ -67,11 +72,13 @@ const INITIAL_STATE: PensionInput = {
     dailyUMA: UMA_ACTUAL.dailyUMA,
     monthlyUMA: UMA_ACTUAL.monthlyUMA,
     annualUMA: UMA_ACTUAL.annualUMA,
+    smgCdmx: UMA_ACTUAL.smgCdmx,
     year: UMA_ACTUAL.year,
     isCustom: false,
   },
-  modalidad40: {
+  modalidad10: {
     active: false,
+    continuesWorkingWhileContributing: true,
   },
   beneficiaries: {
     hasSpouse: false,
@@ -103,15 +110,15 @@ export function usePensionForm() {
             newData.retirementAge,
           );
         }
-        // Los meses M40 se derivan de la fecha exacta de retiro y se
+        // Los meses M10 se derivan de la fecha exacta de retiro y se
         // recalculan cuando cambie esa fecha.
-        const modalidad40 = prev.modalidad40.active
+        const modalidad10 = prev.modalidad10.active
           ? {
-              ...prev.modalidad40,
+              ...prev.modalidad10,
               expectedMonths: expectedMonthsForHorizon(updateReferenceDate, newData),
             }
-          : prev.modalidad40;
-        return { ...prev, personalData: newData, modalidad40 };
+          : prev.modalidad10;
+        return { ...prev, personalData: newData, modalidad10 };
       });
     },
     [],
@@ -148,51 +155,137 @@ export function usePensionForm() {
     }));
   }, []);
 
+  /**
+   * Cambia el año de la UMA.
+   *
+   * El SBC declarado en la Modalidad 10 se conserva (es lo que se va a pagar)
+   * y su equivalente en UMAs se recalcula con la nueva UMA, acotado al rango
+   * legal: el salario mínimo de la zona como piso y 25 UMA como techo.
+   */
   const selectUMAByYear = useCallback((year: number) => {
     const record = getUMAByYear(year);
-    if (record) {
-      setInput((prev) => ({
-        ...prev,
-        uma: {
-          dailyUMA: record.dailyUMA,
-          monthlyUMA: record.monthlyUMA,
-          annualUMA: record.annualUMA,
-          year: record.year,
-          isCustom: false,
-        },
-      }));
-    }
+    if (!record) return;
+    setInput((prev) => {
+      const uma = {
+        dailyUMA: record.dailyUMA,
+        monthlyUMA: record.monthlyUMA,
+        annualUMA: record.annualUMA,
+        smgCdmx: record.smgCdmx,
+        year: record.year,
+        isCustom: false,
+      };
+      const modalidad10 = { ...prev.modalidad10 };
+      if (modalidad10.contributionSalary != null) {
+        const range = m10SalaryRange(uma.dailyUMA, uma.smgCdmx ?? 0);
+        const salary = round2(
+          Math.min(
+            Math.max(modalidad10.contributionSalary, range.minimumDailySalary),
+            range.maximumDailySalary,
+          ),
+        );
+        modalidad10.contributionSalary = salary;
+        modalidad10.contributionSalaryInUMAs = m10SalaryInUMAs(salary, uma.dailyUMA);
+      }
+      return { ...prev, uma, modalidad10 };
+    });
   }, []);
 
   const setCustomUMA = useCallback((dailyUMA: number) => {
     const values = calculateUMAFromDailyValue(dailyUMA);
-    setInput((prev) => ({
-      ...prev,
-      uma: {
+    setInput((prev) => {
+      const uma = {
         ...values,
+        smgCdmx: prev.uma.smgCdmx,
         year: new Date().getFullYear(),
         isCustom: true,
-      },
-    }));
+      };
+      const modalidad10 = { ...prev.modalidad10 };
+      if (modalidad10.contributionSalary != null) {
+        const range = m10SalaryRange(uma.dailyUMA, uma.smgCdmx ?? 0);
+        const salary = round2(
+          Math.min(
+            Math.max(modalidad10.contributionSalary, range.minimumDailySalary),
+            range.maximumDailySalary,
+          ),
+        );
+        modalidad10.contributionSalary = salary;
+        modalidad10.contributionSalaryInUMAs = m10SalaryInUMAs(salary, uma.dailyUMA);
+      }
+      return { ...prev, uma, modalidad10 };
+    });
   }, []);
 
-  const updateModalidad40 = useCallback((m40: Partial<Modalidad40>) => {
+  /**
+   * Actualiza los campos generales de la Modalidad 10 (activación, incremento
+   * anual esperado, si sigue trabajando).
+   *
+   * El SBC declarado y su equivalente en UMAs NO se tocan aquí: se escriben
+   * únicamente por `setModalidad10ContributionSalary` y `setModalidad10UMAs`,
+   * que los mantienen sincronizados.
+   */
+  const updateModalidad10 = useCallback((m10: Partial<Modalidad10>) => {
     const referenceDate = getLocalReferenceDate();
     setInput((prev) => {
-      const modalidad40 = { ...prev.modalidad40, ...m40 };
+      const modalidad10 = { ...prev.modalidad10, ...m10 };
+      // Al activar la Modalidad 10 se precarga el máximo legal de UMAs.
+      if (modalidad10.active && modalidad10.contributionSalary == null) {
+        modalidad10.contributionSalary = m10SalaryFromUMAs(
+          MODALIDAD_10_CAP_TIMES_UMA,
+          prev.uma.dailyUMA,
+        );
+        modalidad10.contributionSalaryInUMAs = MODALIDAD_10_CAP_TIMES_UMA;
+      }
       // Los meses contractuales se derivan de la fecha exacta de retiro y se
-      // borran si Modalidad 40 se desactiva.
-      modalidad40.expectedMonths = modalidad40.active
+      // borran si la Modalidad 10 se desactiva.
+      modalidad10.expectedMonths = modalidad10.active
         ? expectedMonthsForHorizon(referenceDate, prev.personalData)
         : undefined;
-      return { ...prev, modalidad40 };
+      return { ...prev, modalidad10 };
+    });
+  }, []);
+
+  /**
+   * Fija el SBC diario declarado en la Modalidad 10 y recalcula su equivalente
+   * en UMAs.
+   *
+   * El valor se guarda tal como lo captura la persona (para no interrumpir la
+   * escritura); el rango legal del Art. 28 LSS vigente —salario mínimo de la
+   * zona como piso y 25 UMA como techo— lo acotan el control de UMAs y el
+   * esquema de validación.
+   */
+  const setModalidad10ContributionSalary = useCallback((dailySalary: number) => {
+    setInput((prev) => {
+      const salary = round2(dailySalary);
+      return {
+        ...prev,
+        modalidad10: {
+          ...prev.modalidad10,
+          contributionSalary: salary,
+          contributionSalaryInUMAs: m10SalaryInUMAs(salary, prev.uma.dailyUMA),
+        },
+      };
+    });
+  }, []);
+
+  /** Fija el número de UMAs y recalcula el SBC diario declarado. */
+  const setModalidad10UMAs = useCallback((umas: number) => {
+    setInput((prev) => {
+      const salary = round2(m10SalaryFromUMAs(umas, prev.uma.dailyUMA));
+      return {
+        ...prev,
+        modalidad10: {
+          ...prev.modalidad10,
+          contributionSalary: salary,
+          contributionSalaryInUMAs: round2(umas),
+        },
+      };
     });
   }, []);
 
   /**
    * Proyección de semanas hasta la fecha exacta de retiro (ya cotizadas + proyectadas).
-   * La calcula el formulario con la MISMA función que usa el motor, para que
-   * la UI narre las mismas cifras sin recalcular nada (RNF-013).
+   * La calcula el formulario con la MISMA función que usa el motor, para que la
+   * UI narre las mismas cifras sin recalcular nada (RNF-013).
    */
   const weeksProjection = useMemo(
     () =>
@@ -202,8 +295,8 @@ export function usePensionForm() {
         retirementAge: input.personalData.retirementAge,
         referenceDate,
         retirementDate: input.personalData.estimatedRetirementDate,
-        m40PlannedWeeks: input.modalidad40.active
-          ? calculateM40PlannedWeeks(referenceDate, input.personalData.estimatedRetirementDate)
+        m10PlannedWeeks: input.modalidad10.active
+          ? calculateM10PlannedWeeks(referenceDate, input.personalData.estimatedRetirementDate)
           : 0,
       }),
     [
@@ -211,7 +304,7 @@ export function usePensionForm() {
       input.personalData.age,
       input.personalData.retirementAge,
       input.personalData.estimatedRetirementDate.getTime(),
-      input.modalidad40.active,
+      input.modalidad10.active,
       referenceDate.getTime(),
     ],
   );
@@ -236,7 +329,9 @@ export function usePensionForm() {
     updateMonthlySalary,
     selectUMAByYear,
     setCustomUMA,
-    updateModalidad40,
+    updateModalidad10,
+    setModalidad10ContributionSalary,
+    setModalidad10UMAs,
     updateBeneficiaries,
     resetForm,
   };

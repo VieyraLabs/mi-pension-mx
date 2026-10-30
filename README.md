@@ -65,7 +65,7 @@ take to a government office, so it has to be explainable.
   - Ayuda asistencial (Art. 165)
   - Pensión Mínima Garantizada (Art. 170)
   - Tope de 25 UMA (Art. 28 LSS vigente)
-  - Ajuste por Modalidad 40 (Art. 218 Reglamento LSS)
+  - Ajuste por Modalidad 10 (incorporación voluntaria, Arts. 222 a 233 LSS vigente)
 - **Desglose auditable**: cada paso del cálculo muestra su fórmula, su referencia legal
   y si el valor es exacto o estimado
 - **Simulador de escenarios A vs B** con comparación detallada
@@ -73,7 +73,7 @@ take to a government office, so it has to be explainable.
 - **Importación de la Constancia de cotizaciones en PDF** con extracción local de datos
 - **Exportación a PDF** del reporte completo, con el desglose
 - **Modo claro y oscuro** (Material Design 3)
-- **Sección educativa** sobre Ley 73, UMA, Modalidad 40 y FAQ
+- **Sección educativa** sobre Ley 73, UMA, Modalidad 10 y FAQ
 
 ---
 
@@ -96,7 +96,7 @@ src/
 ├── theme/           # MD3 claro/oscuro
 ├── validation/      # Schemas Zod (fuente única de verdad)
 ├── storage/         # AsyncStorage (últimas 20 simulaciones)
-└── utils/           # format.ts (Intl), date.ts, modalidad40.ts
+└── utils/           # format.ts (Intl), date.ts, modalidad10.ts
 ```
 
 ### El motor de cálculo es un pipeline de funciones puras
@@ -208,7 +208,7 @@ autorizado y el aprobador. **La publicación en producción es un procedimiento 
 | Art. 170 LSS 1973 | Pensión Mínima Garantizada |
 | Art. 182 LSS 1973 | Conservación de derechos |
 | Art. 28 LSS vigente | Tope de 25 UMA del SBC |
-| Art. 218 RIR-IMSS | Modalidad 40 |
+| Arts. 222 a 233 LSS vigente | Modalidad 10 (incorporación voluntaria) |
 
 > **Nota sobre la tabla del Art. 167**: los porcentajes de cuantía básica e incrementos
 > anuales son de referencia bibliográfica. El IMSS puede aplicar criterios operativos
@@ -281,7 +281,7 @@ npm run lint           # ESLint
   ingresos, ni pagos en producción.
 - No hay backend, ni cuentas, ni telemetría.
 - No hay OCR: un PDF escaneado requiere captura manual, y la app lo dice.
-- La Modalidad 40 se estima con un promedio ponderado, no con el historial exacto.
+- La Modalidad 10 se estima con el historial proyectado, no con el historial exacto.
 
 ---
 

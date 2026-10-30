@@ -26,7 +26,7 @@ function buildResult() {
     workHistory: { totalWeeks: 500, employmentRelations: [] },
     averageSalary: { dailySalary: 200, monthlySalary: 6080, isManual: true },
     uma: { dailyUMA: 113.14, monthlyUMA: 3439.46, annualUMA: 41296.1, year: 2025, isCustom: false },
-    modalidad40: { active: false },
+    modalidad10: { active: false },
     beneficiaries: {
       hasSpouse: false,
       hasMinorChildren: false,

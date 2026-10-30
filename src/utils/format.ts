@@ -58,6 +58,15 @@ export function formatInteger(value: number): string {
 }
 
 /**
+ * Formatea un número de UMAs: sin decimales cuando es entero y con dos
+ * decimales cuando tiene fracción (el SBC declarado no siempre es múltiplo
+ * exacto de la UMA). Ej: 25 → "25", 21.24 → "21.24".
+ */
+export function formatUMAs(value: number): string {
+  return Number.isInteger(value) ? formatInteger(value) : formatNumber(value);
+}
+
+/**
  * Formatea una edad que puede traer fracción de medio año. Ej: 60 → "60",
  * 60.5 → "60.5". Redondea al medio año más cercano para que el ruido de coma
  * flotante no llegue a la pantalla ("60.50000000000001").

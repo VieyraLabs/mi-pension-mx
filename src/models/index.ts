@@ -3,7 +3,11 @@
  * Todos los tipos están estrictamente tipados con TypeScript.
  */
 
-import type { ContributionSummary, SBCPeriodSegment } from '../services/pension/history/types';
+import type {
+  ContributionSummary,
+  ProjectedAverageBreakdown,
+  SBCPeriodSegment,
+} from '../services/pension/history/types';
 import type { WeeksProjection } from '../utils/weeksProjection';
 
 // ─────────────────────────────────────────────
@@ -22,7 +26,7 @@ export type DocumentType =
   | 'resolucion_pension'
   | 'constancia_semanas_issste'
   | 'recibo_nomina'
-  | 'historial_modalidad40';
+  | 'historial_modalidad10';
 
 // ─────────────────────────────────────────────
 // Datos personales
@@ -100,14 +104,24 @@ export interface UMAConfiguration {
 }
 
 // ─────────────────────────────────────────────
-// Modalidad 40
+// Modalidad 10
 // ─────────────────────────────────────────────
 
-export interface Modalidad40 {
+/**
+ * Modalidad 10 — incorporación voluntaria al régimen obligatorio
+ * (capítulo IX de la LSS vigente, Arts. 222 a 233).
+ */
+export interface Modalidad10 {
   active: boolean;
+  /** SBC diario declarado en la Modalidad 10 (MXN). */
   contributionSalary?: number;
-  startDate?: Date;
+  /** Equivalente del SBC declarado en UMAs (unidad legal del Art. 28). */
+  contributionSalaryInUMAs?: number;
+  /** Si la persona sigue trabajando mientras cotiza en la Modalidad 10. */
+  continuesWorkingWhileContributing?: boolean;
+  /** Meses contractuales DERIVADOS: no son editables. */
   expectedMonths?: number;
+  /** Incremento salarial anual esperado (%), opcional. */
   annualSalaryIncrease?: number;
 }
 
@@ -133,8 +147,14 @@ export interface PensionInput {
   averageSalary: AverageContributionSalary;
   /** SBC diario promedio proyectado al retiro; opcional para compatibilidad con simulaciones anteriores. */
   projectedAverageDailySalary?: number;
+  /**
+   * Reparto de las semanas del SBC promedio proyectado (ordinarias y de
+   * Modalidad 10). Opcional para compatibilidad con simulaciones anteriores:
+   * sin él, el motor no puede narrar el desglose del promedio.
+   */
+  projectedAverageBreakdown?: ProjectedAverageBreakdown;
   uma: UMAConfiguration;
-  modalidad40: Modalidad40;
+  modalidad10: Modalidad10;
   beneficiaries: Beneficiaries;
 }
 
@@ -255,7 +275,7 @@ export interface SimulatorScenario {
   dailySalary: number;
   contributedWeeks: number;
   dailyUMA: number;
-  modalidad40?: Partial<Modalidad40>;
+  modalidad10?: Partial<Modalidad10>;
   result?: PensionResult;
 }
 

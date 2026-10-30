@@ -1,6 +1,6 @@
 # ADR-0013 — Proyectar semanas por fecha calendario de retiro
 
-- **Estado**: Aceptada
+- **Estado**: Aceptada (la Modalidad 40 pasó a llamarse Modalidad 10 y su archivo cambió de nombre con [ADR-0014](0014-modalidad-10-incorporacion-voluntaria-al-régimen-obligatorio.md); la decisión de proyectar las semanas por fecha calendario sigue vigente)
 - **Fecha**: 2026-10-28
 - **Ámbito**: `src/utils/weeksProjection.ts`, `src/utils/modalidad40.ts`, cálculo de pensión y presentación de semanas estimadas
 

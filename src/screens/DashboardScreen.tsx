@@ -118,7 +118,7 @@ export default function DashboardScreen() {
             '✓ Ayuda asistencial',
             '✓ Pensión Mínima Garantizada',
             '✓ Tope 25 UMA',
-            '✓ Ajuste por Modalidad 40',
+            '✓ Ajuste por Modalidad 10',
           ].map((item, i) => (
             <Text key={i} variant="bodySmall" style={{ color: theme.colors.onSurface, lineHeight: 22 }}>
               {item}

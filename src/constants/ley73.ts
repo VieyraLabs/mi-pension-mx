@@ -401,29 +401,80 @@ export const RIGHTS_PRESERVATION_MAX_WEEKS = 60;
 export const DECREE_11_INCREMENT = 0.11;
 
 // ─────────────────────────────────────────────
-// Modalidad 40
+// Modalidad 10 — incorporación voluntaria al régimen obligatorio
 // ─────────────────────────────────────────────
 
 /**
- * Artículo 218 del Reglamento de la LSS 1973, hoy ubicado en el Reglamento de
- * Incorporación y Recaudación del IMSS.
- * Permite al asegurado inscribirse voluntariamente con un SBC mayor al último
- * registrado, para incrementar su promedio de las últimas 250 semanas.
- * Publicación: DOF 21-nov-2002 (Reglamento de Incorporación y Recaudación, y
- * reformas). Vigente.
+ * Fundamento de la Modalidad 10: la incorporación voluntaria al régimen
+ * obligatorio, que se hace por convenio (capítulo IX de la LSS vigente,
+ * Arts. 222 a 233) y cuyos sujetos son los del Art. 13 fr. I — trabajadores
+ * independientes o por cuenta propia (fracción reformada DOF 01-dic-2023).
+ *
+ * La base de las cuotas son los ingresos reportados por la persona
+ * asegurada, acotados por los límites del Art. 28 (Art. 227 fr. I).
+ *
+ * Fuente: Ley del Seguro Social vigente, texto de la Cámara de Diputados,
+ * última reforma DOF 15-ene-2026.
  */
-export const MODALIDAD_40_ARTICLE = 'Art. 218 Reglamento LSS 1973';
+export const MODALIDAD_10_ARTICLE = 'Art. 222 LSS vigente (incorporación voluntaria)';
 
 /**
- * El SBC de Modalidad 40 no puede ser menor al último SBC en el régimen obligatorio.
- * Fuente: Art. 218 del Reglamento de Incorporación y Recaudación del IMSS
- * (DOF 21-nov-2002, y reformas). Vigente.
+ * El SBC de la Modalidad 10 no puede ser inferior al salario mínimo general
+ * del área geográfica del trabajador.
+ * Fuente: Art. 28 LSS vigente — "…estableciéndose como límite superior el
+ * equivalente a veinticinco veces el salario mínimo general que rija en el
+ * Distrito Federal y como límite inferior el salario mínimo general del área
+ * geográfica respectiva". La misma regla aparece en el Art. 33 LSS 1973.
+ *
+ * NOTA: el piso real depende de la zona geográfica. La app no la conoce y usa
+ * el SMG de la Zona A (CDMX), que es el más alto y por tanto el piso más
+ * restrictivo — el mismo criterio que ya se aplica a la pensión mínima
+ * garantizada (`PMG_EQUALS_SMG`).
  */
-export const MODALIDAD_40_MINIMUM_SBC_EQUALS_LAST_MANDATORY = true;
+export const MODALIDAD_10_MINIMUM_IS_SMG_OF_ZONE = true;
 
 /**
- * Tope máximo de Modalidad 40: 25 UMA diarias (igual que el régimen obligatorio).
- * Fuente: tope de cotización del Art. 28 LSS vigente (reforma DOF 27-ene-2016),
- * aplicable también a la inscripción voluntaria.
+ * Tope máximo del SBC de la Modalidad 10: 25 UMA diarias, el mismo límite de
+ * cotización del régimen obligatorio.
+ * Fuente: Art. 28 LSS vigente (límite superior) y Art. 227 fr. I (los límites
+ * del Art. 28 aplican al cálculo de las cuotas de la incorporación voluntaria).
  */
-export const MODALIDAD_40_CAP_TIMES_UMA = 25;
+export const MODALIDAD_10_CAP_TIMES_UMA = 25;
+
+/**
+ * Cuota de la Modalidad 10 sobre el salario de cotización, SIN la aportación
+ * a INFONAVIT.
+ *
+ * ESTIMACIÓN — VERIFICAR: el porcentaje viene de fuentes secundarias y de la
+ * calculadora pública del IMSS; la fuente primaria es el Acuerdo de la Junta
+ * Directiva que fija las cuotas y las primas de financiamiento por ramo
+ * (DOF) y debe confirmarse antes de publicar la app. Hasta entonces, la UI
+ * lo presenta como estimado.
+ *
+ * Contexto legal del criterio: Art. 228 LSS vigente — a las bases de
+ * cotización "se les aplicarán las primas de financiamiento… reduciendo la
+ * parte proporcional relativa a las prestaciones que se excluyen". Excluir
+ * INFONAVIT es exactamente esa reducción: la aportación al fondo de vivienda
+ * es un ahorro adicional, no una prima de financiamiento.
+ */
+export const MODALIDAD_10_CUOTA_PCT = 0.183;
+
+/**
+ * La cuota mostrada NO incluye la aportación opcional a INFONAVIT.
+ * Ver el comentario de `MODALIDAD_10_CUOTA_PCT`.
+ */
+export const MODALIDAD_10_CUOTA_EXCLUDES_INFONAVIT = true;
+
+/**
+ * Contexto normativo (no altera el cálculo de esta app): el Acuerdo
+ * ACDO.AS2.HCT.101026/302.P.DG del Consejo Técnico del IMSS, aprobado el
+ * 10-oct-2026 y publicado en el DOF el 21-oct-2026 (vigente desde el
+ * 22-oct-2026), endureció las nuevas inscripciones a la Modalidad 40 —salario
+ * de cotización igual al último registrado o hasta una UMA por encima— y
+ * prohibió los pagos retroactivos.
+ *
+ * Ese acuerdo NO modifica la Modalidad 10; sí explica por qué el asegurado
+ * del régimen anterior conviene a la Modalidad 10 y por qué esta app no ofrece
+ * meses retroactivos (la cotización arranca el mes siguiente a la fecha de
+ * referencia, Art. 224 LSS vigente).
+ */

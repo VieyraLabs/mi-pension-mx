@@ -3,8 +3,8 @@
  * Garantizan la integridad de los datos antes del cálculo.
  */
 import { z } from 'zod';
-import { MINIMUM_WEEKS_VEJEZ } from '../constants/ley73';
-import { calculateM40PlannedWeeks } from '../utils/modalidad40';
+import { MINIMUM_WEEKS_VEJEZ, MODALIDAD_10_CAP_TIMES_UMA } from '../constants/ley73';
+import { calculateM10PlannedWeeks } from '../utils/modalidad10';
 import {
   calculateWeeksProjection,
   describeWeeksProjection,
@@ -59,7 +59,7 @@ export const EmploymentRelationSchema = z.object({
 export const WorkHistorySchema = z.object({
   // El mínimo de 500 semanas (Arts. 138 y 145 LSS 1973) se valida a nivel de
   // PensionInputSchema (ver más abajo), no aquí — considera también las
-  // semanas proyectadas por Modalidad 40, que viven en otro campo.
+  // semanas proyectadas por Modalidad 10, que viven en otro campo.
   totalWeeks: z
     .number({ required_error: 'Las semanas cotizadas son requeridas' })
     .int('Las semanas deben ser un número entero')
@@ -86,22 +86,28 @@ export const UMAConfigurationSchema = z.object({
     .max(10000, 'El valor de la UMA parece incorrecto'),
   monthlyUMA: z.number().positive(),
   annualUMA: z.number().positive(),
+  smgCdmx: z.number().positive().optional(),
   year: z.number().int().min(2017).max(2100),
   isCustom: z.boolean().default(false),
 });
 
-export const Modalidad40Schema = z.object({
+export const Modalidad10Schema = z.object({
   active: z.boolean().default(false),
   contributionSalary: z
     .number()
-    .positive('El salario de Modalidad 40 debe ser mayor a cero')
+    .positive('El salario de la Modalidad 10 debe ser mayor a cero')
     .optional()
     .nullable(),
-  startDate: z.date().optional().nullable(),
+  contributionSalaryInUMAs: z
+    .number()
+    .positive('Las UMAs de la Modalidad 10 deben ser mayores a cero')
+    .optional()
+    .nullable(),
+  continuesWorkingWhileContributing: z.boolean().optional().nullable(),
   expectedMonths: z
     .number()
     .int()
-    .min(0, 'Los meses de Modalidad 40 no pueden ser negativos')
+    .min(0, 'Los meses de Modalidad 10 no pueden ser negativos')
     .max(600)
     .optional()
     .nullable(),
@@ -128,12 +134,12 @@ function createPensionInputSchema(referenceDateProvider: () => Date) {
       averageSalary: AverageContributionSalarySchema,
       projectedAverageDailySalary: z.number().positive().max(100000).optional(),
       uma: UMAConfigurationSchema,
-      modalidad40: Modalidad40Schema,
+      modalidad10: Modalidad10Schema,
       beneficiaries: BeneficiariesSchema,
     })
     .superRefine((data, ctx) => {
       // El mínimo legal se evalúa contra la proyección hasta la fecha exacta
-      // de retiro y las semanas contractuales de M40.
+      // de retiro y las semanas contractuales de M10.
       const referenceDate = referenceDateProvider();
       const retirementDate = data.personalData.estimatedRetirementDate;
       const projection = calculateWeeksProjection({
@@ -142,8 +148,8 @@ function createPensionInputSchema(referenceDateProvider: () => Date) {
         retirementAge: data.personalData.retirementAge,
         referenceDate,
         retirementDate,
-        m40PlannedWeeks: data.modalidad40.active
-          ? calculateM40PlannedWeeks(referenceDate, retirementDate)
+        m10PlannedWeeks: data.modalidad10.active
+          ? calculateM10PlannedWeeks(referenceDate, retirementDate)
           : 0,
       });
       if (projection.targetWeeks < MINIMUM_WEEKS_VEJEZ) {
@@ -159,6 +165,44 @@ function createPensionInputSchema(referenceDateProvider: () => Date) {
             `Se requieren mínimo ${MINIMUM_WEEKS_VEJEZ} semanas cotizadas (Arts. 138 y 145 LSS 1973)` +
             ` (${breakdown}). Te faltan ${faltantes} semanas para al jubilarse.`,
         });
+      }
+
+      // Límites del SBC declarado en la Modalidad 10 (Art. 28 LSS vigente):
+      // piso = salario mínimo del área geográfica, techo = 25 UMA.
+      if (data.modalidad10.active) {
+        const salary = data.modalidad10.contributionSalary;
+        const maximum = MODALIDAD_10_CAP_TIMES_UMA * data.uma.dailyUMA;
+        const minimum = data.uma.smgCdmx;
+        if (salary != null) {
+          if (salary > maximum) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['modalidad10', 'contributionSalary'],
+              message:
+                `El salario de la Modalidad 10 no puede exceder ${MODALIDAD_10_CAP_TIMES_UMA} UMA ` +
+                `($${maximum.toFixed(2)}/día) — Art. 28 LSS vigente.`,
+            });
+          }
+          if (minimum != null && salary < minimum) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['modalidad10', 'contributionSalary'],
+              message:
+                `El salario de la Modalidad 10 no puede ser inferior al salario mínimo de tu zona ` +
+                `($${minimum.toFixed(2)}/día) — Art. 28 LSS vigente.`,
+            });
+          }
+        }
+        const umas = data.modalidad10.contributionSalaryInUMAs;
+        if (umas != null && umas > MODALIDAD_10_CAP_TIMES_UMA) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['modalidad10', 'contributionSalaryInUMAs'],
+            message:
+              `Las UMAs de la Modalidad 10 no pueden exceder ${MODALIDAD_10_CAP_TIMES_UMA} ` +
+              `— Art. 28 LSS vigente.`,
+          });
+        }
       }
     });
 }

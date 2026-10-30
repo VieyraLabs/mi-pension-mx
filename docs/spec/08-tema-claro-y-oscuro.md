@@ -23,7 +23,7 @@ La identidad visual es **esmeralda de marca**, con violeta secundario y ámbar d
 
 - **El degradado de marca es una superficie semántica**: `getBrandGradient(isDark)` lo
   define una sola vez y lo usan el encabezado de pantalla, la tarjeta del resultado
-  principal y el interruptor de Modalidad 40. Significa "esto es lo importante".
+  principal y el interruptor de Modalidad 10. Significa "esto es lo importante".
 - **`BRAND_ON_COLOR` es el color del texto sobre degradado** (blanco en ambos modos). No
   es `onPrimary`: en modo oscuro `onPrimary` es un verde oscuro que no alcanzaría
   contraste sobre un degradado saturado.

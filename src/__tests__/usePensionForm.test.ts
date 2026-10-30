@@ -10,7 +10,8 @@ import {
   countCotizedWeeksInDateRange,
   getLocalReferenceDate,
 } from '../utils/weeksProjection';
-import { estimateM40Months } from '../utils/modalidad40';
+import { estimateM10Months } from '../utils/modalidad10';
+import { round2 } from '../utils/format';
 import { calculatePension } from '../services/pension/PensionCalculator';
 import { PensionInputSchema } from '../validation/pensionSchema';
 
@@ -137,100 +138,171 @@ describe('usePensionForm', () => {
     expect(result.current.input.uma.isCustom).toBe(true);
   });
 
-  test('updateModalidad40 actualiza los campos de Modalidad 40', () => {
+  test('updateModalidad10 actualiza los campos de Modalidad 10', () => {
     const { result } = renderHook(() => usePensionForm());
 
     act(() => {
-      result.current.updateModalidad40({ active: true, contributionSalary: 500 });
+      result.current.updateModalidad10({ active: true, contributionSalary: 500 });
     });
 
-    expect(result.current.input.modalidad40.active).toBe(true);
-    expect(result.current.input.modalidad40.contributionSalary).toBe(500);
+    expect(result.current.input.modalidad10.active).toBe(true);
+    expect(result.current.input.modalidad10.contributionSalary).toBe(500);
   });
 
-  test('updateModalidad40 precarga los meses esperados al activar Modalidad 40', () => {
+  test('al activar Modalidad 10 se precarga el máximo legal de UMAs', () => {
+    const { result } = renderHook(() => usePensionForm());
+
+    act(() => {
+      result.current.updateModalidad10({ active: true });
+    });
+
+    const { contributionSalary, contributionSalaryInUMAs } = result.current.input.modalidad10;
+    expect(contributionSalaryInUMAs).toBe(25);
+    expect(contributionSalary).toBe(
+      round2(25 * result.current.input.uma.dailyUMA),
+    );
+  });
+
+  test('el SBC declarado y su equivalente en UMAs se mantienen sincronizados', () => {
+    const { result } = renderHook(() => usePensionForm());
+    const umaDiaria = result.current.input.uma.dailyUMA;
+
+    act(() => {
+      result.current.setModalidad10ContributionSalary(1000);
+    });
+
+    expect(result.current.input.modalidad10.contributionSalary).toBe(1000);
+    expect(result.current.input.modalidad10.contributionSalaryInUMAs).toBe(
+      round2(1000 / umaDiaria),
+    );
+
+    act(() => {
+      result.current.setModalidad10UMAs(10);
+    });
+
+    expect(result.current.input.modalidad10.contributionSalaryInUMAs).toBe(10);
+    expect(result.current.input.modalidad10.contributionSalary).toBe(
+      round2(10 * umaDiaria),
+    );
+  });
+
+  test('cambiar de año de UMA conserva el SBC declarado y recalcula sus UMAs', () => {
+    const { result } = renderHook(() => usePensionForm());
+
+    act(() => {
+      result.current.setModalidad10ContributionSalary(2000);
+    });
+    act(() => {
+      result.current.selectUMAByYear(2024);
+    });
+
+    const { dailyUMA } = result.current.input.uma;
+    expect(dailyUMA).toBe(108.57);
+    expect(result.current.input.modalidad10.contributionSalary).toBe(2000);
+    expect(result.current.input.modalidad10.contributionSalaryInUMAs).toBe(
+      round2(2000 / 108.57),
+    );
+  });
+
+  test('una UMA personalizada conserva el SBC y recalcula sus UMAs', () => {
+    const { result } = renderHook(() => usePensionForm());
+
+    act(() => {
+      result.current.setModalidad10ContributionSalary(2000);
+    });
+    act(() => {
+      result.current.setCustomUMA(120);
+    });
+
+    expect(result.current.input.modalidad10.contributionSalary).toBe(2000);
+    expect(result.current.input.modalidad10.contributionSalaryInUMAs).toBe(
+      round2(2000 / 120),
+    );
+  });
+
+  test('updateModalidad10 precarga los meses esperados al activar Modalidad 10', () => {
     const { result } = renderHook(() => usePensionForm());
 
     const { estimatedRetirementDate } = result.current.input.personalData;
-    const mesesEsperados = estimateM40Months(getLocalReferenceDate(), estimatedRetirementDate);
+    const mesesEsperados = estimateM10Months(getLocalReferenceDate(), estimatedRetirementDate);
 
     act(() => {
-      result.current.updateModalidad40({ active: true, contributionSalary: 500 });
+      result.current.updateModalidad10({ active: true, contributionSalary: 500 });
     });
 
-    expect(result.current.input.modalidad40.expectedMonths).toBe(mesesEsperados);
+    expect(result.current.input.modalidad10.expectedMonths).toBe(mesesEsperados);
   });
 
-  test('al desactivar Modalidad 40 se borran los meses esperados', () => {
+  test('al desactivar Modalidad 10 se borran los meses esperados', () => {
     const { result } = renderHook(() => usePensionForm());
 
     act(() => {
-      result.current.updateModalidad40({ active: true });
+      result.current.updateModalidad10({ active: true });
     });
     act(() => {
-      result.current.updateModalidad40({ active: false });
+      result.current.updateModalidad10({ active: false });
     });
 
-    expect(result.current.input.modalidad40.active).toBe(false);
-    // El campo es derivado (no editable): sin Modalidad 40 no hay meses que
-    // cotizar en M40, así que no queda valor.
-    expect(result.current.input.modalidad40.expectedMonths).toBeUndefined();
+    expect(result.current.input.modalidad10.active).toBe(false);
+    // El campo es derivado (no editable): sin Modalidad 10 no hay meses que
+    // cotizar en M10, así que no queda valor.
+    expect(result.current.input.modalidad10.expectedMonths).toBeUndefined();
   });
 
-  test('al activar Modalidad 40 los meses se derivan hasta la fecha exacta de retiro', () => {
+  test('al activar Modalidad 10 los meses se derivan hasta la fecha exacta de retiro', () => {
     const { result } = renderHook(() => usePensionForm());
 
     act(() => {
       result.current.updatePersonalData({ age: 40, retirementAge: 65 });
     });
     act(() => {
-      result.current.updateModalidad40({ active: true });
+      result.current.updateModalidad10({ active: true });
     });
 
-    expect(result.current.input.modalidad40.expectedMonths).toBe(
-      estimateM40Months(
+    expect(result.current.input.modalidad10.expectedMonths).toBe(
+      estimateM10Months(
         getLocalReferenceDate(),
         result.current.input.personalData.estimatedRetirementDate,
       ),
     );
   });
 
-  test('al cambiar solo la edad sin cambiar la fecha de retiro no cambia el horizonte M40', () => {
+  test('al cambiar solo la edad sin cambiar la fecha de retiro no cambia el horizonte M10', () => {
     const { result } = renderHook(() => usePensionForm());
 
     act(() => {
       result.current.updatePersonalData({ age: 40, retirementAge: 65 });
     });
     act(() => {
-      result.current.updateModalidad40({ active: true });
+      result.current.updateModalidad10({ active: true });
     });
     act(() => {
       result.current.updatePersonalData({ age: 50 });
     });
 
-    expect(result.current.input.modalidad40.expectedMonths).toBe(
-      estimateM40Months(
+    expect(result.current.input.modalidad10.expectedMonths).toBe(
+      estimateM10Months(
         getLocalReferenceDate(),
         result.current.input.personalData.estimatedRetirementDate,
       ),
     );
   });
 
-  test('al cambiar la edad de retiro con Modalidad 40 activa los meses se recalculan', () => {
+  test('al cambiar la edad de retiro con Modalidad 10 activa los meses se recalculan', () => {
     const { result } = renderHook(() => usePensionForm());
 
     act(() => {
       result.current.updatePersonalData({ age: 40, retirementAge: 65 });
     });
     act(() => {
-      result.current.updateModalidad40({ active: true });
+      result.current.updateModalidad10({ active: true });
     });
     act(() => {
       result.current.updatePersonalData({ retirementAge: 60 });
     });
 
-    expect(result.current.input.modalidad40.expectedMonths).toBe(
-      estimateM40Months(
+    expect(result.current.input.modalidad10.expectedMonths).toBe(
+      estimateM10Months(
         getLocalReferenceDate(),
         result.current.input.personalData.estimatedRetirementDate,
       ),
@@ -244,14 +316,14 @@ describe('usePensionForm', () => {
       result.current.updatePersonalData({ age: 40, retirementAge: 65 });
     });
     act(() => {
-      result.current.updateModalidad40({ active: true });
+      result.current.updateModalidad10({ active: true });
     });
     act(() => {
-      result.current.updateModalidad40({ expectedMonths: 12 });
+      result.current.updateModalidad10({ expectedMonths: 12 });
     });
 
-    expect(result.current.input.modalidad40.expectedMonths).toBe(
-      estimateM40Months(
+    expect(result.current.input.modalidad10.expectedMonths).toBe(
+      estimateM10Months(
         getLocalReferenceDate(),
         result.current.input.personalData.estimatedRetirementDate,
       ),
@@ -265,11 +337,11 @@ describe('usePensionForm', () => {
       result.current.updatePersonalData({ estimatedRetirementDate: new Date(2100, 0, 1) });
     });
     act(() => {
-      result.current.updateModalidad40({ active: true });
+      result.current.updateModalidad10({ active: true });
     });
 
     // El horizonte supera el máximo vigente de 600 meses admitido por Zod.
-    expect(result.current.input.modalidad40.expectedMonths).toBe(600);
+    expect(result.current.input.modalidad10.expectedMonths).toBe(600);
   });
 
   test('expone la proyección de semanas para que la UI no la recalcule', () => {
@@ -304,7 +376,7 @@ describe('usePensionForm', () => {
       result.current.updateWorkHistory({ totalWeeks: 100 });
     });
     act(() => {
-      result.current.updateModalidad40({ active: true });
+      result.current.updateModalidad10({ active: true });
     });
 
     // La UI narra las cifras que el motor ya calculó (RNF-013).
@@ -312,21 +384,21 @@ describe('usePensionForm', () => {
     expect(result.current.weeksProjection).toEqual(motor.weeksProjection);
   });
 
-  test('los meses de Modalidad 40 se actualizan al cambiar la edad de retiro', () => {
+  test('los meses de Modalidad 10 se actualizan al cambiar la edad de retiro', () => {
     const { result } = renderHook(() => usePensionForm());
 
     act(() => {
       result.current.updatePersonalData({ birthDate: new Date(1980, 0, 1) });
     });
     act(() => {
-      result.current.updateModalidad40({ active: true });
+      result.current.updateModalidad10({ active: true });
     });
     act(() => {
       result.current.updatePersonalData({ retirementAge: 60 });
     });
 
-    expect(result.current.input.modalidad40.expectedMonths).toBe(
-      estimateM40Months(
+    expect(result.current.input.modalidad10.expectedMonths).toBe(
+      estimateM10Months(
         getLocalReferenceDate(),
         result.current.input.personalData.estimatedRetirementDate,
       ),
@@ -366,7 +438,7 @@ describe('usePensionForm', () => {
     }
   });
 
-  test('recalcula semanas y meses M40 si cambia solo la fecha exacta de retiro', () => {
+  test('recalcula semanas y meses M10 si cambia solo la fecha exacta de retiro', () => {
     jest.useFakeTimers().setSystemTime(new Date(2025, 5, 1));
     try {
       const { result } = renderHook(() => usePensionForm());
@@ -377,17 +449,17 @@ describe('usePensionForm', () => {
         });
       });
       act(() => {
-        result.current.updateModalidad40({ active: true, contributionSalary: 500 });
+        result.current.updateModalidad10({ active: true, contributionSalary: 500 });
       });
 
-      expect(result.current.input.modalidad40.expectedMonths).toBe(0);
+      expect(result.current.input.modalidad10.expectedMonths).toBe(0);
       expect(result.current.weeksProjection.projectedWeeks).toBe(0);
 
       act(() => {
         result.current.updatePersonalData({ estimatedRetirementDate: new Date(2025, 6, 1) });
       });
 
-      expect(result.current.input.modalidad40.expectedMonths).toBe(1);
+      expect(result.current.input.modalidad10.expectedMonths).toBe(1);
       expect(result.current.weeksProjection.projectedWeeks).toBe(4);
     } finally {
       jest.useRealTimers();

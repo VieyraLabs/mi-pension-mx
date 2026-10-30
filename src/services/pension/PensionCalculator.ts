@@ -20,7 +20,7 @@ import { AssistanceAidStep } from './steps/AssistanceAidStep';
 import { LimitsStep } from './steps/LimitsStep';
 import { DAYS_PER_YEAR_UMA, AVERAGE_DAYS_PER_MONTH, MONTHS_PER_YEAR, MINIMUM_WEEKS_VEJEZ } from '../../constants/ley73';
 import { round2 } from '../../utils/format';
-import { calculateM40PlannedWeeks } from '../../utils/modalidad40';
+import { calculateM10PlannedWeeks } from '../../utils/modalidad10';
 import {
   calculateWeeksProjection,
   getLocalReferenceDate,
@@ -54,8 +54,8 @@ export function validateInput(input: PensionInput): ValidationResult {
     retirementAge: input.personalData.retirementAge,
     referenceDate,
     retirementDate: input.personalData.estimatedRetirementDate,
-    m40PlannedWeeks: input.modalidad40.active
-      ? calculateM40PlannedWeeks(referenceDate, input.personalData.estimatedRetirementDate)
+    m10PlannedWeeks: input.modalidad10.active
+      ? calculateM10PlannedWeeks(referenceDate, input.personalData.estimatedRetirementDate)
       : 0,
   });
   if (targetWeeks >= MINIMUM_WEEKS_VEJEZ && targetWeeks < 520) {
@@ -81,7 +81,7 @@ export function validateInput(input: PensionInput): ValidationResult {
 function createInitialContext(
   input: PensionInput,
   referenceDate: Date,
-  m40PlannedWeeks: number,
+  m10PlannedWeeks: number,
 ): CalculationContext {
   return {
     input,
@@ -91,9 +91,9 @@ function createInitialContext(
       retirementAge: input.personalData.retirementAge,
       referenceDate,
       retirementDate: input.personalData.estimatedRetirementDate,
-      m40PlannedWeeks,
+      m10PlannedWeeks,
     }),
-    m40PlannedWeeks,
+    m10PlannedWeeks,
     effectiveDailySalary: input.projectedAverageDailySalary ?? input.averageSalary.dailySalary,
     salaryInTimesMinimumWage: 0,
     basicQuantityPct: 0,
@@ -137,13 +137,13 @@ const PIPELINE = [
 export function calculatePension(input: PensionInput): PensionResult {
   const calculationDate = new Date();
   const referenceDate = normalizeLocalCalendarDate(calculationDate);
-  const m40PlannedWeeks = input.modalidad40.active
-    ? calculateM40PlannedWeeks(referenceDate, input.personalData.estimatedRetirementDate)
+  const m10PlannedWeeks = input.modalidad10.active
+    ? calculateM10PlannedWeeks(referenceDate, input.personalData.estimatedRetirementDate)
     : 0;
   // Ejecutar pipeline: cada paso recibe y devuelve un contexto
   const finalContext = PIPELINE.reduce<CalculationContext>(
     (ctx, step) => step(ctx),
-    createInitialContext(input, referenceDate, m40PlannedWeeks),
+    createInitialContext(input, referenceDate, m10PlannedWeeks),
   );
 
   const monthlyPension = round2(finalContext.monthlyPension);
@@ -229,7 +229,7 @@ export function calculateSimpleScenario(params: {
       year: new Date().getFullYear(),
       isCustom: false,
     },
-    modalidad40: { active: false },
+    modalidad10: { active: false },
     beneficiaries: {
       hasSpouse: params.tieneConyuge ?? false,
       hasMinorChildren: params.tieneHijosMenores ?? false,

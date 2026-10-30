@@ -49,7 +49,7 @@ function buildResult() {
     workHistory: { totalWeeks: 500, employmentRelations: [] },
     averageSalary: { dailySalary: 200, monthlySalary: 6080, isManual: true },
     uma: { dailyUMA: 113.14, monthlyUMA: 3439.46, annualUMA: 41296.1, year: 2025, isCustom: false },
-    modalidad40: { active: false },
+    modalidad10: { active: false },
     beneficiaries: {
       hasSpouse: false,
       hasMinorChildren: false,
@@ -89,6 +89,39 @@ describe('getSimulations', () => {
     expect(all).toEqual([]);
     // Autolimpieza: la siguiente lectura ya no debe reprocesar el registro inválido.
     expect(await AsyncStorage.getItem('@mi_pension_mx:simulaciones')).toBe('[]');
+  });
+
+  test('normaliza una simulación guardada con Modalidad 40 a Modalidad 10', async () => {
+    const resultado = buildResult();
+    // Así se guardó en las versiones anteriores de la app.
+    const inputLegacy = {
+      ...resultado.input,
+      modalidad40: { active: true, contributionSalary: 300, expectedMonths: 12 },
+    };
+    delete (inputLegacy as { modalidad10?: unknown }).modalidad10;
+    const registro = {
+      id: 'sim_legacy',
+      name: 'Simulación de la Modalidad 40',
+      creationDate: '2024-01-01T00:00:00.000Z',
+      result: { ...resultado, input: inputLegacy },
+    };
+    await AsyncStorage.setItem(
+      '@mi_pension_mx:simulaciones',
+      JSON.stringify([registro]),
+    );
+
+    const all = await getSimulations();
+
+    expect(all).toHaveLength(1);
+    const input = all[0]!.result.input;
+    expect(input.modalidad10.active).toBe(true);
+    expect(input.modalidad10.contributionSalary).toBe(300);
+    expect(input.modalidad10.expectedMonths).toBe(12);
+    expect(input.modalidad10.continuesWorkingWhileContributing).toBe(true);
+    // La clave vieja no viaja al resultado.
+    expect('modalidad40' in input).toBe(false);
+    // El piso del SBC declarado queda disponible aunque el registro sea viejo.
+    expect(input.uma.smgCdmx).toBeGreaterThan(0);
   });
 
   test('conserva las simulaciones válidas y descarta solo las incompatibles', async () => {

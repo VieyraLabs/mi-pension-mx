@@ -36,7 +36,9 @@ function buildResult(
   options: {
     totalWeeks?: number;
     dailySalary?: number;
-    modalidad40?: PensionInput['modalidad40'];
+    modalidad10?: PensionInput['modalidad10'];
+    projectedAverageDailySalary?: number;
+    projectedAverageBreakdown?: PensionInput['projectedAverageBreakdown'];
   } = {},
 ) {
   const input: PensionInput = {
@@ -56,7 +58,9 @@ function buildResult(
       isManual: true,
     },
     uma: { dailyUMA: 113.14, monthlyUMA: 3439.46, annualUMA: 41296.1, year: 2025, isCustom: false },
-    modalidad40: options.modalidad40 ?? { active: false },
+    modalidad10: options.modalidad10 ?? { active: false },
+    projectedAverageDailySalary: options.projectedAverageDailySalary,
+    projectedAverageBreakdown: options.projectedAverageBreakdown,
     beneficiaries: {
       hasSpouse: false,
       hasMinorChildren: false,
@@ -71,7 +75,13 @@ function buildResult(
 function buildResultAtReferenceDate(
   referenceDate: Date,
   overrides: Partial<PensionInput['personalData']> = {},
-  options: { totalWeeks?: number; dailySalary?: number; modalidad40?: PensionInput['modalidad40'] } = {},
+  options: {
+    totalWeeks?: number;
+    dailySalary?: number;
+    modalidad10?: PensionInput['modalidad10'];
+    projectedAverageDailySalary?: number;
+    projectedAverageBreakdown?: PensionInput['projectedAverageBreakdown'];
+  } = {},
 ) {
   jest.useFakeTimers().setSystemTime(referenceDate);
   try {
@@ -134,7 +144,7 @@ describe('ResultScreen', () => {
     await waitFor(() => expect(screen.getByText('María López')).toBeTruthy());
 
     expect(screen.getByText('Semanas cotizadas actuales')).toBeTruthy();
-    expect(screen.getByText('600 sem.')).toBeTruthy();
+    expect(screen.getAllByText('600 sem.').length).toBeGreaterThan(0);
 
     expect(screen.getByText('Semanas estimadas al pensionarte')).toBeTruthy();
     expect(screen.queryByText('Semanas cotizadas registradas')).toBeNull();
@@ -169,7 +179,7 @@ describe('ResultScreen', () => {
     ).toBeNull();
   });
 
-  test('el total de semanas M40 del resumen se calcula por fechas, no por meses aproximados', async () => {
+  test('el resumen de Modalidad 10 muestra el SBC declarado, sus UMAs y el costo mensual', async () => {
     jest.useFakeTimers().setSystemTime(new Date(2025, 5, 1));
     let resultado: ReturnType<typeof buildResult>;
     try {
@@ -177,7 +187,13 @@ describe('ResultScreen', () => {
         { age: 30, retirementAge: 65, estimatedRetirementDate: new Date(2025, 6, 1) },
         {
           totalWeeks: 600,
-          modalidad40: { active: true, contributionSalary: 300, expectedMonths: 2 },
+          modalidad10: {
+            active: true,
+            contributionSalary: 300,
+            contributionSalaryInUMAs: 2.65,
+            expectedMonths: 2,
+            continuesWorkingWhileContributing: true,
+          },
         },
       );
     } finally {
@@ -189,13 +205,18 @@ describe('ResultScreen', () => {
     renderScreen(<ResultScreen />);
     await waitFor(() => expect(screen.getByText('María López')).toBeTruthy());
 
-    expect(screen.getByText('Semanas cotizadas + semanas M40 planeadas')).toBeTruthy();
-    expect(screen.queryByText('Semanas cotizadas + semanas M40 planeadas (aprox. por meses)')).toBeNull();
-    expect(screen.getByText('604 sem.')).toBeTruthy();
-    expect(screen.getByText('604 sem. (600 cotizadas + 4 proyectadas hasta la fecha de retiro)')).toBeTruthy();
+    expect(screen.getAllByText('Modalidad 10').length).toBeGreaterThan(0);
+    expect(screen.getByText('Salario base declarado')).toBeTruthy();
+    expect(screen.getByText(`${formatCurrency(300)}/día`)).toBeTruthy();
+    expect(screen.getByText('Equivalente en UMAs')).toBeTruthy();
+    expect(screen.getByText('2.65 UMA')).toBeTruthy();
+    expect(screen.getByText('Meses que planeas cotizar')).toBeTruthy();
+    expect(screen.getByText('2 meses')).toBeTruthy();
+    expect(screen.getByText('Costo mensual estimado (sin INFONAVIT)')).toBeTruthy();
+    expect(screen.getByText('¿Sigues trabajando mientras citas?')).toBeTruthy();
   });
 
-  test('resumen y AverageSalaryStep usan las mismas 31 semanas M40 y el promedio de $212.40', async () => {
+  test('el desglose del SBC proyectado reparte las semanas entre ordinarias y M10', async () => {
     const resultado = buildResultAtReferenceDate(
       new Date(2025, 5, 1),
       {
@@ -206,14 +227,22 @@ describe('ResultScreen', () => {
       {
         totalWeeks: 500,
         dailySalary: 200,
-        modalidad40: { active: true, contributionSalary: 300, expectedMonths: 7 },
+        modalidad10: { active: true, contributionSalary: 300, expectedMonths: 7 },
+        projectedAverageDailySalary: 212.4,
+        projectedAverageBreakdown: {
+          totalWeeks: 250,
+          m10Weeks: 31,
+          ordinaryWeeks: 219,
+          m10DailySalary: 300,
+          ordinaryDailySalary: 200,
+        },
       },
     );
     const averageStep = resultado.steps.find((step) => step.id === 'salario_promedio');
 
-    expect(resultado.weeksProjection).not.toHaveProperty('m40PlannedWeeks');
+    expect(resultado.weeksProjection).not.toHaveProperty('m10PlannedWeeks');
     expect(averageStep?.description).toContain(
-      '219 sem. ordinarias ($200.00/día) + 31 sem. M40 ($300.00/día) = $212.40/día',
+      '219 sem. ordinarias ($200.00/día) + 31 sem. M10 ($300.00/día) = $212.40/día',
     );
 
     const saved = await saveSimulation(resultado, 'María López');
@@ -221,17 +250,15 @@ describe('ResultScreen', () => {
     renderScreen(<ResultScreen />);
 
     await waitFor(() => expect(screen.getByText('María López')).toBeTruthy());
-    expect(screen.getByText('Semanas M40 (de las 250)')).toBeTruthy();
-    expect(screen.getAllByText('31 sem.')).toHaveLength(2);
-    expect(screen.getByText('Semanas previas al M40')).toBeTruthy();
+    expect(screen.getByText('Semanas de Modalidad 10 (de las 250)')).toBeTruthy();
+    expect(screen.getByText('31 sem.')).toBeTruthy();
+    expect(screen.getByText('Semanas ordinarias (de las 250)')).toBeTruthy();
     expect(screen.getByText('219 sem.')).toBeTruthy();
-    expect(screen.getByText('Semanas M40 planeadas')).toBeTruthy();
-    expect(screen.getByText('Salario promedio ponderado')).toBeTruthy();
+    expect(screen.getByText('Salario promedio de las 250 semanas')).toBeTruthy();
     expect(screen.getByText(`${formatCurrency(212.4)}/día`)).toBeTruthy();
-    expect(screen.queryByText(/aprox\. por meses/)).toBeNull();
   });
 
-  test('el resultado histórico sin weeksProjection conserva el fallback de meses M40', async () => {
+  test('el resultado histórico sin desglose conserva el SBC declarado de M10', async () => {
     jest.useFakeTimers().setSystemTime(new Date(2025, 5, 1));
     let resultado: ReturnType<typeof buildResult>;
     try {
@@ -239,7 +266,7 @@ describe('ResultScreen', () => {
         { age: 30, retirementAge: 65, estimatedRetirementDate: new Date(2025, 6, 1) },
         {
           totalWeeks: 600,
-          modalidad40: { active: true, contributionSalary: 300, expectedMonths: 2 },
+          modalidad10: { active: true, contributionSalary: 300, expectedMonths: 2 },
         },
       );
     } finally {
@@ -252,20 +279,15 @@ describe('ResultScreen', () => {
     renderScreen(<ResultScreen />);
     await waitFor(() => expect(screen.getByText('María López')).toBeTruthy());
 
-    expect(screen.getByText('609 sem.')).toBeTruthy();
+    expect(screen.getAllByText('600 sem.').length).toBeGreaterThan(0);
     expect(screen.getByText('Semanas cotizadas registradas')).toBeTruthy();
     expect(screen.queryByText('Semanas estimadas al pensionarte')).toBeNull();
-    expect(
-      screen.getByText('Semanas cotizadas + semanas M40 planeadas (aprox. por meses)'),
-    ).toBeTruthy();
-    expect(screen.getByText('Semanas M40 (de las 250) (aprox. por meses)')).toBeTruthy();
-    expect(screen.getByText('Semanas previas al M40 (aprox. por meses)')).toBeTruthy();
-    expect(screen.getByText('Semanas M40 planeadas (aprox. por meses)')).toBeTruthy();
-    expect(screen.getByText('Salario promedio ponderado (aprox. por meses)')).toBeTruthy();
-    expect(screen.getAllByText('9 sem.')).toHaveLength(2);
+    // Sin desglose no se inventa un reparto de semanas: se muestra lo que hay.
+    expect(screen.queryByText('Semanas de Modalidad 10 (de las 250)')).toBeNull();
+    expect(screen.getByText('Salario base declarado')).toBeTruthy();
   });
 
-  test('la fila de Modalidad 40 muestra semanas exactas distintas al objetivo normal', async () => {
+  test('el bloque de Modalidad 10 no se confunde con el objetivo de semanas', async () => {
     const saved = await saveSimulation(
       buildResultAtReferenceDate(
         new Date(2025, 5, 1),
@@ -276,7 +298,7 @@ describe('ResultScreen', () => {
         },
         {
           totalWeeks: 500,
-          modalidad40: { active: true, contributionSalary: 300, expectedMonths: 600 },
+          modalidad10: { active: true, contributionSalary: 300, expectedMonths: 600 },
         },
       ),
       'María López',
@@ -291,12 +313,10 @@ describe('ResultScreen', () => {
     expect(
       screen.getByText('3,111 sem. (500 cotizadas + 2,611 proyectadas hasta la fecha de retiro)'),
     ).toBeTruthy();
-    // El bloque Modalidad 40 ya no se titula como el total de semanas cotizadas…
+    // El bloque Modalidad 10 ya no se titula como el total de semanas cotizadas…
     expect(screen.queryByText('Total de semanas cotizadas')).toBeNull();
-    expect(screen.getByText('Semanas cotizadas + semanas M40 planeadas')).toBeTruthy();
-    // …y su valor (500 cotizadas + 2609 semanas M40) se distingue del objetivo.
-    expect(screen.getByText('3,109 sem.')).toBeTruthy();
-    expect(screen.queryByText('3109 sem.')).toBeNull();
+    expect(screen.getByText('Meses que planeas cotizar')).toBeTruthy();
+    expect(screen.getByText('600 meses')).toBeTruthy();
   });
 
   test('sin horizonte a futuro, las semanas objetivo coinciden con las actuales', async () => {
@@ -361,6 +381,6 @@ describe('ResultScreen', () => {
     await waitFor(() => expect(screen.getByText('María López')).toBeTruthy());
     expect(screen.getByText('Semanas cotizadas registradas')).toBeTruthy();
     expect(screen.queryByText('Semanas estimadas al pensionarte')).toBeNull();
-    expect(screen.getByText('600 sem.')).toBeTruthy();
+    expect(screen.getAllByText('600 sem.').length).toBeGreaterThan(0);
   });
 });

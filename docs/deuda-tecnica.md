@@ -33,7 +33,7 @@ cesantía en edad avanzada y regla de los seis meses).
 | 1 | Techo del 100 % del salario promedio (Art. 169 LSS 1973) | Alta: puede inflar la pensión estimada | Documentado, sin resolver |
 | 2 | Fracción de año en los incrementos (Art. 167 LSS 1973) | Media: subestima el incremento por semanas excedentes | Documentado, sin resolver |
 | 3 | Supuestos de la proyección de semanas | Media: el resultado depende del horizonte supuesto | Fórmula age×52 resuelta por ADR-0013; supuestos restantes documentados |
-| 4 | Modalidad 40 y la ventana de 250 semanas | Media: el SBC capturado puede quedar fuera del promedio | ADR-0013 resuelve semanas por fecha; promedio SBC aún aproximado; fallback histórico aprox. por meses |
+| 4 | Modalidad 10 y la ventana de 250 semanas | Media: con horizontes largos el promedio converge al SBC de M10 y el grupo de salario del Art. 194 no se modela | ADR-0014 integra los meses de M10 al promedio; la convergencia y el supuesto se declaran en el desglose |
 | 5 | Porcentaje del Art. 171 sobre la cuantía básica, no sobre la vejez | Media: la cesantía se estima por debajo de la cantidad legal | Documentado, sin resolver |
 
 ---
@@ -146,7 +146,7 @@ verificada, porque `AGENTS.md` exige que las constantes normativas lleven su fue
 
 ADR-0013 resuelve la aproximación anterior `(edad de retiro − edad actual) × 52`: las
 simulaciones nuevas cuentan días calendario desde el día siguiente a la fecha de referencia
-hasta la fecha exacta de retiro. La proyección de Modalidad 40 también se cuenta por fechas,
+hasta la fecha exacta de retiro. La proyección de Modalidad 10 también se cuenta por fechas,
 hasta fin del mes de retiro. La edad queda como metadato; no determina las semanas
 proyectadas. ADR-0012 documenta el método anterior y está sustituida por ADR-0013.
 
@@ -176,7 +176,7 @@ sensibilidad medida es difícil de auditar frente a la respuesta oficial.
 ### Dónde está el código afectado
 
 - `src/utils/weeksProjection.ts:37-44, 87-108` — cuenta semanas por días calendario; `yearsToRetirement` queda solo como metadato.
-- `src/utils/modalidad40.ts:36-53` — calcula las semanas M40 entre el primer día del mes siguiente a la referencia y el fin del mes de retiro.
+- `src/utils/modalidad10.ts` — calcula las semanas M10 entre el primer día del mes siguiente a la referencia y el fin del mes de retiro.
 - `src/services/pension/PensionCalculator.ts` — fija la fecha de cálculo de una operación, usada como referencia común.
 - `src/services/pension/steps/AnnualIncrementsStep.ts:14-20` — los incrementos consumen el `targetWeeks` producido por la proyección.
 - `src/validation/pensionSchema.ts` — comparte la proyección para validar el mínimo de 500 semanas.
@@ -193,74 +193,58 @@ caso de prueba sobre datos hipotéticos, no sobre comportamiento verificable del
 
 ---
 
-## 4. Modalidad 40 y la ventana de 250 semanas del promedio
+## 4. Modalidad 10 y la convergencia del promedio con horizontes largos
 
 ### Qué falta
 
-ADR-0013 reemplaza para los cálculos nuevos la conversión `mesesM40 × 52/12`: las semanas
-M40 se cuentan por fechas y se pondera así dentro de las 250 semanas de referencia:
+ADR-0014 cambió el tratamiento: los meses de Modalidad 10 son cotizaciones y **entran al
+promedio de las últimas 250 semanas cotizadas** (Art. 167 LSS 1973), al SBC declarado, en
+lugar de ponderarse aparte. La línea temporal del SBC proyectado es:
 
 ```
-m40Weeks   = min(m40PlannedWeeks, 250)
-baseWeeks  = 250 − m40Weeks
-promedio   = (SBC_régimen × baseWeeks + SBC_M40 × m40Weeks) ÷ 250
+historial conocido  +  [ SBC_M10 (o último registrado + SBC_M10) desde el 1º del mes siguiente ]
+promedio = promedio de las últimas 250 semanas cotizadas de esa línea temporal
 ```
 
-Los resultados históricos sin `weeksProjection` conservan el fallback aproximado por meses:
+Con un horizonte de M10 largo (p. ej. 420 meses hasta la fecha de retiro), las últimas 250
+semanas cotizadas **son** las de Modalidad 10: el promedio converge al SBC de M10 y el
+historial previo queda fuera de la ventana. Ese es el comportamiento que pide el Art. 167
+—las últimas 250 semanas cotizadas—, pero no es lo que una persona ожиera al leer «promedio
+de las últimas 250 semanas» en el formulario.
 
-```
-m40Weeks ≈ min(expectedMonths × 52/12, 250)
-```
+Lo que **no** se modela:
 
-Ese fallback sigue identificado como **«aprox. por meses»**; no es el método de las
-simulaciones nuevas.
-
-Con un horizonte de Modalidad 40 largo (p. ej. 420 meses hasta la fecha de retiro), ese
-mínimo **satura** las 250 semanas de referencia: `m40Weeks` vale 250, `baseWeeks` vale 0 y
-el promedio ponderado es **exactamente el SBC de Modalidad 40**, sin ninguna semana del
-régimen obligatorio. El SBC que el usuario capturó —que describe su historial real— puede
-quedar completamente fuera del promedio ponderado.
+- El **grupo de salario** del Art. 194 LSS 1973: la ley permite quedarse en el mismo grupo o
+  en el inmediato inferior o superior, y la app deja elegir el SBC de forma continua.
+- El **historial previo** cuando no hay constancia importada: se sintetiza un tramo plano
+  con el SBC capturado, que es una aproximación.
+- La **cuota**: el porcentaje aplicado al SBC declarado es una estimación pendiente de
+  confirmar en el Acuerdo de la Junta Directiva (ver la
+  [nota de investigación](investigacion/modalidad-10-incorporacion-voluntaria.md)).
 
 ### Por qué importa
 
 El Art. 167 LSS 1973 exige el promedio del SBC de las últimas 250 semanas cotizadas. La
-Modalidad 40 no es una cotización más: es una aportación voluntaria que se suma a las
-semanas del régimen obligatorio, y el IMSS pondera **la historia real del asegurado** con
-las semanas de M40. La ponderación actual es una aproximación que, en el extremo, sustituye
-el promedio histórico por un solo valor.
-
-El propio motor lo reconoce: cuando hay ajuste por M40 empuja un aviso de que "el IMSS
-calculará el promedio exacto con tu historial completo", y marca el paso como
-`isEstimate`. La consecuencia práctica es que **el SBC que el usuario ve en el formulario y
-el que usa el motor no son el mismo número** en este escenario.
+Modalidad 10 es una cotización más: si los últimos años de la vida laboral son meses de
+M10, ese es el promedio que corresponde. La app lo dice en el paso 1 del desglose
+(`assumption`) y en el bloque de Modalidad 10 del resultado, para que la convergencia no
+sorprenda a quien compara su cifra con la del IMSS.
 
 ### Dónde está el código afectado
 
-- `src/services/pension/steps/AverageSalaryStep.ts:42-46, 58-64` — pondera las semanas M40 por fecha dentro de la ventana de 250 semanas.
-- `src/utils/modalidad40.ts:110-115` — el resumen usa las semanas por fecha y conserva `expectedMonths × 52/12` solo cuando no se entrega `plannedWeeks` (fallback histórico).
-- `src/utils/modalidad40.ts:130-134` — total M40 del resumen; también distingue proyección exacta del fallback aproximado.
-- `src/utils/modalidad40.ts:36-53` — calcula semanas M40 por fechas para resultados nuevos.
-- `src/hooks/usePensionForm.ts:38-40` — deriva los meses contractuales de M40 entre fechas de referencia y retiro; no convierte esos meses a semanas en el cálculo nuevo.
-- `src/components/Modalidad40Step.tsx:70-78` — muestra los meses estimados derivados de la fecha de retiro.
+- `src/services/pension/history/projectedSBC.ts` — construye la línea temporal (historial +
+  tramo de M10) y devuelve el promedio con su reparto de semanas.
+- `src/utils/modalidad10.ts` — `buildM10ContributionPeriod` (SBC efectivo del periodo) y
+  `m10SalaryRange` (piso y techo del Art. 28).
+- `src/services/pension/steps/AverageSalaryStep.ts` — narra el reparto y declara el supuesto.
+- `src/hooks/usePensionForm.ts` — precarga las 25 UMA por omisión y sincroniza el SBC con su
+  equivalente en UMAs.
 
 ### Qué no se hizo a propósito
 
-La fórmula de semanas por fechas sí quedó resuelta por ADR-0013; sigue pendiente la
-aproximación del promedio histórico, porque **es una decisión de producto y legal, no de
-código**. Las salidas posibles cambian lo que la app afirma:
-
-1. **Advertir y no ponderar**: usar el SBC capturado y mostrar el SBC de M40 aparte, como
-   referencia, sin alterar el promedio.
-2. **Ponderar contra el horizonte real**: repartir el peso entre el régimen obligatorio y M40
-   según un horizonte acotado, no según las 250 semanas de referencia.
-3. **Pedir el dato**: que el usuario indique cuánto de su horizonte es M40 y qué SBC tendrá
-   en ese periodo, y calcular el promedio ponderado con eso.
-
-Ninguna se puede elegir sin contrastar el criterio del IMSS y sin decidir qué espera la
-persona usuaria de la cifra que ve. Se dejó documentado en vez de fijar una regla en el
-código que pudiera tener que deshacerse.
-
----
+No se modelan las bandas del grupo de salario ni se reconstruye el historial previo cuando
+no hay constancia importada: son decisiones legales que exigen el criterio del IMSS. Se
+declararon como supuestos en vez de fijar una regla que pudiera tener que deshacerse.
 
 ## 5. El porcentaje del Art. 171 se aplica sobre la cuantía básica, no sobre la vejez
 

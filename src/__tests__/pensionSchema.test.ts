@@ -10,10 +10,11 @@
  */
 import {
   PensionInputSchema,
-  Modalidad40Schema,
+  Modalidad10Schema,
   WorkHistorySchema,
   EmploymentRelationSchema,
   safeParsePensionInputAtReferenceDate,
+  type PensionInputForm,
 } from '../validation/pensionSchema';
 
 function buildValidRelation() {
@@ -32,7 +33,7 @@ function parseAtReferenceDate(input: unknown, referenceDate: Date) {
   return safeParsePensionInputAtReferenceDate(input, referenceDate);
 }
 
-function buildValidInput() {
+function buildValidInput(): PensionInputForm {
   return {
     personalData: {
       name: 'Usuario de Prueba',
@@ -48,7 +49,7 @@ function buildValidInput() {
     },
     averageSalary: { dailySalary: 200, monthlySalary: 6080, isManual: true },
     uma: { dailyUMA: 113.14, monthlyUMA: 3439.46, annualUMA: 41296.1, year: 2025, isCustom: false },
-    modalidad40: { active: false },
+    modalidad10: { active: false },
     beneficiaries: {
       hasSpouse: false,
       hasMinorChildren: false,
@@ -152,9 +153,75 @@ describe('PensionInputSchema — contrato completo con historial reconstruido', 
   });
 });
 
-describe('Modalidad40Schema — meses esperados', () => {
+describe('Modalidad10Schema — meses esperados', () => {
   test('acepta cero meses si no hay un mes contractual antes del retiro', () => {
-    expect(Modalidad40Schema.safeParse({ active: true, expectedMonths: 0 }).success).toBe(true);
+    expect(Modalidad10Schema.safeParse({ active: true, expectedMonths: 0 }).success).toBe(true);
+  });
+});
+
+describe('PensionInputSchema — límites del SBC de Modalidad 10 (Art. 28 LSS vigente)', () => {
+  test('acepta un SBC dentro del rango: de una UMA al tope de 25 UMA', () => {
+    const input = buildValidInput();
+    input.uma.smgCdmx = 278.8;
+    input.modalidad10 = {
+      active: true,
+      contributionSalary: 2828.5,
+      contributionSalaryInUMAs: 25,
+    };
+
+    const result = parseAtReferenceDate(input, new Date(2025, 4, 30));
+
+    expect(result.success).toBe(true);
+  });
+
+  test('rechaza un SBC por encima de 25 UMA', () => {
+    const input = buildValidInput();
+    input.uma.smgCdmx = 278.8;
+    input.modalidad10 = {
+      active: true,
+      contributionSalary: 3000,
+      contributionSalaryInUMAs: 26.52,
+    };
+
+    const result = parseAtReferenceDate(input, new Date(2025, 4, 30));
+
+    expect(result.success).toBe(false);
+    expect(
+      result.error?.issues.some((i) => i.message.includes('no puede exceder 25 UMA')),
+    ).toBe(true);
+  });
+
+  test('rechaza un SBC por debajo del salario mínimo de la zona', () => {
+    const input = buildValidInput();
+    input.uma.smgCdmx = 278.8;
+    input.modalidad10 = {
+      active: true,
+      contributionSalary: 100,
+      contributionSalaryInUMAs: 0.88,
+    };
+
+    const result = parseAtReferenceDate(input, new Date(2025, 4, 30));
+
+    expect(result.success).toBe(false);
+    expect(
+      result.error?.issues.some((i) => i.message.includes('salario mínimo de tu zona')),
+    ).toBe(true);
+  });
+
+  test('rechaza un número de UMAs por encima del tope legal', () => {
+    const input = buildValidInput();
+    input.modalidad10 = {
+      active: true,
+      contributionSalary: 2828.5,
+      contributionSalaryInUMAs: 26,
+    };
+
+    const result = parseAtReferenceDate(input, new Date(2025, 4, 30));
+
+    expect(result.success).toBe(false);
+    expect(
+      result.error?.issues.some((i) => i.message.includes('no pueden exceder 25')),
+    ).toBe(true);
   });
 });
 
@@ -203,7 +270,7 @@ describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubi
     }
   });
 
-  test('rechaza 499 semanas sin Modalidad 40', () => {
+  test('rechaza 499 semanas sin Modalidad 10', () => {
     const input = { ...buildValidInput() };
     input.workHistory = { totalWeeks: 499, employmentRelations: [buildValidRelation()] };
     const result = PensionInputSchema.safeParse(input);
@@ -309,37 +376,37 @@ describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubi
     }
   });
 
-  test('acepta 480 semanas + Modalidad 40 planeada que completa el mínimo', () => {
+  test('acepta 480 semanas + Modalidad 10 planeada que completa el mínimo', () => {
     const input = { ...buildValidInput() };
     input.personalData.estimatedRetirementDate = new Date(2025, 5, 15);
     input.workHistory = { totalWeeks: 496, employmentRelations: [buildValidRelation()] };
-    input.modalidad40 = {
+    input.modalidad10 = {
       active: true,
       contributionSalary: 300,
       startDate: new Date(2025, 0, 1),
       expectedMonths: 24,
       annualSalaryIncrease: 5,
-    } as typeof input.modalidad40;
+    } as typeof input.modalidad10;
     const result = parseAtReferenceDate(input, new Date(2025, 4, 30));
     expect(result.success).toBe(true);
   });
 
-  test('rechaza 400 semanas aunque Modalidad 40 planeada no alcance el mínimo', () => {
+  test('rechaza 400 semanas aunque Modalidad 10 planeada no alcance el mínimo', () => {
     const input = { ...buildValidInput() };
     input.personalData.estimatedRetirementDate = new Date(2025, 5, 15);
     input.workHistory = { totalWeeks: 400, employmentRelations: [] };
-    input.modalidad40 = {
+    input.modalidad10 = {
       active: true,
       contributionSalary: 300,
       startDate: new Date(2025, 0, 1),
       expectedMonths: 6,
       annualSalaryIncrease: 5,
-    } as typeof input.modalidad40;
+    } as typeof input.modalidad10;
     const result = parseAtReferenceDate(input, new Date(2025, 4, 30));
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(
-        result.error.issues.some((i) => i.message.includes('planeadas en Modalidad 40')),
+        result.error.issues.some((i) => i.message.includes('planeadas en Modalidad 10')),
       ).toBe(true);
     }
   });

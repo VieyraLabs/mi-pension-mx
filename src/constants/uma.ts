@@ -134,6 +134,17 @@ export function getMostRecentUMA(): UMARecord {
 }
 
 /**
+ * Salario mínimo de referencia (Zona A / CDMX) que la Modalidad 10 usa como
+ * piso del SBC declarado (Art. 28 LSS vigente).
+ *
+ * Si la configuración no lo trae —simulaciones guardadas por versiones
+ * anteriores de la app— se usa el del registro UMA vigente.
+ */
+export function getMinimumDailySalary(uma: { smgCdmx?: number }): number {
+  return uma.smgCdmx ?? UMA_ACTUAL.smgCdmx;
+}
+
+/**
  * Calcula los valores de UMA mensual y anual a partir del valor diario.
  * Fuente: Ley para Determinar el Valor de la UMA, Art. 9 (DOF 27-ene-2016):
  * - Mensual = Diario × 30.4

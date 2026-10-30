@@ -24,7 +24,7 @@ omisión para los campos que el simulador no expone, y luego invoca el mismo mot
 - **El simulador y el motor no pueden divergir.** El simulador no reimplementa ninguna
   regla: arma un `PensionInput` y llama a `calculatePension`.
 - **Los valores por omisión son explícitos** en la construcción del input: sexo
-  masculino, sin empleos registrados, Modalidad 40 inactiva, sin dependientes salvo los que el
+  masculino, sin empleos registrados, Modalidad 10 inactiva, sin dependientes salvo los que el
   usuario marque.
 - **Si la entrada del simulador es inválida, el resultado es `0`** y no se muestra un
   desglose. `calculateSimpleScenario` llama a `validateInput` y devuelve `0` si el

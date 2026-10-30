@@ -75,7 +75,7 @@ App.tsx                     Raíz de la app
 ├── constants/               Valores normativos, con su fuente
 ├── storage/                 Persistencia local (AsyncStorage)
 ├── theme/                   Tema Material Design 3
-└── utils/                   Formato, fechas, Modalidad 40
+└── utils/                   Formato, fechas, Modalidad 10
 ```
 
 ## Stack
@@ -109,7 +109,7 @@ App.tsx                     Raíz de la app
 - **Deuda técnica del motor documentada** en [`docs/deuda-tecnica.md`](docs/deuda-tecnica.md):
   los huecos conocidos entre lo que calcula la app y lo que resuelve el IMSS (techo del
   100 % del salario promedio, fracción de los incrementos anuales, supuestos de la
-  proyección de semanas, saturación de la ponderación de Modalidad 40 y el porcentaje del
+  proyección de semanas, la convergencia del promedio con horizontes largos de Modalidad 10 y el porcentaje del
   Art. 171 aplicado sobre la cuantía básica en vez de sobre la vejez). No es trabajo
   pendiente de la iteración: es el inventario de lo que la app **no** hace, publicado para
   que quien compare su resultado con la respuesta oficial sepa dónde puede haber

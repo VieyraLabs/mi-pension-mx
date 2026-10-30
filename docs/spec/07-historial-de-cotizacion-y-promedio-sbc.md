@@ -88,10 +88,12 @@ se muestra es el número que se promedia.
 - No se importan constancias de otros años que no vengan en el mismo documento.
 - No se corrigen los datos del historial contra la constancia: el módulo trabaja con lo
   que el parser produjo.
-- **El desglose en periodos no resuelve la ponderación de Modalidad 40**: con horizontes
-  largos, el SBC capturado puede quedar fuera del promedio ponderado de las 250 semanas de
-  referencia. Ver el ítem 4 de [`docs/deuda-tecnica.md`](../deuda-tecnica.md).
-
+- **El SBC promedio proyectado incluye los meses de Modalidad 10 al SBC declarado**: los
+  meses de M10 son cotizaciones y entran al promedio de las últimas 250 semanas cotizadas
+  (Art. 167 LSS 1973), no como una ponderación aparte. Con horizontes largos el promedio
+  converge al SBC de M10, porque las últimas 250 semanas cotizadas son las de M10. El
+  desglose en periodos sigue sin resolverlo: ver el ítem 4 de
+  [`docs/deuda-tecnica.md`](../deuda-tecnica.md).
 ## Verificación
 
 - `src/__tests__/contributionHistory.test.ts` — caso de las 250 semanas completas, caso

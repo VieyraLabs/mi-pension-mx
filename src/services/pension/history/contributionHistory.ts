@@ -285,6 +285,25 @@ export function summarizeLastContributedWeeks(
 }
 
 /**
+ * Último salario registrado: el SBC del tramo más reciente del historial.
+ *
+ * Es el dato que se suma al SBC de la Modalidad 10 cuando la persona sigue
+ * trabajando (dos cotizaciones en el mismo mes). Si no hay historial, se
+ * devuelve el SBC capturado por la persona.
+ */
+export function getLastRegisteredDailySalary(
+  segments: readonly { startDate: Date; endDate: Date; sbc: number }[],
+  fallback: number,
+): number {
+  const valid = segments.filter((segment) => Number.isFinite(segment.sbc) && segment.sbc > 0);
+  if (valid.length === 0) return fallback;
+  const latest = valid.reduce((a, b) =>
+    b.endDate.getTime() > a.endDate.getTime() ? b : a,
+  );
+  return latest.sbc;
+}
+
+/**
  * Inicio del día (medianoche local) de la fecha dada, en milisegundos.
  * Se usa para comparar fechas por DÍA COMPLETO y no por instante.
  */

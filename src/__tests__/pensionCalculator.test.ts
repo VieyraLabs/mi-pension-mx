@@ -42,9 +42,9 @@ function buildInput(overrides: Partial<{
   tieneHijosMenores: boolean;
   numeroHijos: number;
   tienePadres: boolean;
-  modalidad40Activa: boolean;
-  m40Salario: number;
-  m40Meses: number;
+  modalidad10Activa: boolean;
+  M10Salario: number;
+  M10Meses: number;
   umaDiaria: number;
   smgCdmx: number;
   fechaRetiro: Date;
@@ -63,9 +63,9 @@ function buildInput(overrides: Partial<{
     tieneHijosMenores = false,
     numeroHijos = 0,
     tienePadres = false,
-    modalidad40Activa = false,
-    m40Salario = 0,
-    m40Meses = 0,
+    modalidad10Activa = false,
+    M10Salario = 0,
+    M10Meses = 0,
     umaDiaria = UMA_2025,
     smgCdmx = SMG_2025,
     fechaRetiro = new Date(2025, 0, 1),
@@ -96,10 +96,10 @@ function buildInput(overrides: Partial<{
       year: 2025,
       isCustom: false,
     },
-    modalidad40: {
-      active: modalidad40Activa,
-      contributionSalary: m40Salario || undefined,
-      expectedMonths: m40Meses || undefined,
+    modalidad10: {
+      active: modalidad10Activa,
+      contributionSalary: M10Salario || undefined,
+      expectedMonths: M10Meses || undefined,
     },
     beneficiaries: {
       hasSpouse: tieneConyuge,
@@ -169,99 +169,144 @@ describe('validateInput', () => {
     expect(result.warnings.length).toBeGreaterThan(0);
   });
 
-  test('rechaza semanas menores a 500 aunque falte poco, si Modalidad 40 no está activa', () => {
-    // El asegurado ya está en la edad de retiro: ni la proyección ni la M40
+  test('rechaza semanas menores a 500 aunque falte poco, si Modalidad 10 no está activa', () => {
+    // El asegurado ya está en la edad de retiro: ni la proyección ni la M10
     // pueden completar el mínimo de 500 semanas.
     const input = buildInput({ semanas: 480 });
     const result = validateInput(input);
     expect(result.valid).toBe(false);
   });
 
-  test('acepta semanas menores a 500 cuando M40 por fechas completa el mínimo', () => {
+  test('acepta semanas menores a 500 cuando M10 por fechas completa el mínimo', () => {
     withReferenceDate(new Date(2025, 4, 30), () => {
       const input = buildInput({
         semanas: 496,
-        modalidad40Activa: true,
-        m40Salario: 300,
-        m40Meses: 24,
+        modalidad10Activa: true,
+        M10Salario: 300,
+        M10Meses: 24,
         fechaRetiro: new Date(2025, 5, 15),
       });
       expect(validateInput(input).valid).toBe(true);
     });
   });
 
-  test('rechaza semanas menores a 500 cuando la M40 por fechas no completa el mínimo', () => {
+  test('rechaza semanas menores a 500 cuando la M10 por fechas no completa el mínimo', () => {
     withReferenceDate(new Date(2025, 4, 30), () => {
       const input = buildInput({
         semanas: 400,
-        modalidad40Activa: true,
-        m40Salario: 300,
-        m40Meses: 6,
+        modalidad10Activa: true,
+        M10Salario: 300,
+        M10Meses: 6,
         fechaRetiro: new Date(2025, 5, 15),
       });
       const result = validateInput(input);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('planeadas en Modalidad 40'))).toBe(true);
+      expect(result.errors.some((e) => e.includes('planeadas en Modalidad 10'))).toBe(true);
     });
   });
 });
 
 // ─────────────────────────────────────────────
-// Modalidad 40 — semanas proyectadas
+// Modalidad 10 — semanas proyectadas
 // ─────────────────────────────────────────────
 //
-// Los meses de Modalidad 40 que el usuario planea contratar a futuro
+// Los meses de Modalidad 10 que el usuario planea contratar a futuro
 // (`expectedMonths`) no están incluidos en `workHistory.totalWeeks` — deben
 // sumarse al total de semanas usado para el mínimo de 500 y los incrementos
 // anuales, no solo usarse para el promedio ponderado del SBC.
 
-describe('calculatePension — Modalidad 40 (semanas proyectadas)', () => {
-  test('la proyección M40 dentro del horizonte no duplica las semanas estimadas', () => {
+describe('calculatePension — Modalidad 10 (semanas proyectadas)', () => {
+  test('la proyección M10 dentro del horizonte no duplica las semanas estimadas', () => {
     withReferenceDate(new Date(2025, 5, 1), () => {
       const fechaRetiro = new Date(2026, 5, 30);
-      const sinM40 = calculatePension(
+      const sinM10 = calculatePension(
         buildInput({ semanas: 500, fechaRetiro }),
       );
-      const conM40 = calculatePension(
+      const conM10 = calculatePension(
         buildInput({
           semanas: 500,
           fechaRetiro,
-          modalidad40Activa: true,
-          m40Salario: 200,
-          m40Meses: 12,
+          modalidad10Activa: true,
+          M10Salario: 200,
+          M10Meses: 12,
         }),
       );
 
-      expect(sinM40.weeksProjection?.projectedWeeks).toBe(56);
-      expect(conM40.weeksProjection?.projectedWeeks).toBe(56);
-      expect(conM40.weeksProjection?.targetWeeks).toBe(556);
-      expect(conM40.weeksProjection?.targetWeeks).toBe(sinM40.weeksProjection?.targetWeeks);
+      expect(sinM10.weeksProjection?.projectedWeeks).toBe(56);
+      expect(conM10.weeksProjection?.projectedWeeks).toBe(56);
+      expect(conM10.weeksProjection?.targetWeeks).toBe(556);
+      expect(conM10.weeksProjection?.targetWeeks).toBe(sinM10.weeksProjection?.targetWeeks);
     });
   });
 
-  test('sin Modalidad 40 activa, las semanas proyectadas no se suman', () => {
-    const input = buildInput({ semanas: 500, modalidad40Activa: false, m40Meses: 12 });
+  test('sin Modalidad 10 activa, las semanas proyectadas no se suman', () => {
+    const input = buildInput({ semanas: 500, modalidad10Activa: false, M10Meses: 12 });
     const result = calculatePension(input);
     const paso = result.steps.find((p) => p.id === 'incrementos_anuales');
-    expect(paso?.description).not.toMatch(/Modalidad 40/i);
+    expect(paso?.description).not.toMatch(/Modalidad 10/i);
   });
 
-  test('AverageSalaryStep pondera 31 semanas M40 del intervalo 1-jul a 31-ene', () => {
+  test('los meses de M10 que llegan más allá del horizonte se narran aparte', () => {
+    // El retiro cae a principios del mes: M10 alcanza el fin del mes de
+    // retiro y aporta semanas que la proyección por días no cubre.
+    withReferenceDate(new Date(2025, 11, 20), () => {
+      const result = calculatePension(
+        buildInput({
+          semanas: 500,
+          edadActual: 30,
+          edadRetiro: 65,
+          modalidad10Activa: true,
+          M10Salario: 300,
+          M10Meses: 1,
+          fechaRetiro: new Date(2026, 0, 5),
+        }),
+      );
+      const paso = result.steps.find((p) => p.id === 'incrementos_anuales');
+
+      expect(paso?.assumption).toContain('meses de Modalidad 10');
+    });
+  });
+
+  test('AverageSalaryStep narra el reparto de semanas de M10 del SBC proyectado', () => {
+    const result = calculatePension({
+      ...buildInput({ semanas: 500, salarioDiario: 200 }),
+      projectedAverageDailySalary: 212.4,
+      projectedAverageBreakdown: {
+        totalWeeks: 250,
+        m10Weeks: 31,
+        ordinaryWeeks: 219,
+        m10DailySalary: 300,
+        ordinaryDailySalary: 200,
+      },
+    });
+    const averageStep = result.steps.find((step) => step.id === 'salario_promedio');
+
+    expect(averageStep?.description).toContain(
+      '219 sem. ordinarias ($200.00/día) + 31 sem. M10 ($300.00/día) = $212.40/día',
+    );
+    expect(averageStep?.formula).toContain('÷ 250');
+    expect(averageStep?.isEstimate).toBe(true);
+  });
+
+  test('avisa cuando la M10 está activa pero el SBC proyectado no incluye sus meses', () => {
+    const result = calculatePension(
+      buildInput({ semanas: 500, modalidad10Activa: true, M10Salario: 300, M10Meses: 7 }),
+    );
+
+    expect(
+      result.warnings.some((w) =>
+        w.includes('el SBC promedio proyectado no incluye sus meses'),
+      ),
+    ).toBe(true);
+  });
+
+  test('la proyección de semanas conserva su forma pública', () => {
     withReferenceDate(new Date(2025, 5, 1), () => {
       const result = calculatePension(
         buildInput({
           semanas: 500,
-          salarioDiario: 200,
-          modalidad40Activa: true,
-          m40Salario: 300,
-          m40Meses: 7,
           fechaRetiro: new Date(2026, 0, 31),
         }),
-      );
-      const averageStep = result.steps.find((step) => step.id === 'salario_promedio');
-
-      expect(averageStep?.description).toContain(
-        '219 sem. ordinarias ($200.00/día) + 31 sem. M40 ($300.00/día) = $212.40/día',
       );
       const projectionKeys = [
         'currentWeeks',
@@ -332,17 +377,17 @@ describe('calculatePension — Proyección de semanas al jubilarse', () => {
     expect(result.weeksProjection?.yearsToRetirement).toBe(0);
   });
 
-  test('las semanas de Modalidad 40 dentro del horizonte no se cuentan dos veces', () => {
-    // 35 años proyectados (1820 semanas) con 12 meses de M40 (52 semanas):
-    // la M40 cae dentro del horizonte, así que el total NO es 1920 + 52.
+  test('las semanas de Modalidad 10 dentro del horizonte no se cuentan dos veces', () => {
+    // 35 años proyectados (1820 semanas) con 12 meses de M10 (52 semanas):
+    // la M10 cae dentro del horizonte, así que el total NO es 1920 + 52.
     withReferenceDate(new Date(2025, 5, 1), () => {
       const input = buildInput({
         semanas: 100,
         edadActual: 30,
         edadRetiro: 65,
-        modalidad40Activa: true,
-        m40Salario: 200,
-        m40Meses: 12,
+        modalidad10Activa: true,
+        M10Salario: 200,
+        M10Meses: 12,
         fechaRetiro: new Date(2060, 5, 1),
       });
       const result = calculatePension(input);
@@ -878,8 +923,8 @@ describe('calculatePension — Invariante de explicabilidad del desglose', () =>
       }),
     ],
     [
-      'con Modalidad 40 planeada',
-      buildInput({ semanas: 500, salarioDiario: 200, modalidad40Activa: true, m40Salario: 300, m40Meses: 24 }),
+      'con Modalidad 10 planeada',
+      buildInput({ semanas: 500, salarioDiario: 200, modalidad10Activa: true, M10Salario: 300, M10Meses: 24 }),
     ],
   ];
 

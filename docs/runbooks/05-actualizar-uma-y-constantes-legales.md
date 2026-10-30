@@ -37,7 +37,12 @@ En `src/constants/ley73.ts`, en `ART167_TABLE`:
 En `src/constants/ley73.ts`:
 
 - `SBC_CAP_TIMES_UMA` (tope de cotización, 25 UMA por el Art. 28 LSS vigente).
-- `MODALIDAD_40_CAP_TIMES_UMA` (tope de la Modalidad 40).
+- `MODALIDAD_10_CAP_TIMES_UMA` (tope de la Modalidad 10: 25 UMA).
+- `MODALIDAD_10_CUOTA_PCT` (cuota de la Modalidad 10 sin INFONAVIT): verificar en el
+  Acuerdo de la Junta Directiva y marcar como estimación mientras no se confirme.
+- El SMG de `TABLA_UMA_SMG` es también el **piso del SBC declarado en la Modalidad 10**
+  (salario mínimo del área geográfica, Art. 28 LSS vigente): al cambiarlo hay que revisar
+  el mínimo en UMAs que muestra el paso 4.
 - El mínimo de la pensión garantizada, si cambió.
 
 ### 4. Registrar la provenancia documental (obligatorio)

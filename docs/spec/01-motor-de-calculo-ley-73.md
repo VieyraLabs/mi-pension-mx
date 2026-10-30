@@ -44,8 +44,8 @@ en seis meses» solo es decidible si la edad cumplida se conoce con esa precisi�
 
 El pipeline tiene ocho pasos, en este orden:
 
-1. `AverageSalaryStep` — SBC promedio de las últimas 250 semanas cotizadas, ajustado por
-   Modalidad 40 y topado a 25 UMA.
+1. `AverageSalaryStep` — SBC promedio de las últimas 250 semanas cotizadas (con los meses
+   de Modalidad 10 ya integrados, ver más abajo) y topado a 25 UMA.
 2. `BasicQuantityStep` — cuantía básica según la tabla del Art. 167.
 3. `AnnualIncrementsStep` — incrementos anuales por cada 52 semanas excedentes.
 4. `DecreeIncrementStep` — incremento del 11 % (decreto DOF 2001/2004).
@@ -105,22 +105,35 @@ Reglas transversales:
     futuros aporta 0 semanas. El residuo mayor que tres sigue la regla aritmética del
     Art. 20 de la LSS vigente; no se verificó independientemente que la LSS 1973 tenga
     ese mismo texto (ver [nota de investigación](../investigacion/semanas-cotizadas-y-proyeccion.md)).
-  - Modalidad 40 comienza el día 1 del mes siguiente a `referenceDate` y cuenta hasta el
+  - Modalidad 10 comienza el día 1 del mes siguiente a `referenceDate` y cuenta hasta el
     último día del mes de retiro, con el límite vigente de 600 meses desde el primer mes
-    M40 permitido. `targetWeeks = semanas actuales + max(projectedWeeks,
-    m40PlannedWeeks)`: las semanas M40 dentro del horizonte no se suman dos veces.
+    M10 permitido. `targetWeeks = semanas actuales + max(projectedWeeks,
+    m10PlannedWeeks)`: las semanas M10 dentro del horizonte no se suman dos veces.
   - `yearsToRetirement = max(0, edad de retiro − edad actual)` se conserva como metadato,
     pero no determina las semanas proyectadas. La edad actual sigue tomando el dato de
     `personalData.age`; la edad legal y su factor no cambian.
   - `targetWeeks` se compara contra las 500 semanas mínimas (Arts. 138 y 145 LSS 1973) y
-    produce los años excedentes de los incrementos del Art. 167 LSS 1973. Las semanas
-    M40 derivadas por fecha también alimentan el promedio M40 de resultados nuevos.
-  - Las simulaciones históricas sin `weeksProjection` conservan sus cifras ya guardadas;
-    el fallback M40 por meses (`expectedMonths × 52/12`) se identifica como aproximado.
-    La etiqueta compartida en resultado, historial y PDF es «Semanas estimadas al
+    produce los años excedentes de los incrementos del Art. 167 LSS 1973.
+  - La etiqueta compartida en resultado, historial y PDF es «Semanas estimadas al
     pensionarte».
   - La decisión de proyección vigente se documenta en
     [ADR-0013](../adr/0013-proyeccion-de-semanas-por-fecha.md).
+- **Modalidad 10 (incorporación voluntaria al régimen obligatorio).** El SBC declarado se
+  cotiza durante los meses proyectados y **entra al promedio de las últimas 250 semanas
+  cotizadas** (Art. 167 LSS 1973): no se pondera aparte. El SBC proyectado que ve la persona
+  es el mismo número que alimenta el cálculo.
+  - El rango del SBC declarado es el del Art. 28 LSS vigente: **salario mínimo del área
+    geográfica** como piso y **25 UMA** como techo. La app usa el SMG de la Zona A (CDMX)
+    como proxy del piso, por no conocer la zona del trabajador.
+  - Si la persona **sigue trabajando** mientras cotiza, el SBC del periodo de M10 es
+    `último salario registrado + SBC de M10` (dos cotizaciones en el mismo mes); si ya no
+    trabaja, es solo el SBC de M10. En ambos casos se topa a 25 UMA.
+  - El desglose de las 250 semanas (cuántas ordinarias y cuántas de M10, con qué SBC) viaja
+    en la entrada para que el paso 1 narre los mismos números que se usaron.
+  - La decisión vigente se documenta en
+    [ADR-0014](../adr/0014-modalidad-10-incorporacion-voluntaria-al-régimen-obligatorio.md)
+    y las fuentes, en
+    [la nota de investigación](../investigacion/modalidad-10-incorporacion-voluntaria.md).
 - **La proyección es una estimación.** Asume que el asegurado sigue cotizando de forma
   continua durante el horizonte; no afirma que las semanas futuras estén reconocidas por
   el IMSS. El SBC proyectado al retiro se calcula sobre las últimas 250 semanas cotizadas
@@ -140,8 +153,8 @@ Reglas transversales:
 
 ## Fuera de alcance
 
-- La Modalidad 40 se estima con un promedio ponderado, no con el historial exacto: se
-  marca como estimación en el paso y en las advertencias.
+- La Modalidad 10 se estima con el historial proyectado, no con el historial exacto del
+  IMSS: se marca como estimación en el paso y en las advertencias.
 - No se calculan Zackarias por viudez, orfandad o Accidente de trabajo.
 - No se calcula la pensión de invalidez ni la de cesantía en edad avanzada como
   tipos separados: el factor por edad cubre el caso de edad avanzada.
@@ -162,9 +175,11 @@ Reglas transversales:
 - **La proyección de semanas es un supuesto, no una predicción**, y no tiene una prueba de
   sensibilidad que mida cuánto se mueve el resultado al cambiar el horizonte. Ver el ítem 3
   de [`docs/deuda-tecnica.md`](../deuda-tecnica.md).
-- **La ponderación de Modalidad 40 sobre las 250 semanas de referencia puede saturar** con
-  horizontes largos: el SBC capturado por el usuario puede quedar fuera del promedio
-  ponderado. Ver el ítem 4 de [`docs/deuda-tecnica.md`](../deuda-tecnica.md).
+- **Con un horizonte largo de Modalidad 10, el promedio de las 250 semanas converge al SBC
+  declarado.** Es el comportamiento correcto según el Art. 167 LSS 1973 (las últimas 250
+  semanas cotizadas son las de la Modalidad 10), pero se declara para que quien compare con
+  el IMSS sepa interpretarlo. Ver el ítem 4 de
+  [`docs/deuda-tecnica.md`](../deuda-tecnica.md).
 - **El porcentaje del Art. 171 LSS 1973 se aplica sobre la cuantía básica, no sobre la
   cuantía de vejez.** La ley expresa la cesantía como «% de la cuantía de la pensión de
   vejez que le hubiera correspondido al asegurado de haber alcanzado 65 años»; el motor
@@ -174,7 +189,7 @@ Reglas transversales:
 ## Verificación
 
 - `src/__tests__/pensionCalculator.test.ts` — cadena completa, orden de los pasos,
-  topes, Modalidad 40,UMO personalizada y validación de entrada; **regla del Art. 171
+  topes, Modalidad 10,UMO personalizada y validación de entrada; **regla del Art. 171
   LSS 1973 (edad legal por seis meses)**: 60 exactos → factor 75 %, 60.5 → 61 años y
   factor 80 %, 64.5 → 65 años y vejez sin reducción, 60.25 → 60 años y factor 75 %.
 - `src/__tests__/legalAge.test.ts` — `calculateLegalAge` (edad entera, menos de medio año
@@ -182,7 +197,7 @@ Reglas transversales:
 - `src/__tests__/pensionSchema.test.ts` — la entrada del motor acepta una edad de retiro
   con fracción de medio año (60.5) y rechaza las que no son múltiplos de medio año.
 - `src/__tests__/weeksProjection.test.ts` — cálculo de la proyección (`yearsToRetirement`,
-  `projectedWeeks`, `targetWeeks`), el tratamiento de Modalidad 40 dentro del horizonte
+  `projectedWeeks`, `targetWeeks`), el tratamiento de Modalidad 10 dentro del horizonte
   (nunca sumando dos veces) y el texto del desglose que comparten el motor y la validación.
 - `src/services/pension/steps/` — cada paso tiene su propia cobertura de rama dentro
   del mismo archivo de pruebas del motor.

@@ -60,8 +60,8 @@ export interface WeeksNarrative {
   currentWeeks: number;
   /** Semanas proyectadas desde mañana hasta la fecha exacta de retiro. */
   projectedWeeks: number;
-  /** Semanas de Modalidad 40 que exceden el horizonte (0 si no las hay). */
-  m40ExtraWeeks: number;
+  /** Semanas de Modalidad 10 que exceden el horizonte (0 si no las hay). */
+  m10ExtraWeeks: number;
   /** Semanas con las que se jubila el asegurado. */
   targetWeeks: number;
   /**
@@ -81,7 +81,7 @@ export interface WeeksNarrative {
  * como metadato de compatibilidad; no determina las semanas estimadas.
  *
  * La proyección base empieza mañana para no volver a contar el día reflejado en
- * `currentWeeks`. M40 puede cubrir hasta el fin del mes de retiro, por lo que
+ * `currentWeeks`. M10 puede cubrir hasta el fin del mes de retiro, por lo que
  * el objetivo toma el máximo de ambas proyecciones y nunca las suma.
  */
 export function calculateWeeksProjection(params: {
@@ -90,7 +90,7 @@ export function calculateWeeksProjection(params: {
   retirementAge: number;
   referenceDate: Date;
   retirementDate: Date;
-  m40PlannedWeeks: number;
+  m10PlannedWeeks: number;
 }): WeeksProjection {
   const yearsToRetirement = Math.max(0, params.retirementAge - params.age);
   const startDate = new Date(
@@ -99,7 +99,7 @@ export function calculateWeeksProjection(params: {
     params.referenceDate.getDate() + 1,
   );
   const projectedWeeks = countCotizedWeeksInDateRange(startDate, params.retirementDate);
-  const targetWeeks = params.currentWeeks + Math.max(projectedWeeks, params.m40PlannedWeeks);
+  const targetWeeks = params.currentWeeks + Math.max(projectedWeeks, params.m10PlannedWeeks);
 
   return {
     currentWeeks: params.currentWeeks,
@@ -111,7 +111,7 @@ export function calculateWeeksProjection(params: {
 
 /**
  * Meses que faltan hasta la edad de retiro — horizonte sugerido para los
- * meses esperados de Modalidad 40.
+ * meses esperados de Modalidad 10.
  */
 export function estimateMonthsToRetirement(age: number, retirementAge: number): number {
   return Math.max(0, retirementAge - age) * MONTHS_PER_YEAR;
@@ -135,10 +135,10 @@ export function describeWeeksProjection(
 ): WeeksNarrative {
   const { currentWeeks, projectedWeeks, targetWeeks } = projection;
 
-  // Las semanas de Modalidad 40 que exceden el horizonte hasta la edad de
+  // Las semanas de Modalidad 10 que exceden el horizonte hasta la edad de
   // retiro son el único horizonte que puede sumar semanas por encima de la
   // proyección (no se cuentan dos veces).
-  const m40ExtraWeeks = Math.max(0, targetWeeks - (currentWeeks + projectedWeeks));
+  const m10ExtraWeeks = Math.max(0, targetWeeks - (currentWeeks + projectedWeeks));
 
   const horizonte =
     retirementAge !== undefined
@@ -149,14 +149,14 @@ export function describeWeeksProjection(
   if (projectedWeeks > 0) {
     parts.push(`${projectedWeeks} ${horizonte}`);
   }
-  if (m40ExtraWeeks > 0) {
-    parts.push(`${m40ExtraWeeks} planeadas en Modalidad 40`);
+  if (m10ExtraWeeks > 0) {
+    parts.push(`${m10ExtraWeeks} planeadas en Modalidad 10`);
   }
 
   return {
     currentWeeks,
     projectedWeeks,
-    m40ExtraWeeks,
+    m10ExtraWeeks,
     targetWeeks,
     parts,
     breakdown: `${parts.join(' + ')} = ${targetWeeks}`,

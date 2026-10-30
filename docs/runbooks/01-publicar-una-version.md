@@ -90,7 +90,7 @@ gh workflow run promotion-gate.yml \
 Si el cambio es solo de JavaScript, se puede publicar sin pasar por las tiendas:
 
 ```bash
-npx eas-cli update --channel production --message "Corrección del cálculo de la Modalidad 40"
+npx eas-cli update --channel production --message "Corrección del cálculo de la Modalidad 10"
 ```
 
 Este paso va **después** de tener el artefacto de autorización del paso 4: es el punto

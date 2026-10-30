@@ -4,7 +4,7 @@
  *
  * También fija la estructura de los pasos (4 en total): el historial laboral y
  * el SBC viven en el paso 2, la edad de retiro y los beneficiarios en el paso
- * 3, y la UMA y la Modalidad 40 en el paso 4.
+ * 3, y la UMA y la Modalidad 10 en el paso 4.
  *
  * Para ejecutar: npm test
  */
@@ -28,7 +28,10 @@ import { lightTheme } from '../theme';
 import { renderScreen } from '../test-utils/renderScreen';
 import NewSimulationScreen from '../screens/NewSimulationScreen';
 import { getLocalReferenceDate } from '../utils/weeksProjection';
-import { estimateM40Months } from '../utils/modalidad40';
+import { calculateM10MonthlyCost, estimateM10Months } from '../utils/modalidad10';
+import { round2 } from '../utils/format';
+import { formatCurrency } from '../utils/format';
+import { UMA_ACTUAL } from '../constants/uma';
 import {
   cumpleanosEnEdad,
   edadMostrada,
@@ -178,7 +181,7 @@ describe('NewSimulationScreen', () => {
     expect(screen.queryByLabelText('Salario Base de Cotización proyectado')).toBeNull();
   });
 
-  test('el paso 4 reúne la UMA y la Modalidad 40', () => {
+  test('el paso 4 reúne la UMA y la Modalidad 10', () => {
     renderScreen(<NewSimulationScreen />);
 
     advanceToUmaStep();
@@ -186,8 +189,8 @@ describe('NewSimulationScreen', () => {
     expect(screen.getByText('Paso 4 de 4: UMA')).toBeTruthy();
     // UMA (tarjeta).
     expect(screen.getAllByText(/Unidad de Medida y Actualización/).length).toBeGreaterThan(0);
-    // Modalidad 40 (misma pantalla).
-    expect(screen.getAllByText(/Modalidad 40 \(opcional\)/).length).toBeGreaterThan(0);
+    // Modalidad 10 (misma pantalla).
+    expect(screen.getAllByText(/Modalidad 10 \(opcional\)/).length).toBeGreaterThan(0);
   });
 
   test('el paso 3 precarga la fecha del cumpleaños a los 65 y muestra la edad en solo lectura', () => {
@@ -291,48 +294,92 @@ describe('NewSimulationScreen', () => {
       ),
     ).toBeTruthy();
 
-    // El horizonte de Modalidad 40 se deriva de la EDAD DE PRESENTACIÓN (64.5).
+    // El horizonte de Modalidad 10 se deriva de la EDAD DE PRESENTACIÓN (64.5).
     fireEvent.press(screen.getByText('Siguiente'));
-    fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 40? Toca aquí'));
+    fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 10? Toca aquí'));
 
-    const mesesConMediaEdad = estimateM40Months(
+    const mesesConMediaEdad = estimateM10Months(
       getLocalReferenceDate(),
       new Date(2029, 6, 1),
     );
-    expect(screen.getByDisplayValue(String(mesesConMediaEdad))).toBeTruthy();
+    expect(screen.getByText('Meses cotizando en M10 (proyectados)')).toBeTruthy();
+    expect(screen.getByText(`${mesesConMediaEdad} meses`)).toBeTruthy();
     expect(
       screen.getByText(
-        'Se calcula automáticamente: M40 va del día 1 del mes siguiente a hoy hasta el último día del mes de retiro, ambos inclusive.',
+        'M10 va del día 1 del mes siguiente a hoy hasta el último día del mes de retiro, ambos inclusive.',
       ),
     ).toBeTruthy();
   });
 
-  test('los meses de Modalidad 40 son de solo lectura y muestran el valor derivado', () => {
+  test('los meses de Modalidad 10 son de solo lectura: texto, no campo editable', () => {
     renderScreen(<NewSimulationScreen />);
 
-    // Ir al paso 4 (UMA + Modalidad 40).
+    // Ir al paso 4 (UMA + Modalidad 10).
     advanceToUmaStep();
     expect(screen.getByText('Paso 4 de 4: UMA')).toBeTruthy();
 
-    // Activar Modalidad 40.
-    fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 40? Toca aquí'));
+    // Activar Modalidad 10.
+    fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 10? Toca aquí'));
 
     // El valor viene del horizonte: los meses entre hoy y la fecha de retiro.
-    const mesesEsperados = estimateM40Months(
+    const mesesEsperados = estimateM10Months(
       getLocalReferenceDate(),
       new Date(2030, 0, 1),
     );
 
-    const inputMeses = screen.getByDisplayValue(String(mesesEsperados));
-    expect(inputMeses.props.editable).toBe(false);
-    expect(inputMeses).toBeDisabled();
+    // Es un texto de solo lectura, como la edad de retiro: no un input.
+    expect(screen.getByText('Meses cotizando en M10 (proyectados)')).toBeTruthy();
+    expect(screen.getByText(`${mesesEsperados} meses`)).toBeTruthy();
+    expect(screen.queryByDisplayValue(String(mesesEsperados))).toBeNull();
+  });
 
-    // El helper explica de dónde sale el valor.
+  test('la Modalidad 10 arranca con el máximo legal de UMAs y el control las mueve de una en una', () => {
+    renderScreen(<NewSimulationScreen />);
+    advanceToUmaStep();
+
+    // Activar Modalidad 10: se precarga el techo de 25 UMA (Art. 28 LSS vigente).
+    fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 10? Toca aquí'));
+
+    expect(screen.getByDisplayValue('25')).toBeTruthy();
+    expect(
+      screen.getByDisplayValue(String(round2(25 * UMA_ACTUAL.dailyUMA))),
+    ).toBeTruthy();
+
+    // Bajar una UMA baja el monto una UMA.
+    fireEvent.press(screen.getByLabelText('Quitar una UMA'));
+    expect(screen.getByDisplayValue('24')).toBeTruthy();
+    expect(
+      screen.getByDisplayValue(String(round2(24 * UMA_ACTUAL.dailyUMA))),
+    ).toBeTruthy();
+  });
+
+  test('escribir el SBC actualiza su equivalente en UMAs', () => {
+    renderScreen(<NewSimulationScreen />);
+    advanceToUmaStep();
+    fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 10? Toca aquí'));
+
+    fireEvent.changeText(
+      screen.getByDisplayValue(String(round2(25 * UMA_ACTUAL.dailyUMA))),
+      '1000',
+    );
+
+    expect(screen.getByDisplayValue(String(round2(1000 / UMA_ACTUAL.dailyUMA)))).toBeTruthy();
+  });
+
+  test('muestra el costo mensual estimado y el rango legal de UMAs', () => {
+    renderScreen(<NewSimulationScreen />);
+    advanceToUmaStep();
+    fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 10? Toca aquí'));
+
+    expect(screen.getByText('Costo mensual estimado de la Modalidad 10')).toBeTruthy();
     expect(
       screen.getByText(
-        'Se calcula automáticamente: M40 va del día 1 del mes siguiente a hoy hasta el último día del mes de retiro, ambos inclusive.',
+        `${formatCurrency(
+          calculateM10MonthlyCost(round2(25 * UMA_ACTUAL.dailyUMA)),
+        )}/mes`,
       ),
     ).toBeTruthy();
+    expect(screen.getByText(/Rango legal \(Art\. 28 LSS vigente\)/)).toBeTruthy();
   });
 });
 

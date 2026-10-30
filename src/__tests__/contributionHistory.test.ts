@@ -13,6 +13,7 @@ import {
   calculateContributionSummary,
   getContributedWeeks,
   getLastContributionWeeks,
+  getLastRegisteredDailySalary,
   selectPeriodsInAverageWindow,
   summarizeLastContributedWeeks,
   type SBCPeriod,
@@ -615,5 +616,28 @@ describe('buildContributionSegments', () => {
     expect(tramos).toHaveLength(2);
     expect(tramos[0]!.startDate).toEqual(new Date(2024, 8, 1));
     expect(tramos[1]!.endDate).toEqual(new Date(2024, 2, 31));
+  });
+});
+
+describe('getLastRegisteredDailySalary', () => {
+  test('devuelve el SBC del tramo más reciente', () => {
+    const segmentos = [
+      { startDate: new Date(2024, 0, 1), endDate: new Date(2024, 2, 31), sbc: 100 },
+      { startDate: new Date(2025, 0, 1), endDate: new Date(2025, 2, 31), sbc: 300 },
+    ];
+
+    expect(getLastRegisteredDailySalary(segmentos, 250)).toBe(300);
+  });
+
+  test('sin historial devuelve el SBC capturado', () => {
+    expect(getLastRegisteredDailySalary([], 250)).toBe(250);
+  });
+
+  test('ignora los tramos sin SBC válido', () => {
+    const segmentos = [
+      { startDate: new Date(2024, 0, 1), endDate: new Date(2024, 2, 31), sbc: 0 },
+    ];
+
+    expect(getLastRegisteredDailySalary(segmentos, 250)).toBe(250);
   });
 });

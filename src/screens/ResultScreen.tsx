@@ -15,13 +15,14 @@ import {
   formatCurrency,
   formatPercent,
   formatInteger,
+  formatUMAs,
   formatWeeksTargetText,
   formatAge,
   formatDateLong,
   getWeeksLabel,
 } from '../utils/format';
 import { showAlert } from '../utils/alert';
-import { calculateM40PlannedWeeks, calculateM40Summary } from '../utils/modalidad40';
+import { calculateM10MonthlyCost } from '../utils/modalidad10';
 import { normalizeLocalCalendarDate } from '../utils/weeksProjection';
 import { getBannerColors, getBrandGradient, BRAND_ON_COLOR } from '../theme';
 import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
@@ -144,14 +145,14 @@ export default function ResultScreen() {
             PMG aplicada
          </Chip>
         )}
-        {result.input.modalidad40.active && (
+        {result.input.modalidad10.active && (
           <Chip
             icon="check"
             compact
             style={{ backgroundColor: successColors.background }}
             textStyle={{ color: successColors.text }}
           >
-            Modalidad 40
+            Modalidad 10
          </Chip>
         )}
         <Chip
@@ -180,105 +181,74 @@ export default function ResultScreen() {
           <SummaryRow label="SBC actual (diario)" value={formatCurrency(result.input.averageSalary.dailySalary)} theme={theme} />
           <SummaryRow label="SBC proyectado al retiro (diario)" value={formatCurrency(result.input.projectedAverageDailySalary ?? result.input.averageSalary.dailySalary)} theme={theme} />
           <SummaryRow label="UMA utilizada" value={`$${result.input.uma.dailyUMA}/día (${result.input.uma.year}${result.input.uma.isCustom ? ', personalizada' : ''})`} theme={theme} />
-          {result.input.modalidad40.active && (() => {
-            const m40 = result.input.modalidad40;
-            const summary = calculateM40Summary(
-              m40,
-              result.input.workHistory.totalWeeks,
-              result.input.projectedAverageDailySalary ?? result.input.averageSalary.dailySalary,
-              result.input.uma.dailyUMA,
-              weeksProjection
-                ? calculateM40PlannedWeeks(
-                    normalizeLocalCalendarDate(new Date(result.calculationDate)),
-                    // JSON storage revives model Date fields as ISO strings.
-                    new Date(
-                      result.input.personalData.estimatedRetirementDate as unknown as string,
-                    ),
-                  )
-                : undefined,
-            );
+          {result.input.modalidad10.active && (() => {
+            const m10 = result.input.modalidad10;
+            const breakdown = result.input.projectedAverageBreakdown;
+            const monthlyCost = calculateM10MonthlyCost(m10.contributionSalary ?? 0);
             return (
-              <View style={[styles.m40Block, { borderTopColor: theme.colors.outlineVariant }]}>
+              <View style={[styles.m10Block, { borderTopColor: theme.colors.outlineVariant }]}>
                 <Text
                   variant="labelLarge"
                   style={{ color: theme.colors.primary, marginBottom: 6 }}
                 >
-                  Modalidad 40
+                  Modalidad 10
                 </Text>
                 <SummaryRow
-                  label="Salario base a cotizar"
-                  value={`${formatCurrency(m40.contributionSalary ?? 0)}/día`}
+                  label="Salario base declarado"
+                  value={`${formatCurrency(m10.contributionSalary ?? 0)}/día`}
+                  theme={theme}
+                />
+                <SummaryRow
+                  label="Equivalente en UMAs"
+                  value={`${formatUMAs(m10.contributionSalaryInUMAs ?? 0)} UMA`}
                   theme={theme}
                 />
                 <SummaryRow
                   label="Meses que planeas cotizar"
-                  value={`${m40.expectedMonths ?? 0} meses`}
+                  value={`${m10.expectedMonths ?? 0} meses`}
                   theme={theme}
                 />
                 <SummaryRow
-                  label="SBC M40 con incremento anual"
-                  value={`${formatCurrency(summary.adjustedDailyM40Salary)}/día`}
+                  label="Costo mensual estimado (sin INFONAVIT)"
+                  value={`${formatCurrency(monthlyCost)}/mes`}
                   theme={theme}
                 />
                 <SummaryRow
-                  label={
-                    weeksProjection
-                      ? 'Semanas M40 (de las 250)'
-                      : 'Semanas M40 (de las 250) (aprox. por meses)'
-                  }
-                  value={`${formatInteger(summary.referenceWeeks)} sem.`}
+                  label="¿Sigues trabajando mientras citas?"
+                  value={m10.continuesWorkingWhileContributing ?? true ? 'Sí' : 'No'}
                   theme={theme}
                 />
-                <SummaryRow
-                  label={
-                    weeksProjection
-                      ? 'Semanas previas al M40'
-                      : 'Semanas previas al M40 (aprox. por meses)'
-                  }
-                  value={`${formatInteger(summary.baseWeeks)} sem.`}
-                  theme={theme}
-                />
-                <SummaryRow
-                  label={
-                    weeksProjection
-                      ? 'Semanas M40 planeadas'
-                      : 'Semanas M40 planeadas (aprox. por meses)'
-                  }
-                  value={`${formatInteger(Math.max(0, summary.estimatedTotalWeeks - currentWeeks))} sem.`}
-                  theme={theme}
-                />
-                {/* NO es el total de semanas del cálculo (ese es el objetivo de
-                    la fila de semanas proyectadas, si hay proyección): son las
-                    semanas ya cotizadas más las que se planean cotizar en M40. */}
-                <SummaryRow
-                  label={
-                    weeksProjection
-                      ? 'Semanas cotizadas + semanas M40 planeadas'
-                      : 'Semanas cotizadas + semanas M40 planeadas (aprox. por meses)'
-                  }
-                  value={`${formatInteger(summary.estimatedTotalWeeks)} sem.`}
-                  theme={theme}
-                />
-                <SummaryRow
-                  label={
-                    weeksProjection
-                      ? 'Salario promedio ponderado'
-                      : 'Salario promedio ponderado (aprox. por meses)'
-                  }
-                  value={`${formatCurrency(summary.estimatedAverageDailySalary)}/día`}
-                  theme={theme}
-                />
-                <Text
-                  variant="bodySmall"
-                  style={{ color: theme.colors.onSurfaceVariant, marginTop: 4, fontStyle: 'italic' }}
-                >
-                  Promedio = (salario × semanas previas + SBC M40 × semanas M40) ÷ 250
-                </Text>
+                {breakdown && breakdown.m10Weeks > 0 && (
+                  <>
+                    <SummaryRow
+                      label="Semanas de Modalidad 10 (de las 250)"
+                      value={`${formatInteger(breakdown.m10Weeks)} sem.`}
+                      theme={theme}
+                    />
+                    <SummaryRow
+                      label="Semanas ordinarias (de las 250)"
+                      value={`${formatInteger(breakdown.ordinaryWeeks)} sem.`}
+                      theme={theme}
+                    />
+                    <SummaryRow
+                      label="Salario promedio de las 250 semanas"
+                      value={`${formatCurrency(result.input.projectedAverageDailySalary ?? result.input.averageSalary.dailySalary)}/día`}
+                      theme={theme}
+                    />
+                    <Text
+                      variant="bodySmall"
+                      style={{ color: theme.colors.onSurfaceVariant, marginTop: 4, fontStyle: 'italic' }}
+                    >
+                      Promedio = (SBC ordinario × semanas ordinarias + SBC M10 × semanas M10) ÷ {breakdown.totalWeeks}
+                    </Text>
+                  </>
+                )}
                 <Text
                   variant="bodySmall"
                   style={{ color: theme.colors.onSurfaceVariant, fontStyle: 'italic' }}
                 >
-                  Suma ponderada de las 250 semanas que usa el IMSS para calcular tu pensión.
+                  Los meses de Modalidad 10 se cotizan al salario declarado y entran al promedio
+                  de las últimas 250 semanas cotizadas (Art. 167 LSS 1973).
                 </Text>
               </View>
             );
@@ -367,7 +337,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   card: { borderRadius: 16, marginBottom: 16 },
-  m40Block: { marginTop: 12, paddingTop: 12, borderTopWidth: 1 },
+  m10Block: { marginTop: 12, paddingTop: 12, borderTopWidth: 1 },
   mainResultCard: {
     borderRadius: 20,
     marginBottom: 16,

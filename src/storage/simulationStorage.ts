@@ -3,7 +3,8 @@
  * Usa AsyncStorage para persistir las últimas 999 simulaciones.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { SavedSimulation } from '../models';
+import type { Modalidad10, PensionInput, SavedSimulation } from '../models';
+import { getMinimumDailySalary } from '../constants/uma';
 
 const STORAGE_KEY = '@mi_pension_mx:simulaciones';
 
@@ -33,6 +34,59 @@ function isValidSavedSimulation(value: unknown): value is SavedSimulation {
   );
 }
 
+/** Input guardado que puede venir de una versión anterior de la app. */
+type LegacyPensionInput = Partial<PensionInput> & {
+  modalidad40?: Partial<Modalidad10>;
+};
+
+/**
+ * Normaliza una simulación guardada por una versión anterior de la app.
+ *
+ * La Modalidad 40 pasó a llamarse Modalidad 10 y la configuración de UMA ahora
+ * trae el salario mínimo de referencia (el piso del SBC declarado). Sin esta
+ * normalización, los resultados ya guardados se mostrarían sin el bloque de
+ * Modalidad 10 y con un piso desconocido.
+ *
+ * La normalización ocurre en memoria: no se reescribe lo que el usuario tiene
+ * guardado (ADR-0013).
+ */
+function normalizeSavedSimulation(saved: SavedSimulation): SavedSimulation {
+  const input = saved.result?.input as LegacyPensionInput | undefined;
+  if (!input) return saved;
+
+  const legacy = input.modalidad40;
+  const modalidad10: Modalidad10 = {
+    active: input.modalidad10?.active ?? legacy?.active ?? false,
+    contributionSalary: input.modalidad10?.contributionSalary ?? legacy?.contributionSalary,
+    contributionSalaryInUMAs: input.modalidad10?.contributionSalaryInUMAs,
+    continuesWorkingWhileContributing:
+      input.modalidad10?.continuesWorkingWhileContributing ??
+      legacy?.continuesWorkingWhileContributing ??
+      true,
+    expectedMonths: input.modalidad10?.expectedMonths ?? legacy?.expectedMonths,
+    annualSalaryIncrease:
+      input.modalidad10?.annualSalaryIncrease ?? legacy?.annualSalaryIncrease,
+  };
+
+  const normalizedInput = {
+    ...input,
+    modalidad10,
+    uma: input.uma
+      ? { ...input.uma, smgCdmx: getMinimumDailySalary(input.uma) }
+      : input.uma,
+  } as PensionInput & { modalidad40?: unknown };
+  // La clave vieja no viaja al resultado: se lee como Modalidad 10.
+  delete normalizedInput.modalidad40;
+
+  return {
+    ...saved,
+    result: {
+      ...saved.result,
+      input: normalizedInput,
+    },
+  };
+}
+
 /** Obtiene todas las simulaciones guardadas. */
 export async function getSimulations(): Promise<SavedSimulation[]> {
   try {
@@ -47,7 +101,7 @@ export async function getSimulations(): Promise<SavedSimulation[]> {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(valid));
     }
 
-    return valid;
+    return valid.map(normalizeSavedSimulation);
   } catch {
     return [];
   }

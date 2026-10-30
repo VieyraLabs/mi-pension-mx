@@ -12,6 +12,9 @@ import { usePensionForm } from '../hooks/usePensionForm';
 import { StepProgress } from '../components/StepProgress';
 import { calculatePension, validateInput } from '../services/pension/PensionCalculator';
 import { calculateProjectedSBC } from '../services/pension/history/projectedSBC';
+import { getLastRegisteredDailySalary } from '../services/pension/history/contributionHistory';
+import { buildM10ContributionPeriod } from '../utils/modalidad10';
+import { getMinimumDailySalary } from '../constants/uma';
 import { useHistory } from '../hooks/useHistory';
 import { showAlert } from '../utils/alert';
 import { getLocalReferenceDate } from '../utils/weeksProjection';
@@ -21,7 +24,7 @@ import { WorkHistoryStep } from '../components/WorkHistoryStep';
 import { SalaryStep } from '../components/SalaryStep';
 import { RetirementAgeStep } from '../components/RetirementAgeStep';
 import { UMAStep } from '../components/UMAStep';
-import { Modalidad40Step } from '../components/Modalidad40Step';
+import { Modalidad10Step } from '../components/Modalidad10Step';
 import { BeneficiariesStep } from '../components/BeneficiariesStep';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -32,7 +35,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'NewSimulation'>;
  * 1. Datos personales
  * 2. Historial laboral (+ salario base de cotización)
  * 3. Edad de retiro (+ beneficiarios)
- * 4. UMA (+ Modalidad 40)
+ * 4. UMA (+ Modalidad 10)
  */
 const STEPS = [
   'Datos personales',
@@ -53,7 +56,9 @@ export default function NewSimulationScreen() {
     updateMonthlySalary,
     selectUMAByYear,
     setCustomUMA,
-    updateModalidad40,
+    updateModalidad10,
+    setModalidad10ContributionSalary,
+    setModalidad10UMAs,
     updateBeneficiaries,
   } = usePensionForm();
   const { save } = useHistory();
@@ -71,15 +76,57 @@ export default function NewSimulationScreen() {
     })),
     [route.params?.importedData?.sbcPeriods],
   );
-  const projectedSBC = useMemo(
-    () => calculateProjectedSBC(
+  /**
+   * Último salario registrado: el del tramo más reciente del historial
+   * importado, o el SBC capturado si no hay historial.
+   */
+  const lastRegisteredSBC = useMemo(
+    () => getLastRegisteredDailySalary(importedSbcPeriods, input.averageSalary.dailySalary),
+    [importedSbcPeriods, input.averageSalary.dailySalary],
+  );
+
+  /**
+   * Periodo de cotización de la Modalidad 10 al SBC declarado. Si la persona
+   * sigue trabajando, su último salario registrado se suma a ese SBC; si no,
+   * el periodo usa solo el salario de la Modalidad 10.
+   */
+  const m10Period = useMemo(() => {
+    if (!input.modalidad10.active || !input.modalidad10.contributionSalary) return null;
+    return buildM10ContributionPeriod({
+      referenceDate: getLocalReferenceDate(),
+      retirementDate: input.personalData.estimatedRetirementDate,
+      m10DailySalary: input.modalidad10.contributionSalary,
+      ordinaryDailySalary: lastRegisteredSBC,
+      continuesWorking: input.modalidad10.continuesWorkingWhileContributing ?? true,
+      annualSalaryIncreasePct: input.modalidad10.annualSalaryIncrease,
+      dailyUMA: input.uma.dailyUMA,
+    });
+  }, [
+    input.modalidad10.active,
+    input.modalidad10.contributionSalary,
+    input.modalidad10.continuesWorkingWhileContributing,
+    input.modalidad10.annualSalaryIncrease,
+    input.personalData.estimatedRetirementDate.getTime(),
+    input.uma.dailyUMA,
+    lastRegisteredSBC,
+  ]);
+
+  const projection = useMemo(
+    () => calculateProjectedSBC({
+      segments: importedSbcPeriods,
+      currentSBC: input.averageSalary.dailySalary,
+      retirementDate: input.personalData.estimatedRetirementDate,
+      referenceDate: getLocalReferenceDate(),
+      m10Period,
+    }),
+    [
       importedSbcPeriods,
       input.averageSalary.dailySalary,
-      input.personalData.estimatedRetirementDate,
-      getLocalReferenceDate(),
-    ),
-    [importedSbcPeriods, input.averageSalary.dailySalary, input.personalData.estimatedRetirementDate.getTime()],
+      input.personalData.estimatedRetirementDate.getTime(),
+      m10Period,
+    ],
   );
+  const projectedSBC = projection.averageDailySalary;
 
   // Precarga el formulario con los datos revisados en ValidationScreen
   // (importación de PDF). Solo corre una vez, al entrar a la pantalla.
@@ -144,8 +191,15 @@ export default function NewSimulationScreen() {
   })();
 
   const calculate = async () => {
-    const inputWithProjection = importedSbcPeriods.length > 0
-      ? { ...input, projectedAverageDailySalary: projectedSBC }
+    // El SBC proyectado acompaña al motor cuando hay historial importado o
+    // Modalidad 10: es el mismo número que ve la persona en el formulario.
+    const hasProjection = importedSbcPeriods.length > 0 || m10Period != null;
+    const inputWithProjection = hasProjection
+      ? {
+          ...input,
+          projectedAverageDailySalary: projectedSBC,
+          projectedAverageBreakdown: projection.breakdown,
+        }
       : input;
     const validation = validateInput(inputWithProjection);
     if (!validation.valid) {
@@ -206,9 +260,13 @@ export default function NewSimulationScreen() {
               setIsCustom={setCustomUMAMode}
               theme={theme}
             />
-            <Modalidad40Step
-              modalidad40={input.modalidad40}
-              onChange={updateModalidad40}
+            <Modalidad10Step
+              modalidad10={input.modalidad10}
+              onChange={updateModalidad10}
+              onChangeSalary={setModalidad10ContributionSalary}
+              onChangeUMAs={setModalidad10UMAs}
+              dailyUMA={input.uma.dailyUMA}
+              minimumDailySalary={getMinimumDailySalary(input.uma)}
               theme={theme}
             />
           </View>
