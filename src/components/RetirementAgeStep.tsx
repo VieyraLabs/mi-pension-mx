@@ -14,14 +14,14 @@
  * - la regla legal de si 60.5 cuenta como 61 la resuelve el motor, no esta
  *   pantalla: aquí solo se presenta el valor (RNF-013).
  */
-import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Card, Icon, Text, TextInput, HelperText } from 'react-native-paper';
+import React, { useMemo } from 'react';
+import { StyleSheet } from 'react-native';
+import { Card, Text, HelperText } from 'react-native-paper';
 import type { MD3Theme } from 'react-native-paper';
 import type { PersonalData } from '../models';
-import { formatCurrency, formatDateLong } from '../utils/format';
+import { formatCurrency } from '../utils/format';
 import { calculateLegalAge } from '../utils/date';
-import { DateWheelPicker } from './DateWheelPicker';
+import { DateField } from './DateField';
 import { DataRow } from './DataRow';
 
 /** Edad a la que se precarga la fecha de retiro por defecto. */
@@ -133,8 +133,6 @@ export interface RetirementAgeStepProps {
 }
 
 export function RetirementAgeStep({ personalData, onChange, theme, projectedSBC }: RetirementAgeStepProps) {
-  const [pickerVisible, setPickerVisible] = useState(false);
-
   // La fecha precargada es el cumpleaños en el año en que cumpliría 65 años.
   const fechaInicial = useMemo(
     () => cumpleanosEnEdad(personalData.birthDate, EDAD_RETIRIO_POR_DEFECTO),
@@ -169,27 +167,15 @@ export function RetirementAgeStep({ personalData, onChange, theme, projectedSBC 
         <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginBottom: 16 }}>
           Edad de retiro
         </Text>
-        {/* El campo de fecha no es editable: se toca para abrir el calendario.
-            El `Pressable` envuelve al campo (y el campo no intercepta los
-            toques) para que todo el renglón sea pulsable. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Abrir calendario"
-          onPress={() => setPickerVisible(true)}
-          style={styles.dateRow}
-        >
-          <View pointerEvents="none" style={styles.dateField}>
-            <TextInput
-              label="Fecha de retiro *"
-              value={formatDateLong(fechaMostrada)}
-              editable={false}
-              mode="outlined"
-              style={styles.input}
-              accessibilityLabel="Fecha de retiro"
-            />
-          </View>
-          <Icon source="calendar" size={22} color={theme.colors.onSurfaceVariant} />
-        </Pressable>
+        {/* El campo no es editable: se toca para abrir el calendario
+            (DateField), el mismo patrón que la fecha de nacimiento. */}
+        <DateField
+          label="Fecha de retiro *"
+          value={fechaMostrada}
+          fallbackDate={fechaInicial}
+          onConfirm={elegirFecha}
+          theme={theme}
+        />
         <HelperText type="info" style={{ marginBottom: 12 }}>
           Toca la fecha para elegirla en el calendario. La edad se calcula a partir de tu fecha de
           nacimiento.
@@ -217,24 +203,10 @@ export function RetirementAgeStep({ personalData, onChange, theme, projectedSBC 
           </Text>
         )}
       </Card.Content>
-
-      <DateWheelPicker
-        visible={pickerVisible}
-        value={fechaMostrada}
-        onChange={elegirFecha}
-        onDismiss={() => setPickerVisible(false)}
-      />
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
   card: { borderRadius: 12 },
-  input: { marginBottom: 12 },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  dateField: { flex: 1 },
 });

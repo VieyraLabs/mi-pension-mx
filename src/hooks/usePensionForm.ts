@@ -19,8 +19,14 @@ import {
   getLocalReferenceDate,
 } from '../utils/weeksProjection';
 
-/** Fecha de nacimiento por defecto del formulario. */
-const DEFAULT_BIRTH_DATE = new Date(1965, 0, 1);
+/**
+ * Fecha de nacimiento por defecto del formulario.
+ *
+ * Exportada para que los campos de fecha de nacimiento (`PersonalDataStep`,
+ * `ValidationScreen`) abran su calendario en la misma fecha que precarga el
+ * formulario cuando aún no hay una fecha válida.
+ */
+export const DEFAULT_BIRTH_DATE = new Date(1965, 0, 1);
 
 /** Rango de meses de Modalidad 40 aceptado por el esquema (Zod). */
 const M40_MAX_MONTHS = 600;

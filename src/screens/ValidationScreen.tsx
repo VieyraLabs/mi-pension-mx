@@ -10,6 +10,8 @@ import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-n
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { ConstanciaIMSSParser } from '../services/pdf/parsers/PersonalDataParser';
 import { DataRow } from '../components/DataRow';
+import { DateField } from '../components/DateField';
+import { DEFAULT_BIRTH_DATE } from '../hooks/usePensionForm';
 import { formatCurrency, formatDateShort } from '../utils/format';
 import type { ContributionSummary, SBCPeriodSegment } from '../services/pension/history/types';
 import { showAlert } from '../utils/alert';
@@ -17,6 +19,24 @@ import { getBannerColors } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Validation'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
+
+/**
+ * Interpreta una fecha «AAAA-MM-DD» como fecha LOCAL (sin desfase de zona
+ * horaria); undefined si falta, está incompleta o es inválida.
+ */
+function fechaDesdeIso(iso: string): Date | undefined {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return undefined;
+  const partes = iso.split('-').map(Number);
+  const fecha = new Date(partes[0]!, partes[1]! - 1, partes[2]!);
+  return isNaN(fecha.getTime()) ? undefined : fecha;
+}
+
+/** Formatea una fecha local como «AAAA-MM-DD» sin depender de la zona horaria. */
+function fechaAIso(fecha: Date): string {
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  return `${fecha.getFullYear()}-${mes}-${dia}`;
+}
 
 export default function ValidationScreen() {
   const theme = useTheme();
@@ -155,7 +175,15 @@ export default function ValidationScreen() {
           <TextInput label="Nombre completo" value={data.name} onChangeText={(v) => setData({ ...data, name: v })} mode="outlined" style={styles.input} />
           <TextInput label="CURP" value={data.curp} onChangeText={(v) => setData({ ...data, curp: v })} mode="outlined" style={styles.input} autoCapitalize="characters" />
           <TextInput label="NSS (Número de Seguridad Social)" value={data.nss} onChangeText={(v) => setData({ ...data, nss: v })} mode="outlined" style={styles.input} keyboardType="numeric" />
-          <TextInput label="Fecha de nacimiento (AAAA-MM-DD)" value={data.birthDate} onChangeText={(v) => setData({ ...data, birthDate: v })} mode="outlined" style={styles.input} />
+          {/* La fecha no se escribe a mano: se elige con el calendario
+              (DateField); el valor interno sigue siendo «AAAA-MM-DD». */}
+          <DateField
+            label="Fecha de nacimiento"
+            value={fechaDesdeIso(data.birthDate)}
+            fallbackDate={DEFAULT_BIRTH_DATE}
+            onConfirm={(fecha) => setData({ ...data, birthDate: fechaAIso(fecha) })}
+            theme={theme}
+          />
         </Card.Content>
       </Card>
 

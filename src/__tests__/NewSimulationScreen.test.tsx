@@ -78,20 +78,27 @@ describe('NewSimulationScreen', () => {
     expect(screen.getByText('Paso 2 de 4: Historial laboral')).toBeTruthy();
   });
 
-  test('una fecha de nacimiento inválida se rechaza y el paso conserva el último valor válido', () => {
+  test('la fecha de nacimiento del paso 1 se elige con el mismo calendario que la de retiro', () => {
     renderScreen(<NewSimulationScreen />);
 
-    // El paso muestra la fecha por defecto con la misma conversión que usa
-    // PersonalDataStep (toISOString), para ser independiente de la zona horaria.
-    const fechaValida = new Date(1965, 0, 1).toISOString().split('T')[0]!;
-    expect(screen.getByDisplayValue(fechaValida)).toBeTruthy();
+    // El campo no se escribe a mano: muestra la fecha por defecto del
+    // formulario en formato largo y es de solo lectura.
+    const campo = screen.getByDisplayValue('1 de enero de 1965');
+    expect(campo.props.editable).toBe(false);
 
-    fireEvent.changeText(screen.getByPlaceholderText('1965-01-15'), 'no-es-fecha');
+    // Tocar el campo abre el MISMO selector de calendario del paso 3.
+    fireEvent.press(screen.getByLabelText('Abrir calendario'));
+    expect(screen.getByText('Selecciona la fecha')).toBeTruthy();
 
-    // La entrada inválida no se propaga al estado: el campo conserva el
-    // último valor válido y «Siguiente» permanece habilitado.
-    expect(screen.getByDisplayValue(fechaValida)).toBeTruthy();
-    expect(screen.queryByDisplayValue('no-es-fecha')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Año 1980'));
+    fireEvent.press(screen.getByLabelText('Mes marzo'));
+    fireEvent.press(screen.getByLabelText('Día 15'));
+    fireEvent.press(screen.getByText('Aceptar'));
+
+    // La fecha elegida queda en el campo (con su edad informativa) y
+    // «Siguiente» permanece habilitado.
+    expect(screen.getByDisplayValue('15 de marzo de 1980')).toBeTruthy();
+    expect(screen.getByText(/Edad actual: \d+ años/)).toBeTruthy();
     expect(screen.getByText('Siguiente')).toBeEnabled();
   });
 
