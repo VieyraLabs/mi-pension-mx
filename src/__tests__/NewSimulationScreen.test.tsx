@@ -402,7 +402,9 @@ describe('NewSimulationScreen', () => {
     });
 
     // Comerciantes y agentes de ventas → Comerciantes → clase III.
+    fireEvent.press(screen.getByLabelText('Seleccionar División'));
     fireEvent.press(screen.getByText('Comerciantes y agentes de ventas'));
+    fireEvent.press(screen.getByLabelText('Seleccionar Grupo principal'));
     fireEvent.press(screen.getByText('Comerciantes'));
 
     const costoClaseIII = calculateM10MonthlyCost({

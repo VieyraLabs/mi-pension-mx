@@ -7,8 +7,21 @@
  * los meses proyectados (derivados, no editables).
  */
 import { useEffect, useState } from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Card, HelperText, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import {
+  Button,
+  Card,
+  Dialog,
+  HelperText,
+  Icon,
+  Portal,
+  RadioButton,
+  SegmentedButtons,
+  Switch,
+  Text,
+  TextInput,
+  TouchableRipple,
+} from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { MD3Theme } from 'react-native-paper';
 import type { Modalidad10, SalaryZone } from '../models';
@@ -158,32 +171,26 @@ export function Modalidad10Step({
             </Text>
 
             <Text variant="labelMedium" style={styles.fieldLabel}>División</Text>
-            <View style={styles.optionList} accessibilityRole="radiogroup">
-              {M10_OCCUPATION_CATALOG.map((division) => (
-                <OptionRow
-                  key={division.code}
-                  label={division.name}
-                  selected={modalidad10.occupationDivision === division.code}
-                  onPress={() => handleSelectDivision(division.code)}
-                  theme={theme}
-                />
-              ))}
-            </View>
+            <OptionSelector
+              label="División"
+              placeholder="Selecciona una opción"
+              value={modalidad10.occupationDivision}
+              options={M10_OCCUPATION_CATALOG.map((d) => ({ value: d.code, label: d.name }))}
+              onSelect={handleSelectDivision}
+              theme={theme}
+            />
 
             {selectedDivision && (
               <>
                 <Text variant="labelMedium" style={styles.fieldLabel}>Grupo principal</Text>
-                <View style={styles.optionList} accessibilityRole="radiogroup">
-                  {selectedDivision.groups.map((group) => (
-                    <OptionRow
-                      key={group.code}
-                      label={group.name}
-                      selected={modalidad10.occupationGroup === group.code}
-                      onPress={() => handleSelectGroup(group.code)}
-                      theme={theme}
-                    />
-                  ))}
-                </View>
+                <OptionSelector
+                  label="Grupo principal"
+                  placeholder="Selecciona una opción"
+                  value={modalidad10.occupationGroup}
+                  options={selectedDivision.groups.map((g) => ({ value: g.code, label: g.name }))}
+                  onSelect={handleSelectGroup}
+                  theme={theme}
+                />
               </>
             )}
 
@@ -280,52 +287,86 @@ export function Modalidad10Step({
 }
 
 /**
- * Opción seleccionable en lista vertical.
+ * Selector de una sola opción: un campo con la elección actual que abre un
+ * diálogo con la lista completa de opciones.
  *
  * Los nombres del catálogo oficial son largos —«Trabajadores en actividades
- * agrícolas, ganaderas, forestales, caza y pesca»— y una etiqueta de chip de
- * una sola línea los recortaría, dos de ellos con el mismo inicio. La lista
- * vertical muestra el nombre completo y deja el grupo a un toque.
+ * agrícolas, ganaderas, forestales, caza y pesca»— y tanto las etiquetas de
+ * chip como las de `Menu.Item` los recortan a una sola línea: dos divisiones
+ * empiezan igual, así que quedarían indistinguibles. En el diálogo cada
+ * opción se muestra entera.
  */
-function OptionRow({
+function OptionSelector({
   label,
-  selected,
-  onPress,
+  placeholder,
+  value,
+  options,
+  onSelect,
   theme,
 }: {
   label: string;
-  selected: boolean;
-  onPress: () => void;
+  placeholder: string;
+  /** Valor de la opción elegida, si la hay. */
+  value?: string;
+  options: { value: string; label: string }[];
+  onSelect: (value: string) => void;
   theme: MD3Theme;
 }) {
+  const [visible, setVisible] = useState(false);
+  const selected = options.find((o) => o.value === value);
+
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      style={[
-        styles.optionRow,
-        {
-          borderBottomColor: theme.colors.outlineVariant,
-          backgroundColor: selected ? theme.colors.secondaryContainer : 'transparent',
-        },
-      ]}
-    >
-      <Text
-        variant="bodyMedium"
-        style={{
-          flex: 1,
-          color: selected ? theme.colors.onSecondaryContainer : theme.colors.onSurface,
-          fontWeight: selected ? 'bold' : 'normal',
-        }}
+    <>
+      <TouchableRipple
+        onPress={() => setVisible(true)}
+        borderless
+        accessibilityRole="button"
+        accessibilityLabel={`Seleccionar ${label}`}
+        accessibilityState={{ expanded: visible }}
       >
-        {label}
-      </Text>
-      {selected && (
-        <Text variant="labelLarge" style={{ color: theme.colors.primary }}>✓</Text>
-      )}
-    </TouchableOpacity>
+        <View
+          style={[
+            styles.selector,
+            { borderColor: theme.colors.outline },
+          ]}
+        >
+          <Text
+            variant="bodyMedium"
+            style={{
+              flex: 1,
+              color: selected ? theme.colors.onSurface : theme.colors.onSurfaceVariant,
+            }}
+          >
+            {selected?.label ?? placeholder}
+          </Text>
+          <Icon source="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
+        </View>
+      </TouchableRipple>
+
+      <Portal>
+        <Dialog visible={visible} onDismiss={() => setVisible(false)}>
+          <Dialog.Title>{label}</Dialog.Title>
+          <Dialog.ScrollArea style={styles.dialogScrollArea}>
+            <ScrollView>
+              <RadioButton.Group
+                value={value ?? ''}
+                onValueChange={(v) => {
+                  onSelect(v);
+                  setVisible(false);
+                }}
+              >
+                {options.map((option) => (
+                  <RadioButton.Item key={option.value} value={option.value} label={option.label} />
+                ))}
+              </RadioButton.Group>
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setVisible(false)}>Cerrar</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+    </>
   );
 }
 
@@ -336,14 +377,18 @@ const styles = StyleSheet.create({
   fieldRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   field: { flex: 1 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 },
-  optionList: { marginBottom: 12 },
-  optionRow: {
+  /** Campo selector: caja con la opción elegida y el chevron. */
+  selector: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    marginBottom: 12,
   },
+  dialogScrollArea: { maxHeight: 320, paddingHorizontal: 0 },
   fieldLabel: { marginBottom: 6 },
   m10Toggle: {
     flexDirection: 'row',

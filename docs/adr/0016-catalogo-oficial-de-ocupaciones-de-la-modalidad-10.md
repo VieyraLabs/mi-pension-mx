@@ -38,11 +38,12 @@ Trabajadoras Independientes, con la clase de riesgo que el propio catálogo publ
   entre grupos confirmados y aproximados: ahora todos los grupos traen la clase oficial.
 - **El orden es el del catálogo oficial**, para que la lista de la app sea la misma que la de
   la calculadora del IMSS; los nombres se reproducen literalmente.
-- **Las divisiones y los grupos se muestran en listas verticales, no en etiquetas.** Los
-  nombres oficiales son largos («Trabajadores en actividades agrícolas, ganaderas,
-  forestales, caza y pesca») y dos divisiones comparten inicio; una etiqueta de chip de una
-  sola línea —que el componente recorta— las volvería indistinguibles y, en algunos casos,
-  desbordaría el ancho de la pantalla. La lista vertical muestra el nombre completo.
+- **Divisiones y grupos se eligen con un selector, no con etiquetas.** Los nombres oficiales
+  son largos («Trabajadores en actividades agrícolas, ganaderas, forestales, caza y pesca») y
+  dos divisiones comparten inicio; tanto las etiquetas de chip como las de `Menu.Item` los
+  recortan a una sola línea, lo que las volvería indistinguibles y, en algunos casos,
+  desbordaría el ancho de la pantalla. El selector es un campo con la elección actual que
+  abre un **diálogo con la lista completa**, donde cada opción se muestra entera.
 - **Se conservan la división y el grupo por separado** en la entrada, porque el grupo solo
   significa algo dentro de su división (por ejemplo, el grupo `41` de la división `14` es
   «Comerciantes» y el `41` de otra división es otra cosa).

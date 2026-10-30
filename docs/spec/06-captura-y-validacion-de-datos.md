@@ -105,9 +105,10 @@ esa fecha es la que queda.
   Independientes. Al elegir el grupo se fija la clase, que determina la prima de Riesgos de
   Trabajo y con ella el costo mensual; cambiar de división limpia el grupo y la clase
   ([ADR-0016](../adr/0016-catalogo-oficial-de-ocupaciones-de-la-modalidad-10.md)).
-  Las dos listas son **verticales y con el nombre completo**: los nombres oficiales son
-  largos y dos divisiones empiezan igual («Trabajadores en actividades…»), de modo que una
-  etiqueta de una sola línea las volvería indistinguibles.
+  División y grupo se eligen con un **selector**: un campo con la elección actual que abre
+  un diálogo con la lista completa. Los nombres oficiales son largos y dos divisiones
+  empiezan igual («Trabajadores en actividades…»), de modo que una etiqueta de una sola
+  línea las volvería indistinguibles.
 - **La persona declara si sigue trabajando mientras cotiza en la Modalidad 10.** El
   interruptor suma su último salario registrado al SBC de M10 en el SBC promedio proyectado;
   si ya no trabaja, el SBC del periodo es solo el de M10. La respuesta se declara en el
