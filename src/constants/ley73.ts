@@ -445,11 +445,11 @@ export const MODALIDAD_10_CAP_TIMES_UMA = 25;
  * Cuota de la Modalidad 10 sobre el salario de cotización, SIN la aportación
  * a INFONAVIT.
  *
- * ESTIMACIÓN — VERIFICAR: el porcentaje viene de fuentes secundarias y de la
- * calculadora pública del IMSS; la fuente primaria es el Acuerdo de la Junta
- * Directiva que fija las cuotas y las primas de financiamiento por ramo
- * (DOF) y debe confirmarse antes de publicar la app. Hasta entonces, la UI
- * lo presenta como estimado.
+ * Calibrada contra el costo real observado en octubre de 2026: con el SBC
+ * tope de 25 UMA (UMA 2026 $117.70/día) el costo mensual sin INFONAVIT fue de
+ * $18,584, equivalente al 20.775% del SBC mensual. La fuente primaria sigue
+ * siendo el Acuerdo de la Junta Directiva que fija las primas de financiamiento
+ * por ramo (DOF); hasta confirmarlo ahí, la UI lo presenta como estimado.
  *
  * Contexto legal del criterio: Art. 228 LSS vigente — a las bases de
  * cotización "se les aplicarán las primas de financiamiento… reduciendo la
@@ -457,7 +457,7 @@ export const MODALIDAD_10_CAP_TIMES_UMA = 25;
  * INFONAVIT es exactamente esa reducción: la aportación al fondo de vivienda
  * es un ahorro adicional, no una prima de financiamiento.
  */
-export const MODALIDAD_10_CUOTA_PCT = 0.183;
+export const MODALIDAD_10_CUOTA_PCT = 0.20775;
 
 /**
  * La cuota mostrada NO incluye la aportación opcional a INFONAVIT.

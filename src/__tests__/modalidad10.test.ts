@@ -136,8 +136,8 @@ describe('Modalidad 10 — periodo de cotización', () => {
 
 describe('Modalidad 10 — costo mensual', () => {
   test('se calcula sobre el SBC mensual y sin INFONAVIT', () => {
-    // 25 UMA de 2025: $2,828.50/día × 30.4 = $85,986.40/mes × 18.30% = $15,735.51
-    expect(calculateM10MonthlyCost(2828.5)).toBe(15735.51);
+    // 25 UMA de 2025: $2,828.50/día × 30.4 = $85,986.40/mes × 20.775% = $17,863.67
+    expect(calculateM10MonthlyCost(2828.5)).toBe(17863.67);
   });
 
   test('un SBC menor cuesta menos', () => {
