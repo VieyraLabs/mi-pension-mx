@@ -103,17 +103,15 @@ export const TABLA_UMA_SMG: readonly UMARecord[] = [
   },
   {
     year: 2026,
-    // Estimación basada en tendencia histórica (~4% de incremento).
-    // VERIFICAR en DOF correspondiente (enero 2026).
-    dailyUMA: 117.7,
-    monthlyUMA: 3578.28,
-    annualUMA: 42960.5,
+    dailyUMA: 117.31,
+    monthlyUMA: 3566.22,
+    annualUMA: 42818.15,
     smgCdmx: 315.04,
     // ESTIMACIÓN — VERIFICAR: Zona Libre Frontera Norte 2026 (~13% sobre 2025).
     smgFronteraNorte: 474.46,
-    isEstimate: true,
+    isEstimate: false,
     source:
-      'UMA estimada — verificar publicación DOF enero 2026 (INEGI). ' +
+      'DOF 09-ene-2026 (INEGI) — valor diario corroborado en valoruma.com. ' +
       'SMG ZSMG 2026 oficial CONASAMI, Tabla de Salarios Mínimos 2026 (PDF gob.mx). ' +
       'SMG Frontera Norte 2026 estimado — verificar CONASAMI.',
   },
@@ -121,8 +119,7 @@ export const TABLA_UMA_SMG: readonly UMARecord[] = [
 
 /**
  * UMA vigente por defecto — último registro de TABLA_UMA_SMG. Fuente y vigencia
- * heredadas del campo `source` de ese registro. Para 2026 es una ESTIMACIÓN:
- * verificar contra la publicación DOF de enero 2026 (INEGI) al actualizar.
+ * heredadas del campo `source` de ese registro.
  */
 export const UMA_ACTUAL: UMARecord = TABLA_UMA_SMG[TABLA_UMA_SMG.length - 1]!;
 

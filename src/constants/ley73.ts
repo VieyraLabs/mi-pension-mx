@@ -447,11 +447,11 @@ export const MODALIDAD_10_CAP_TIMES_UMA = 25;
  * Cuota base de la Modalidad 10 sobre el SBC mensual, SIN prima de Riesgos de
  * Trabajo (RT) y SIN la aportación a INFONAVIT.
  *
- * ESTIMACIÓN — VERIFICAR: 18.30% reproduce exactamente el costo base que la
- * app mostraba antes de descomponer la prima de RT (25 UMA 2026 → $16,369.72,
- * solo ramos distintos a Riesgos de Trabajo). La fuente primaria es el Acuerdo
- * de la Junta Directiva que fija las primas de financiamiento por ramo (DOF);
- * hasta confirmarlo ahí, la UI lo presenta como estimado.
+ * ESTIMACIÓN — VERIFICAR: 18.30% es la cuota base (ramos distintos a Riesgos
+ * de Trabajo). Con 25 UMA 2026 ($117.31/día) equivale a $16,315.47/mes. La
+ * fuente primaria es el Acuerdo de la Junta Directiva que fija las primas de
+ * financiamiento por ramo (DOF); hasta confirmarlo ahí, la UI lo presenta
+ * como estimado.
  *
  * Contexto legal del criterio: Art. 228 LSS vigente — a las bases de
  * cotización "se les aplicarán las primas de financiamiento… reduciendo la

@@ -2,100 +2,125 @@
  * Catálogo de ocupaciones para derivar la clase de riesgo laboral (I–V) que
  * determina la prima de Riesgos de Trabajo de la Modalidad 10.
  *
- * FUENTE: la clasificación oficial vive en el Catálogo de Actividades para la
- * Clasificación de las Empresas en el Seguro de Riesgos de Trabajo (RACERF,
- * Reglamento de la Ley del Seguro Social en materia de Afiliación,
- * Clasificación de Empresas, Recaudación y Fiscalización). Ese catálogo llega
- * hasta el nivel de FRACCIÓN, que es donde se asigna la clase.
+ * FUENTE: Catálogo de Actividades para la Clasificación de las Empresas en el
+ * Seguro de Riesgos de Trabajo, del Reglamento de la Ley del Seguro Social en
+ * materia de Afiliación, Clasificación de Empresas, Recaudación y Fiscalización
+ * (RACERF, art. 196). La clasificación oficial llega hasta FRACCIÓN, que es
+ * donde se asigna la clase. Para la captura se reduce a dos niveles
+ * (División → Grupo) y se conserva la clase PREDOMINANTE de cada grupo.
  *
- * MUESTRA PARCIAL — VERIFICAR: este catálogo reduce la clasificación a dos
- * niveles (División → Grupo) y asigna la clase PREDOMINANTE de cada grupo como
- * aproximación. No sustituye al RACERF: hay grupos con fracciones de distintas
- * clases. Antes de publicar la app hay que completarlo y contrastarlo contra el
- * RACERF vigente (ver docs/runbooks/05-actualizar-uma-y-constantes-legales.md).
+ * - Las 10 divisiones (códigos 0–9) y sus nombres siguen al RACERF.
+ * - Los grupos con `sourceFraction` tienen la clase confirmada contra el
+ *   Clasificador oficial del IMSS (serviciosdigitales.imss.gob.mx/clasificador/).
+ * - Los grupos sin `sourceFraction` son una aproximación y deben verificarse
+ *   contra la fracción que corresponda (docs/runbooks/05-actualizar-uma-y-constantes-legales.md).
+ *
+ * LIMITACIÓN DECLARADA: la clase real se asigna por FRACCIÓN; un mismo grupo
+ * puede contener fracciones de distinta clase. Para el costo exacto hace falta
+ * capturar la fracción, no solo división y grupo.
  *
  * Solo lectura y función pura: aquí no hay UI ni estado.
  */
 import type { RiskClass } from '../models';
 
 export interface OccupationGroup {
-  /** Código del grupo dentro de su división (cadena para permitir códigos con ceros a la izquierda). */
+  /** Código del grupo dentro de su división (cadena para permitir ceros a la izquierda). */
   code: string;
   name: string;
   /** Clase de riesgo PREDOMINANTE del grupo (aproximación de la fracción). */
   riskClass: RiskClass;
+  /** Fracción RACERF de la que se tomó la clase, cuando está confirmada. */
+  sourceFraction?: string;
 }
 
 export interface OccupationDivision {
-  /** Código de división (cadena para permitir códigos con ceros a la izquierda). */
+  /** Código de división (0–9, cadena para permitir ceros a la izquierda). */
   code: string;
   name: string;
   groups: OccupationGroup[];
 }
 
-/** Catálogo curado (muestra) de divisiones y grupos con su clase predominante. */
+/** Catálogo de 10 divisiones del RACERF con sus grupos y clase predominante. */
 export const M10_OCCUPATION_CATALOG: readonly OccupationDivision[] = [
   {
-    code: '1',
-    name: 'Agricultura, ganadería y pesca',
+    code: '0',
+    name: 'Agricultura, ganadería, silvicultura, pesca y caza',
     groups: [
-      { code: '11', name: 'Agricultura', riskClass: 2 },
-      { code: '12', name: 'Ganadería', riskClass: 2 },
-      { code: '13', name: 'Pesca y acuicultura', riskClass: 3 },
+      { code: '01', name: 'Agricultura', riskClass: 3, sourceFraction: '011' },
+      { code: '02', name: 'Ganadería', riskClass: 3, sourceFraction: '021' },
+      { code: '03', name: 'Silvicultura', riskClass: 3 },
+      { code: '04', name: 'Pesca y caza', riskClass: 4 },
+    ],
+  },
+  {
+    code: '1',
+    name: 'Industrias extractivas',
+    groups: [
+      { code: '11', name: 'Minería', riskClass: 5 },
+      { code: '12', name: 'Extracción de petróleo y gas', riskClass: 4, sourceFraction: '121' },
     ],
   },
   {
     code: '2',
-    name: 'Industrias extractivas (minería)',
+    name: 'Industrias de transformación',
     groups: [
-      { code: '21', name: 'Extracción de minerales', riskClass: 5 },
-      { code: '22', name: 'Extracción de petróleo y gas', riskClass: 5 },
+      { code: '21', name: 'Alimentos y bebidas', riskClass: 2 },
+      { code: '22', name: 'Textil y confección', riskClass: 3 },
+      { code: '23', name: 'Madera, papel e imprenta', riskClass: 3 },
+      { code: '24', name: 'Química, plástico y derivados', riskClass: 4 },
+      { code: '25', name: 'Metalúrgica, maquinaria y equipo', riskClass: 4 },
     ],
   },
   {
     code: '3',
-    name: 'Industrias de transformación',
-    groups: [
-      { code: '31', name: 'Alimentos y bebidas', riskClass: 2 },
-      { code: '32', name: 'Textil y confección', riskClass: 3 },
-      { code: '33', name: 'Madera, papel e imprenta', riskClass: 3 },
-      { code: '34', name: 'Química, plástico y derivados', riskClass: 4 },
-      { code: '35', name: 'Metalúrgica, maquinaria y equipo', riskClass: 4 },
-    ],
+    name: 'Industrias de transformación (continuación)',
+    groups: [{ code: '31', name: 'Otras manufacturas', riskClass: 3 }],
   },
   {
     code: '4',
-    name: 'Construcción',
+    name: 'Industria de la construcción',
     groups: [
-      { code: '41', name: 'Edificación e infraestructura', riskClass: 5 },
+      { code: '41', name: 'Edificación e infraestructura', riskClass: 5, sourceFraction: '412' },
     ],
   },
   {
     code: '5',
-    name: 'Comercio',
-    groups: [
-      { code: '51', name: 'Comercio al por menor', riskClass: 1 },
-      { code: '52', name: 'Comercio al por mayor', riskClass: 2 },
-    ],
+    name: 'Industria eléctrica y captación de agua',
+    groups: [{ code: '51', name: 'Electricidad y agua', riskClass: 4 }],
   },
   {
     code: '6',
-    name: 'Transporte y comunicaciones',
+    name: 'Comercio',
     groups: [
-      { code: '61', name: 'Transporte terrestre', riskClass: 3 },
-      { code: '62', name: 'Transporte aéreo y marítimo', riskClass: 4 },
-      { code: '63', name: 'Comunicaciones', riskClass: 1 },
+      { code: '61', name: 'Comercio al por menor', riskClass: 2, sourceFraction: '611' },
+      { code: '62', name: 'Comercio al por mayor', riskClass: 2 },
     ],
   },
   {
     code: '7',
-    name: 'Servicios',
+    name: 'Transportes y comunicaciones',
     groups: [
-      { code: '71', name: 'Servicios profesionales y técnicos', riskClass: 1 },
-      { code: '72', name: 'Servicios personales y del hogar', riskClass: 1 },
-      { code: '73', name: 'Educación', riskClass: 1 },
-      { code: '74', name: 'Salud y asistencia social', riskClass: 2 },
-      { code: '75', name: 'Restaurantes y hoteles', riskClass: 2 },
+      { code: '71', name: 'Transporte de carga', riskClass: 5, sourceFraction: '712' },
+      { code: '72', name: 'Transporte de pasajeros', riskClass: 4, sourceFraction: '711' },
+      { code: '73', name: 'Transporte ferroviario', riskClass: 5, sourceFraction: '713' },
+      { code: '74', name: 'Comunicaciones', riskClass: 1 },
+    ],
+  },
+  {
+    code: '8',
+    name: 'Servicios para empresas, personas y el hogar',
+    groups: [
+      { code: '81', name: 'Servicios profesionales y técnicos', riskClass: 1, sourceFraction: '841' },
+      { code: '82', name: 'Servicios personales y del hogar', riskClass: 1 },
+      { code: '83', name: 'Restaurantes y hoteles', riskClass: 2 },
+    ],
+  },
+  {
+    code: '9',
+    name: 'Servicios sociales y comunales',
+    groups: [
+      { code: '91', name: 'Educación', riskClass: 1 },
+      { code: '92', name: 'Salud y asistencia social', riskClass: 2 },
     ],
   },
 ];

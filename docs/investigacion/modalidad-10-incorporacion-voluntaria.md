@@ -18,6 +18,8 @@ hecho.
 | 3 | **Anexo A — Informe del Consejo Técnico del IMSS** (dic-2024), Cuadro A.1 "Modalidades de aseguramiento por tipo de régimen" | `https://www.imss.gob.mx/sites/all/statics/pdf/informes/20242025/15-anexos.pdf` | Texto leído |
 | 4 | **Acuerdo ACDO.AS2.HCT.101026/302.P.DG** (Consejo Técnico del IMSS, aprobado 10-oct-2026, DOF 21-oct-2026, vigente 22-oct-2026) | DOF / SIDOF nota 5801708 | **Pendiente**: no se pudo abrir el articulado; el resumen proviene de la nota de prensa de Infobae del 22-oct-2026 |
 | 5 | **Reglamento de la Ley del Seguro Social** (el artículo que nombra "Modalidad 10") | — | **Pendiente**: no se pudo abrir el texto reglamentario |
+| 6 | **UMA 2026** (INEGI, DOF 09-ene-2026) | `https://www.inegi.org.mx/contenidos/saladeprensa/boletines/2026/uma/uma2026.pdf` | Valor diario $117.31 corroborado en `valoruma.com`; el PDF oficial existe pero su texto no se pudo extraer directamente |
+| 7 | **RACERF — Catálogo de Actividades** (art. 196 del Reglamento de Afiliación, Clasificación de Empresas, Recaudación y Fiscalización) | Clasificador oficial IMSS `https://serviciosdigitales.imss.gob.mx/clasificador/` | Clases por fracción leídas (412, 611, 711–713, 841, etc.); lista íntegra de divisiones 0–9 corroborada con fuente secundaria |
 
 ---
 
@@ -162,12 +164,16 @@ mes siguiente a la fecha de referencia.
    cuotas y las primas de financiamiento por ramo, publicado en el DOF. Hasta confirmarlo, el
    campo de costo se presenta como **estimado**.
 3. **La clase de riesgo laboral y su prima de Riesgos de Trabajo.** Las primas por clase
-   (`MODALIDAD_10_RT_PRIMA`) son oficiales (Art. 71 LSS vigente); lo que falta verificar es el
-   catálogo **División/Grupo → clase** (`src/constants/ocupaciones.ts`), que es una muestra
-   parcial de dos niveles y no sustituye al RACERF (que asigna la clase por fracción).
-4. **La UMA 2026 y el SMG de la Frontera Norte.** `UMA_ACTUAL` y `smgFronteraNorte` 2026
-   siguen marcadas como estimación en `src/constants/uma.ts`; el SMG general 2026 sí tiene
-   fuente oficial (CONASAMI). El piso de la Modalidad 10 depende del SMG de la zona, no de la UMA.
+   (`MODALIDAD_10_RT_PRIMA`) son oficiales (Art. 71 LSS vigente). El catálogo
+   (`src/constants/ocupaciones.ts`) ya sigue las 10 divisiones del RACERF y marca con
+   `sourceFraction` las clases confirmadas contra el Clasificador oficial del IMSS; queda
+   pendiente completar la clase por FRACCIÓN de los grupos sin confirmar (la captura sigue
+   siendo División → Grupo, no fracción).
+4. **La UMA 2026 y el SMG de la Frontera Norte.** La UMA 2026 está publicada: $117.31/día
+   (DOF 09-ene-2026, INEGI), y `UMA_ACTUAL` ya la usa sin marca de estimación. Queda por
+   verificar el **SMG de la Frontera Norte 2026** (`smgFronteraNorte`), que sigue marcado
+   como estimación en `src/constants/uma.ts`. El piso de la Modalidad 10 depende del SMG de
+   la zona, no de la UMA.
 
 ---
 

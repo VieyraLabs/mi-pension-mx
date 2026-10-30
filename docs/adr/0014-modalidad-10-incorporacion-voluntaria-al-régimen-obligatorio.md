@@ -95,8 +95,8 @@ UMAs.**
   inferior o superior; la app deja elegir el SBC de forma continua y **no modela** esas
   bandas. Se declara como supuesto.
 - La cuota base mostrada depende de una constante marcada como estimación, y el catálogo
-  División/Grupo → clase es una muestra parcial que no sustituye al RACERF: hay que confirmar
-  ambos antes de publicar la app.
+  División/Grupo → clase (10 divisiones del RACERF) es una aproximación de dos niveles que no
+  sustituye la asignación por fracción: hay que confirmar ambos antes de publicar la app.
 - Las simulaciones guardadas por versiones anteriores se normalizan **en memoria** al leer
   (la clave vieja `modalidad40` se lee como `modalidad10`); no se reescribe lo que la persona
   tiene guardado (ADR-0013).
