@@ -372,12 +372,13 @@ describe('NewSimulationScreen', () => {
     fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 10? Toca aquí'));
 
     expect(screen.getByText('Costo mensual de la Modalidad 10')).toBeTruthy();
+    // La ocupación precargada es Comerciantes (clase III).
     expect(
       screen.getByText(
         `${formatCurrency(
           calculateM10MonthlyCost({
             dailySalary: round2(25 * UMA_ACTUAL.dailyUMA),
-            riskClass: 1,
+            riskClass: 3,
             dailyUMA: UMA_ACTUAL.dailyUMA,
             minimumDailySalary: UMA_ACTUAL.smgCdmx,
             year: UMA_ACTUAL.year,
@@ -388,24 +389,20 @@ describe('NewSimulationScreen', () => {
     expect(screen.getByText(/Rango legal \(Art\. 28 LSS vigente\)/)).toBeTruthy();
   });
 
-  test('elegir la ocupación fija la clase de riesgo y con ella el costo', () => {
+  test('la ocupación precargada es Comerciantes y agentes de ventas → Comerciantes', () => {
     renderScreen(<NewSimulationScreen />);
     advanceToUmaStep();
     fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 10? Toca aquí'));
 
-    const costoClaseI = calculateM10MonthlyCost({
-      dailySalary: round2(25 * UMA_ACTUAL.dailyUMA),
-      riskClass: 1,
-      dailyUMA: UMA_ACTUAL.dailyUMA,
-      minimumDailySalary: UMA_ACTUAL.smgCdmx,
-      year: UMA_ACTUAL.year,
-    });
+    expect(screen.getByText('Comerciantes y agentes de ventas')).toBeTruthy();
+    expect(screen.getByText('Comerciantes')).toBeTruthy();
+    expect(screen.getByText(/Clase III/)).toBeTruthy();
+  });
 
-    // Comerciantes y agentes de ventas → Comerciantes → clase III.
-    fireEvent.press(screen.getByLabelText('Seleccionar División'));
-    fireEvent.press(screen.getByText('Comerciantes y agentes de ventas'));
-    fireEvent.press(screen.getByLabelText('Seleccionar Grupo principal'));
-    fireEvent.press(screen.getByText('Comerciantes'));
+  test('elegir la ocupación fija la clase de riesgo y con ella el costo', () => {
+    renderScreen(<NewSimulationScreen />);
+    advanceToUmaStep();
+    fireEvent.press(screen.getByText('¿Deseas cotizar en Modalidad 10? Toca aquí'));
 
     const costoClaseIII = calculateM10MonthlyCost({
       dailySalary: round2(25 * UMA_ACTUAL.dailyUMA),
@@ -415,9 +412,23 @@ describe('NewSimulationScreen', () => {
       year: UMA_ACTUAL.year,
     });
 
-    expect(screen.getByText(`${formatCurrency(costoClaseIII)}/mes`)).toBeTruthy();
-    expect(screen.queryByText(`${formatCurrency(costoClaseI)}/mes`)).toBeNull();
-    expect(screen.getByText(/Clase III/)).toBeTruthy();
+    // Plataformas digitales → Conductores y repartidores → clase IV.
+    fireEvent.press(screen.getByLabelText('Seleccionar División'));
+    fireEvent.press(screen.getByText('Plataformas digitales'));
+    fireEvent.press(screen.getByLabelText('Seleccionar Grupo principal'));
+    fireEvent.press(screen.getByText('Conductores y repartidores'));
+
+    const costoClaseIV = calculateM10MonthlyCost({
+      dailySalary: round2(25 * UMA_ACTUAL.dailyUMA),
+      riskClass: 4,
+      dailyUMA: UMA_ACTUAL.dailyUMA,
+      minimumDailySalary: UMA_ACTUAL.smgCdmx,
+      year: UMA_ACTUAL.year,
+    });
+
+    expect(screen.getByText(`${formatCurrency(costoClaseIV)}/mes`)).toBeTruthy();
+    expect(screen.queryByText(`${formatCurrency(costoClaseIII)}/mes`)).toBeNull();
+    expect(screen.getByText(/Clase IV/)).toBeTruthy();
   });
 });
 

@@ -11,6 +11,7 @@ import {
   getLocalReferenceDate,
 } from '../utils/weeksProjection';
 import { estimateM10Months } from '../utils/modalidad10';
+import { M10_DEFAULT_OCCUPATION } from '../constants/ocupaciones';
 import { round2 } from '../utils/format';
 import { calculatePension } from '../services/pension/PensionCalculator';
 import { PensionInputSchema } from '../validation/pensionSchema';
@@ -147,6 +148,19 @@ describe('usePensionForm', () => {
 
     expect(result.current.input.modalidad10.active).toBe(true);
     expect(result.current.input.modalidad10.contributionSalary).toBe(500);
+  });
+
+  test('la Modalidad 10 arranca con la ocupación precargada del catálogo oficial', () => {
+    const { result } = renderHook(() => usePensionForm());
+
+    const { occupationDivision, occupationGroup, riskClass } =
+      result.current.input.modalidad10;
+
+    expect(occupationDivision).toBe(M10_DEFAULT_OCCUPATION.divisionCode);
+    expect(occupationGroup).toBe(M10_DEFAULT_OCCUPATION.groupCode);
+    // La clase viene del catálogo, no se escribe a mano.
+    expect(riskClass).toBe(M10_DEFAULT_OCCUPATION.riskClass);
+    expect(riskClass).toBe(3);
   });
 
   test('al activar Modalidad 10 se precarga el máximo legal de UMAs', () => {

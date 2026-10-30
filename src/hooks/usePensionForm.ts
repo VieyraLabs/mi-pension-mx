@@ -26,6 +26,7 @@ import {
   calculateWeeksProjection,
   getLocalReferenceDate,
 } from '../utils/weeksProjection';
+import { M10_DEFAULT_OCCUPATION } from '../constants/ocupaciones';
 
 /**
  * Fecha de nacimiento por defecto del formulario.
@@ -81,6 +82,11 @@ const INITIAL_STATE: PensionInput = {
     active: false,
     continuesWorkingWhileContributing: true,
     salaryZone: 'general',
+    // La ocupación se precarga con la del catálogo oficial; la persona puede
+    // cambiarla en el paso 4.
+    occupationDivision: M10_DEFAULT_OCCUPATION.divisionCode,
+    occupationGroup: M10_DEFAULT_OCCUPATION.groupCode,
+    riskClass: M10_DEFAULT_OCCUPATION.riskClass,
   },
   beneficiaries: {
     hasSpouse: false,

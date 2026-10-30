@@ -38,6 +38,10 @@ Trabajadoras Independientes, con la clase de riesgo que el propio catálogo publ
   entre grupos confirmados y aproximados: ahora todos los grupos traen la clase oficial.
 - **El orden es el del catálogo oficial**, para que la lista de la app sea la misma que la de
   la calculadora del IMSS; los nombres se reproducen literalmente.
+- **La Modalidad 10 se precarga con una ocupación del catálogo**: la división *Comerciantes
+  y agentes de ventas* con el grupo *Comerciantes* (clase III). Así el formulario abre con
+  una ocupación —y una prima— ya resueltos, y la persona solo la cambia si la suya es otra.
+  La clase se toma del catálogo, no se escribe a mano.
 - **Divisiones y grupos se eligen con un selector, no con etiquetas.** Los nombres oficiales
   son largos («Trabajadores en actividades agrícolas, ganaderas, forestales, caza y pesca») y
   dos divisiones comparten inicio; tanto las etiquetas de chip como las de `Menu.Item` los

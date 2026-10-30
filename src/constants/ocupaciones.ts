@@ -220,6 +220,19 @@ export function getOccupationGroup(
 }
 
 /**
+ * Ocupación con la que se precarga la Modalidad 10: la división de
+ * Comerciantes y agentes de ventas con su grupo Comerciantes.
+ *
+ * La clase **no** se escribe a mano: se toma del catálogo, para que siga siendo
+ * la que el IMSS publica.
+ */
+export const M10_DEFAULT_OCCUPATION = {
+  divisionCode: '14',
+  groupCode: '41',
+  riskClass: getOccupationGroup('14', '41')?.riskClass,
+};
+
+/**
  * Deriva la clase de riesgo a partir de la división y el grupo seleccionados.
  * Devuelve `undefined` si la ocupación no está en el catálogo (o no se eligió).
  */
