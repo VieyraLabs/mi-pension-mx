@@ -1,7 +1,7 @@
 /**
  * Encabezado de pantalla con degradado de marca.
  * Unifica el patrón Surface+primary que repetían Dashboard, Info, FAQ,
- * PdfImport y Simulator: un solo lugar decide el degradado, el radio y el
+ * PdfImport: un solo lugar decide el degradado, el radio y el
  * espaciado. Los colores siempre salen del tema (ver ADR-0008).
  */
 import React from 'react';

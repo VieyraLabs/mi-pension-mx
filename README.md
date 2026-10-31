@@ -68,7 +68,6 @@ take to a government office, so it has to be explainable.
   - Ajuste por Modalidad 10 (incorporación voluntaria, Arts. 222 a 233 LSS vigente)
 - **Desglose auditable**: cada paso del cálculo muestra su fórmula, su referencia legal
   y si el valor es exacto o estimado
-- **Simulador de escenarios A vs B** con comparación detallada
 - **Historial** de las últimas 20 simulaciones (AsyncStorage)
 - **Importación de la Constancia de cotizaciones en PDF** con extracción local de datos
 - **Exportación a PDF** del reporte completo, con el desglose
@@ -157,7 +156,7 @@ prueba nada. La cobertura de una pantalla es un indicador pobre; la del motor no
 Escenarios cubiertos: validación de entrada (semanas < 500, edad < 60, salario 0),
 pensión de vejez, cesantía en edad avanzada, incrementos anuales, asignaciones
 familiares, ayuda asistencial, tope de 25 UMA, pensión mínima garantizada, desglose de
-pasos, simulador de escenarios, promedio del SBC sobre 250 semanas cotizadas, empleos
+pasos, promedio del SBC sobre 250 semanas cotizadas, empleos
 simultáneos, cambios de salario a mitad de semana, importación de PDF, parsing de la
 constancia, exportación a PDF y persistencia del historial.
 

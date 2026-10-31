@@ -32,8 +32,6 @@ La identidad visual es **esmeralda de marca**, con violeta secundario y ámbar d
   precede a la cifra a propósito: es una estimación y debe leerse antes del número.
 - **Los encabezados de pantalla son degradados** (`ScreenHeader`), no superficies planas
   de color primario.
-- **El violeta distingue el Escenario B del Escenario A** en el simulador, y el escenario
-  ganador se marca con un borde de color.
 - **Los diálogos de confirmación son `Dialog` de React Native Paper** (eliminar
   simulación, limpiar historial), no `Modal` crudo.
 
@@ -66,13 +64,13 @@ La identidad visual es **esmeralda de marca**, con violeta secundario y ámbar d
 
 ## Verificación
 
-- Verificación manual en ambos modos sobre las nueve pantallas.
+- Verificación manual en ambos modos sobre las ocho pantallas.
 - `src/__tests__/ResultScreen.test.tsx` y `ValidationScreen.test.tsx` renderizan
   componentes que dependen del tema, lo que detecta roturas de contrato en la API del
   tema.
 - `grep -rn "#[0-9A-Fa-f]\{6\}" src/screens src/components` no debe devolver
   resultados: es la verificación mecánica de la regla de "cero hex en pantallas".
 - Auditoría de contraste sobre el DOM renderizado (build web): 0 textos por debajo del
-  mínimo de WCAG AA en las cuatro pantallas de pestañas y en la pantalla de resultado,
+  mínimo de WCAG AA en las tres pantallas de pestañas y en la pantalla de resultado,
   en modo claro y oscuro. La medición es reproducible con
   `npm run audit:contraste` (runbook 08).

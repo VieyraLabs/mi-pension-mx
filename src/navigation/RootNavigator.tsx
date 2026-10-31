@@ -12,7 +12,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DashboardScreen from '../screens/DashboardScreen';
 import NewSimulationScreen from '../screens/NewSimulationScreen';
 import ResultScreen from '../screens/ResultScreen';
-import SimulatorScreen from '../screens/SimulatorScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import InfoScreen from '../screens/InfoScreen';
 import FAQScreen from '../screens/FAQScreen';
@@ -35,7 +34,6 @@ export type RootStackParamList = {
 
 export type TabParamList = {
   Dashboard: undefined;
-  Simulator: undefined;
   History: undefined;
   Info: undefined;
 };
@@ -71,16 +69,6 @@ function MainTabs() {
           title: 'Inicio',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Simulator"
-        component={SimulatorScreen}
-        options={{
-          title: 'Simular',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="calculator" color={color} size={size} />
           ),
         }}
       />

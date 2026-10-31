@@ -7,7 +7,6 @@
 import {
   calculatePension,
   validateInput,
-  calculateSimpleScenario,
 } from '../services/pension/PensionCalculator';
 import type { PensionInput } from '../models';
 import {
@@ -947,27 +946,4 @@ describe('calculatePension — Invariante de explicabilidad del desglose', () =>
       }
     },
   );
-});
-
-
-describe('calculateSimpleScenario', () => {
-  test('devuelve 0 con semanas insuficientes', () => {
-    const resultado = calculateSimpleScenario({
-      semanasCotizadas: 499,
-      salarioDiario: 300,
-      umaDiaria: UMA_2025,
-      edadRetiro: 65,
-    });
-    expect(resultado).toBe(0);
-  });
-
-  test('devuelve un número positivo con datos válidos', () => {
-    const resultado = calculateSimpleScenario({
-      semanasCotizadas: 800,
-      salarioDiario: 300,
-      umaDiaria: UMA_2025,
-      edadRetiro: 65,
-    });
-    expect(resultado).toBeGreaterThan(0);
-  });
 });

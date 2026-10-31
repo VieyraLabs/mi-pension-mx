@@ -27,7 +27,7 @@ const DIST = join(ROOT, '.audit-contrast-build');
 const VIEWPORT = { width: 430, height: 932 };
 
 /** Pestañas de la app y su etiqueta visible (incluye el glifo del icono). */
-const TABS = ['Inicio', 'Simular', 'Historial', 'Info'];
+const TABS = ['Inicio', 'Historial', 'Info'];
 
 const MIME = {
   '.html': 'text/html',

@@ -11,7 +11,6 @@ Una spec no explica por qué el sistema es así: eso es trabajo de las
 | # | Spec | Verificación |
 |---|---|---|
 | [01](01-motor-de-calculo-ley-73.md) | Motor de cálculo Ley 73 | `src/__tests__/pensionCalculator.test.ts`, `src/__tests__/legalAge.test.ts`, `src/__tests__/pensionSchema.test.ts`, `src/__tests__/weeksProjection.test.ts` |
-| [02](02-simulador-de-escenarios.md) | Simulador de escenarios A/B | `src/__tests__/` + `SimulatorScreen` |
 | [03](03-importacion-de-constancia-pdf.md) | Importación de la constancia en PDF | `PdfImporter.test.ts`, `PdfTextExtractor.test.ts`, `personalDataParser.test.ts`, `contributionHistory.test.ts`, `ValidationScreen.test.tsx` |
 | [04](04-exportacion-del-reporte-en-pdf.md) | Exportación del reporte en PDF | `src/__tests__/pdfExport.test.ts` |
 | [05](05-historial-de-simulaciones.md) | Historial de simulaciones | `simulationStorage.test.ts`, `useHistory.test.ts` |

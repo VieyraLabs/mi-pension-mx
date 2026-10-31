@@ -288,28 +288,6 @@ export interface ImportedSimulationData {
 }
 
 // ─────────────────────────────────────────────
-// Comparación de escenarios (Simulador)
-// ─────────────────────────────────────────────
-
-export interface SimulatorScenario {
-  id: 'A' | 'B';
-  retirementAge: number;
-  dailySalary: number;
-  contributedWeeks: number;
-  dailyUMA: number;
-  modalidad10?: Partial<Modalidad10>;
-  result?: PensionResult;
-}
-
-export interface ScenarioComparison {
-  scenarioA: SimulatorScenario;
-  scenarioB: SimulatorScenario;
-  monthlyDifference: number;
-  annualDifference: number;
-  percentageIncrease: number;
-}
-
-// ─────────────────────────────────────────────
 // PDF / Importación de constancia IMSS
 // ─────────────────────────────────────────────
 

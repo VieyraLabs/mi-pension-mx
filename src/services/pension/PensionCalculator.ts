@@ -18,7 +18,7 @@ import { AgeFactorStep } from './steps/AgeFactorStep';
 import { FamilyAssignmentsStep } from './steps/FamilyAssignmentsStep';
 import { AssistanceAidStep } from './steps/AssistanceAidStep';
 import { LimitsStep } from './steps/LimitsStep';
-import { DAYS_PER_YEAR_UMA, AVERAGE_DAYS_PER_MONTH, MONTHS_PER_YEAR, MINIMUM_WEEKS_VEJEZ } from '../../constants/ley73';
+import { AVERAGE_DAYS_PER_MONTH, MONTHS_PER_YEAR, MINIMUM_WEEKS_VEJEZ } from '../../constants/ley73';
 import { round2 } from '../../utils/format';
 import { calculateM10PlannedWeeks } from '../../utils/modalidad10';
 import {
@@ -191,57 +191,4 @@ export function calculatePension(input: PensionInput): PensionResult {
     input,
     calculationDate: calculationDate.toISOString(),
   };
-}
-
-/**
- * Calcula la pensión para un escenario simplificado (para el simulador de escenarios).
- */
-export function calculateSimpleScenario(params: {
-  semanasCotizadas: number;
-  salarioDiario: number;
-  umaDiaria: number;
-  edadRetiro: number;
-  tieneConyuge?: boolean;
-  tieneHijosMenores?: boolean;
-  numeroHijos?: number;
-}): number {
-  const input: PensionInput = {
-    personalData: {
-      sex: 'masculino',
-      birthDate: new Date(new Date().getFullYear() - params.edadRetiro, 0, 1),
-      age: params.edadRetiro,
-      estimatedRetirementDate: new Date(),
-      retirementAge: params.edadRetiro,
-    },
-    workHistory: {
-      totalWeeks: params.semanasCotizadas,
-      employmentRelations: [],
-    },
-    averageSalary: {
-      dailySalary: params.salarioDiario,
-      monthlySalary: round2(params.salarioDiario * AVERAGE_DAYS_PER_MONTH),
-      isManual: true,
-    },
-    uma: {
-      dailyUMA: params.umaDiaria,
-      monthlyUMA: round2(params.umaDiaria * AVERAGE_DAYS_PER_MONTH),
-      annualUMA: round2(params.umaDiaria * DAYS_PER_YEAR_UMA),
-      year: new Date().getFullYear(),
-      isCustom: false,
-    },
-    modalidad10: { active: false },
-    beneficiaries: {
-      hasSpouse: params.tieneConyuge ?? false,
-      hasMinorChildren: params.tieneHijosMenores ?? false,
-      numberOfMinorChildren: params.numeroHijos ?? 0,
-      hasDependentParents: false,
-      numberOfDependentParents: 0,
-    },
-  };
-
-  const validation = validateInput(input);
-  if (!validation.valid) return 0;
-
-  const result = calculatePension(input);
-  return result.monthlyPension;
 }

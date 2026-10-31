@@ -52,12 +52,11 @@ Ese contexto explica dos decisiones que de otro modo parecen arbitrarias:
 ```
 App.tsx                     Raíz de la app
 ├── navigation/
-│   └── RootNavigator.tsx    Stack raíz + Bottom Tabs (9 pantallas)
+│   └── RootNavigator.tsx    Stack raíz + Bottom Tabs (8 pantallas)
 ├── screens/                 Una por función
 │   ├── DashboardScreen      Panel
 │   ├── NewSimulationScreen  Captura por pasos
 │   ├── ResultScreen         Resultado + desglose
-│   ├── SimulatorScreen      Comparación de escenarios A/B
 │   ├── HistoryScreen        Simulaciones guardadas
 │   ├── PdfImportScreen      Importación de la constancia
 │   ├── ValidationScreen     Revisión de lo importado
@@ -105,7 +104,7 @@ App.tsx                     Raíz de la app
 - **17 suites de pruebas, 252 casos, todos en verde.**
 - **Cobertura**: 89.1 % de sentencias, 96.1 % de funciones, 91.7 % de líneas, medida
   sobre `src/services/**`, `src/hooks/**` y `src/storage/**`.
-- **12 ADRs, 9 specs, 8 runbooks** en `docs/`.
+- **12 ADRs, 8 specs, 8 runbooks** en `docs/`.
 - **Deuda técnica del motor documentada** en [`docs/deuda-tecnica.md`](docs/deuda-tecnica.md):
   los huecos conocidos entre lo que calcula la app y lo que resuelve el IMSS (techo del
   100 % del salario promedio, fracción de los incrementos anuales, supuestos de la
