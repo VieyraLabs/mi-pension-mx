@@ -18,7 +18,7 @@ export default function FAQScreen() {
       contentContainerStyle={styles.content}
     >
       <ScreenHeader
-        title="❓ Preguntas Frecuentes"
+        title="Preguntas Frecuentes"
         subtitle="Respuestas a las preguntas más comunes sobre pensiones IMSS Ley 73"
       />
 

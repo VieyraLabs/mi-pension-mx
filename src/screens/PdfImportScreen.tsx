@@ -42,7 +42,7 @@ export default function PdfImportScreen() {
       contentContainerStyle={styles.content}
     >
       <ScreenHeader
-        title="📄 Importar Constancia IMSS"
+        title="Importar Constancia IMSS"
         subtitle="Importa tu Constancia de Semanas Cotizadas en PDF para extraer los datos automáticamente"
       />
 

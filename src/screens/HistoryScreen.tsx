@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Card, Button, IconButton, useTheme, ActivityIndicator, Divider, Portal, Dialog } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -81,7 +82,7 @@ export default function HistoryScreen() {
       {simulations.length === 0 ? (
         <View style={styles.center}>
           <View style={[styles.emptyIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Text style={{ fontSize: 40 }}>📊</Text>
+            <MaterialCommunityIcons name="chart-timeline-variant" size={40} color={theme.colors.onPrimaryContainer} />
           </View>
           <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center', marginTop: 16 }}>
             No hay simulaciones guardadas.{'\n'}Crea tu primera simulación desde el inicio.

@@ -24,7 +24,7 @@ export default function InfoScreen() {
       contentContainerStyle={styles.content}
     >
       <ScreenHeader
-        title="📚 Información Ley 73"
+        title="Información Ley 73"
         subtitle="Todo lo que necesitas saber sobre la Ley del Seguro Social de 1973"
       />
 

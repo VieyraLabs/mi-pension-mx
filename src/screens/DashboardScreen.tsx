@@ -3,13 +3,9 @@
  * Muestra tarjetas de acceso rápido a las funcionalidades principales.
  */
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Card, useTheme } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -24,7 +20,7 @@ interface DashboardCard {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
   onPress: () => void;
 }
 
@@ -35,16 +31,16 @@ export default function DashboardScreen() {
   const cards: DashboardCard[] = [
     {
       id: 'pdf',
-      title: '📄 Importar Constancia IMSS',
+      title: 'Importar Constancia IMSS',
       description: 'Carga tu constancia de semanas cotizadas en PDF y extrae los datos automáticamente',
-      icon: '📄',
+      icon: 'file-pdf-box',
       onPress: () => navigation.navigate('PdfImport'),
     },
     {
       id: 'manual',
-      title: '🧮 Ingresar datos manualmente',
+      title: 'Ingresar datos manualmente',
       description: 'Calcula tu pensión estimada paso a paso con todos los detalles',
-      icon: '🧮',
+      icon: 'calculator-variant',
       onPress: () => navigation.navigate('NewSimulation'),
     },
   ];
@@ -72,27 +68,27 @@ export default function DashboardScreen() {
       </Text>
 
       {cards.map((card) => (
-        <TouchableOpacity key={card.id} onPress={card.onPress} activeOpacity={0.7}>
-          <Card
-            style={[styles.card, { backgroundColor: theme.colors.surface }]}
-            elevation={1}
-          >
-            <Card.Content style={styles.cardContent}>
-              <View style={[styles.cardIconContainer, { backgroundColor: theme.colors.primaryContainer }]}>
-                <Text style={styles.cardIcon}>{card.icon}</Text>
-              </View>
-              <View style={styles.cardTextContainer}>
-                <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>
-                  {card.title}
-                </Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
-                  {card.description}
-                </Text>
-              </View>
-              <Text style={{ color: theme.colors.primary, fontSize: 24 }}>›</Text>
-            </Card.Content>
-          </Card>
-        </TouchableOpacity>
+        <Card
+          key={card.id}
+          onPress={card.onPress}
+          style={[styles.card, { backgroundColor: theme.colors.surface }]}
+          elevation={1}
+        >
+          <Card.Content style={styles.cardContent}>
+            <View style={[styles.cardIconContainer, { backgroundColor: theme.colors.primaryContainer }]}>
+              <MaterialCommunityIcons name={card.icon} size={26} color={theme.colors.onPrimaryContainer} />
+            </View>
+            <View style={styles.cardTextContainer}>
+              <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>
+                {card.title}
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                {card.description}
+              </Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+          </Card.Content>
+        </Card>
       ))}
 
       {/* Nota legal */}
@@ -160,7 +156,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cardIcon: { fontSize: 26 },
   cardTextContainer: { flex: 1 },
   legalCard: {
     marginBottom: 20,
