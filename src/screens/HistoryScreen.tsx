@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Text, Card, Button, IconButton, useTheme, ActivityIndicator, Divider, Portal, Dialog } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { BUTTON_RADIUS } from '../theme';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
@@ -89,7 +90,7 @@ export default function HistoryScreen() {
           </Text>
           <Button
             mode="contained"
-            style={[styles.emptyBtn, { borderRadius: 14 }]}
+            style={[styles.emptyBtn, { borderRadius: BUTTON_RADIUS }]}
             contentStyle={{ paddingVertical: 6 }}
             onPress={() => navigation.navigate('NewSimulation' as never)}
           >

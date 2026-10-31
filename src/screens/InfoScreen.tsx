@@ -7,6 +7,7 @@ import { Text, Card, List, useTheme, Divider, Button } from 'react-native-paper'
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
+import { BUTTON_RADIUS } from '../theme';
 import { INFO_LEY73 } from '../constants/infoLegal';
 import { MessageBanner } from '../components/MessageBanner';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -73,7 +74,7 @@ export default function InfoScreen() {
           <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 12 }}>
             Consulta las Preguntas Frecuentes en la sección FAQ.
           </Text>
-          <Button mode="contained" onPress={() => navigation.navigate('FAQ')} style={{ borderRadius: 12 }} icon="help-circle">
+          <Button mode="contained" onPress={() => navigation.navigate('FAQ')} style={{ borderRadius: BUTTON_RADIUS }} icon="help-circle">
             Ver Preguntas Frecuentes
           </Button>
         </Card.Content>

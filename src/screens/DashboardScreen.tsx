@@ -56,9 +56,12 @@ export default function DashboardScreen() {
         subtitle="Calculadora de Pensión IMSS Ley 73"
       >
         <View style={styles.headerBadge}>
-          <Text variant="labelSmall" style={{ color: BRAND_ON_COLOR }}>
-            ⚠️ {ESTIMATION_DISCLAIMER_SHORT}
-          </Text>
+          <View style={styles.headerBadgeRow}>
+            <MaterialCommunityIcons name="alert" size={14} color={BRAND_ON_COLOR} />
+            <Text variant="labelSmall" style={{ color: BRAND_ON_COLOR, marginLeft: 4 }}>
+              {ESTIMATION_DISCLAIMER_SHORT}
+            </Text>
+          </View>
         </View>
       </ScreenHeader>
 
@@ -106,19 +109,22 @@ export default function DashboardScreen() {
       <Card style={[styles.infoCard, { backgroundColor: theme.colors.surface }]} elevation={1}>
         <Card.Content>
           {[
-            '✓ Cuantía básica según tabla Art. 167 LSS 1973',
-            '✓ Incrementos anuales por semanas excedentes',
-            '✓ Incremento del 11% (Decreto DOF 2001/2004)',
-            '✓ Factor por edad (Cesantía 60–64 años)',
-            '✓ Asignaciones familiares (cónyuge, hijos)',
-            '✓ Ayuda asistencial',
-            '✓ Pensión Mínima Garantizada',
-            '✓ Tope 25 UMA',
-            '✓ Ajuste por Modalidad 10',
+            'Cuantía básica según tabla Art. 167 LSS 1973',
+            'Incrementos anuales por semanas excedentes',
+            'Incremento del 11% (Decreto DOF 2001/2004)',
+            'Factor por edad (Cesantía 60–64 años)',
+            'Asignaciones familiares (cónyuge, hijos)',
+            'Ayuda asistencial',
+            'Pensión Mínima Garantizada',
+            'Tope 25 UMA',
+            'Ajuste por Modalidad 10',
           ].map((item, i) => (
-            <Text key={i} variant="bodySmall" style={{ color: theme.colors.onSurface, lineHeight: 22 }}>
-              {item}
-            </Text>
+            <View key={i} style={styles.checkItem}>
+              <MaterialCommunityIcons name="check" size={16} color={theme.colors.primary} style={styles.checkIcon} />
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurface, lineHeight: 22, flex: 1 }}>
+                {item}
+              </Text>
+            </View>
           ))}
         </Card.Content>
       </Card>
@@ -135,6 +141,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
+  headerBadgeRow: { flexDirection: 'row', alignItems: 'center' },
+  checkItem: { flexDirection: 'row', alignItems: 'flex-start' },
+  checkIcon: { marginTop: 3, marginRight: 8 },
   sectionTitle: {
     fontWeight: 'bold',
     marginBottom: 12,

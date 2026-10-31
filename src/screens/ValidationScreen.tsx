@@ -11,11 +11,12 @@ import type { RootStackParamList } from '../navigation/RootNavigator';
 import { ConstanciaIMSSParser } from '../services/pdf/parsers/PersonalDataParser';
 import { DataRow } from '../components/DataRow';
 import { DateField } from '../components/DateField';
+import { IconText } from '../components/IconText';
 import { DEFAULT_BIRTH_DATE } from '../hooks/usePensionForm';
 import { formatCurrency, formatDateShort } from '../utils/format';
 import type { ContributionSummary, SBCPeriodSegment } from '../services/pension/history/types';
 import { showAlert } from '../utils/alert';
-import { getBannerColors } from '../theme';
+import { BUTTON_RADIUS, getBannerColors } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Validation'>;
 type Nav = NativeStackNavigationProp<RootStackParamList>;
@@ -148,9 +149,9 @@ export default function ValidationScreen() {
       {missingFields.length > 0 && (
         <Card style={[styles.card, { backgroundColor: errorColors.background }]} elevation={0}>
           <Card.Content>
-            <Text variant="labelSmall" style={{ color: errorColors.text, marginBottom: 8 }}>
-              ⚠️ Campos no encontrados en el PDF (completa manualmente):
-            </Text>
+            <IconText icon="alert" color={errorColors.text} variant="labelSmall" containerStyle={{ marginBottom: 8 }}>
+              Campos no encontrados en el PDF (completa manualmente):
+            </IconText>
             <View style={styles.chips}>
               {missingFields.map((field) => (
                 <Chip
@@ -216,15 +217,15 @@ export default function ValidationScreen() {
             style={styles.input}
           />
           {data.averageSBC !== '' ? (
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: -8, marginBottom: 12 }}>
-              ✓ Calculado a partir del historial detallado de modificaciones salariales de tus patrones. Verifícalo.
-            </Text>
+            <IconText icon="check-circle" color={theme.colors.onSurfaceVariant} containerStyle={{ marginTop: -8, marginBottom: 12 }}>
+              Calculado a partir del historial detallado de modificaciones salariales de tus patrones. Verifícalo.
+            </IconText>
           ) : (
-            <Text variant="bodySmall" style={{ color: errorColors.text, marginTop: -8, marginBottom: 12 }}>
-              ⚠️ Esta constancia no incluye el historial de modificaciones salariales necesario para calcularlo.
+            <IconText icon="alert" color={errorColors.text} containerStyle={{ marginTop: -8, marginBottom: 12 }}>
+              Esta constancia no incluye el historial de modificaciones salariales necesario para calcularlo.
               Descarga la "Constancia de Semanas Cotizadas en el IMSS e Historial de Registros Afiliatorios de la
               Persona Asegurada" desde los servicios digitales del IMSS, o complétalo manualmente.
-            </Text>
+            </IconText>
           )}
           {sbcDetail && (
             <Text variant="bodySmall" style={{ color: theme.colors.primary, marginTop: -4, marginBottom: 12 }}>
@@ -306,9 +307,9 @@ export default function ValidationScreen() {
             {(!sbcDetail.summary.isComplete || sbcDetail.summary.skippedWeeks > 0) && (
               <View style={[styles.partialBanner, { backgroundColor: warningColors.background }]}>
                 {!sbcDetail.summary.isComplete && (
-                  <Text variant="bodySmall" style={{ color: warningColors.text, lineHeight: 18 }}>
-                    ⚠️ Reconstrucción parcial: tu historial solo registra {sbcDetail.summary.contributedWeeks} semanas cotizadas de las 250 que exige el cálculo; el promedio se obtuvo con las disponibles.
-                  </Text>
+                  <IconText icon="alert" color={warningColors.text} style={{ lineHeight: 18 }}>
+                    Reconstrucción parcial: tu historial solo registra {sbcDetail.summary.contributedWeeks} semanas cotizadas de las 250 que exige el cálculo; el promedio se obtuvo con las disponibles.
+                  </IconText>
                 )}
                 {sbcDetail.summary.skippedWeeks > 0 && (
                   <Text variant="bodySmall" style={{ color: warningColors.text, lineHeight: 18 }}>
@@ -321,9 +322,9 @@ export default function ValidationScreen() {
         </Card>
       )}
 
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16, lineHeight: 18 }}>
-        ✏️ Revisa y corrige los datos extraídos. Los datos marcados con * son requeridos para el cálculo de la pensión.
-      </Text>
+      <IconText icon="pencil" color={theme.colors.onSurfaceVariant} containerStyle={{ marginBottom: 16 }} style={{ lineHeight: 18 }}>
+        Revisa y corrige los datos extraídos. Los datos marcados con * son requeridos para el cálculo de la pensión.
+      </IconText>
 
       <Button mode="contained" onPress={confirmData} icon="check" style={styles.btn}>
         Confirmar y continuar
@@ -344,5 +345,5 @@ const styles = StyleSheet.create({
   partialBanner: { borderRadius: 8, padding: 12, marginTop: 8, gap: 4 },
   input: { marginBottom: 12 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  btn: { marginBottom: 12, borderRadius: 8 },
+  btn: { marginBottom: 12, borderRadius: BUTTON_RADIUS },
 });

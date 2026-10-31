@@ -10,7 +10,7 @@ import { UMA_ACTUAL } from '../constants/uma';
 import { ScenarioInputs, type Scenario } from '../components/ScenarioInputs';
 import { CompRow } from '../components/CompRow';
 import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
-import { getBannerColors } from '../theme';
+import { BUTTON_RADIUS, getBannerColors } from '../theme';
 
 const DEFAULT_SCENARIO: Scenario = {
   retirementAge: '65',
@@ -79,7 +79,7 @@ export default function SimulatorScreen() {
         </Card>
       </View>
 
-      <Button mode="contained" onPress={calculate} style={[styles.calcBtn, { borderRadius: 14 }]} contentStyle={{ paddingVertical: 6 }} icon="calculator">
+      <Button mode="contained" onPress={calculate} style={[styles.calcBtn, { borderRadius: BUTTON_RADIUS }]} contentStyle={{ paddingVertical: 6 }} icon="calculator">
         Comparar escenarios
       </Button>
 

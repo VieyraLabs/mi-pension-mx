@@ -26,7 +26,7 @@ import { calculateM10MonthlyBreakdown } from '../utils/modalidad10';
 import { getMinimumDailySalary } from '../constants/uma';
 import { MODALIDAD_10_RISK_CLASS_LABELS } from '../constants/ley73';
 import { normalizeLocalCalendarDate } from '../utils/weeksProjection';
-import { getBannerColors, getBrandGradient, BRAND_ON_COLOR } from '../theme';
+import { BUTTON_RADIUS, getBannerColors, getBrandGradient, BRAND_ON_COLOR } from '../theme';
 import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
 import { EmptyState } from '../components/EmptyState';
 import { SummaryRow } from '../components/SummaryRow';
@@ -368,9 +368,9 @@ const styles = StyleSheet.create({
   subResultDivider: { width: 1, height: 28, opacity: 0.3 },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   actions: { gap: 12, marginBottom: 20 },
-  primaryAction: { borderRadius: 14 },
+  primaryAction: { borderRadius: BUTTON_RADIUS },
   secondaryActions: { flexDirection: 'row', gap: 12 },
-  actionBtn: { flex: 1, borderRadius: 12 },
+  actionBtn: { flex: 1, borderRadius: BUTTON_RADIUS },
   breakdownItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1 },
   breakdownContent: { flex: 1 },
   breakdownTitle: { fontWeight: 'bold', fontSize: 13, marginBottom: 4, width: '100%' },

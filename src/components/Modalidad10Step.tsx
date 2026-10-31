@@ -123,9 +123,14 @@ export function Modalidad10Step({
             end={{ x: 1, y: 1 }}
             style={[styles.m10Toggle, modalidad10.active ? {} : { opacity: 0.55 }]}
           >
-            <Text variant="bodyMedium" style={{ color: BRAND_ON_COLOR, fontWeight: 'bold', flex: 1 }}>
-              {modalidad10.active ? '✓ Cotizando en Modalidad 10' : '¿Deseas cotizar en Modalidad 10? Toca aquí'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              {modalidad10.active && (
+                <Icon source="check-circle" size={18} color={BRAND_ON_COLOR} />
+              )}
+              <Text variant="bodyMedium" style={{ color: BRAND_ON_COLOR, fontWeight: 'bold', flex: 1, marginLeft: modalidad10.active ? 8 : 0 }}>
+                {modalidad10.active ? 'Cotizando en Modalidad 10' : '¿Deseas cotizar en Modalidad 10? Toca aquí'}
+              </Text>
+            </View>
             <Switch
               value={modalidad10.active}
               onValueChange={(v) => onChange({ active: v })}

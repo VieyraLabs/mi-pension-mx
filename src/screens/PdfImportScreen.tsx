@@ -7,6 +7,7 @@ import { Text, Card, Button, useTheme, ActivityIndicator, Chip } from 'react-nat
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
+import { BUTTON_RADIUS } from '../theme';
 import { importPdf } from '../services/pdf/PdfImporter';
 import { MessageBanner } from '../components/MessageBanner';
 import { ScreenHeader } from '../components/ScreenHeader';
@@ -130,6 +131,6 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: { marginBottom: 4 },
   loadingContainer: { alignItems: 'center', padding: 24 },
-  mainBtn: { borderRadius: 14, marginBottom: 12 },
-  backBtn: { borderRadius: 12 },
+  mainBtn: { borderRadius: BUTTON_RADIUS, marginBottom: 12 },
+  backBtn: { borderRadius: BUTTON_RADIUS },
 });

@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import RootNavigator from './src/navigation/RootNavigator';
 import type { RootStackParamList } from './src/navigation/RootNavigator';
 import { useAppTheme } from './src/theme/useAppTheme';
+import { lightTheme } from './src/theme';
 
 /** ErrorBoundary para mostrar errores de render en lugar de pantalla en blanco */
 class ErrorBoundary extends React.Component<
@@ -24,14 +25,14 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <ScrollView style={{ flex: 1, backgroundColor: '#fff', padding: 20 }}>
-          <Text style={{ color: 'red', fontSize: 18, fontWeight: 'bold', marginTop: 40 }}>
-            ❌ Error de renderizado
+        <ScrollView style={{ flex: 1, backgroundColor: lightTheme.colors.background, padding: 20 }}>
+          <Text style={{ color: lightTheme.colors.error, fontSize: 18, fontWeight: 'bold', marginTop: 40 }}>
+            Error de renderizado
           </Text>
-          <Text style={{ color: '#333', marginTop: 12, fontSize: 13 }}>
+          <Text style={{ color: lightTheme.colors.onSurface, marginTop: 12, fontSize: 13 }}>
             {this.state.error?.message}
           </Text>
-          <Text style={{ color: '#666', marginTop: 12, fontSize: 11 }}>
+          <Text style={{ color: lightTheme.colors.onSurfaceVariant, marginTop: 12, fontSize: 11 }}>
             {this.state.error?.stack}
           </Text>
         </ScrollView>

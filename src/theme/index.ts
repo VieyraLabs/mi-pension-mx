@@ -153,4 +153,11 @@ export const darkTheme: MD3Theme = {
   },
 };
 
+/**
+ * Radio unificado de esquinas para botones. Antes cada pantalla usaba 8, 12 o
+ * 14; un solo token mantiene las acciones principales visualmente idénticas
+ * (ver ADR-0011: sistema de diseño, no valores sueltos).
+ */
+export const BUTTON_RADIUS = 12;
+
 export { COLORS };

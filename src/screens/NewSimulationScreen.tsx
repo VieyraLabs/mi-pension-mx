@@ -8,6 +8,7 @@ import { Button, useTheme } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
+import { BUTTON_RADIUS } from '../theme';
 import { usePensionForm } from '../hooks/usePensionForm';
 import { StepProgress } from '../components/StepProgress';
 import { calculatePension, validateInput } from '../services/pension/PensionCalculator';
@@ -329,5 +330,5 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
   },
   btn: { flex: 1 },
-  primaryBtn: { borderRadius: 12 },
+  primaryBtn: { borderRadius: BUTTON_RADIUS },
 });

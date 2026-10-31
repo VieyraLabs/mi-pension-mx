@@ -68,9 +68,10 @@ export function UMAStep({ uma, onSelectYear, onCustomize, isCustom, setIsCustom,
                     key={r.year}
                     selected={uma.year === r.year}
                     onPress={() => onSelectYear(r.year)}
+                    icon={r.isEstimate ? 'alert' : undefined}
                     style={{ marginBottom: 4 }}
                   >
-                    {r.year}{r.isEstimate ? ' ⚠️' : ''}
+                    {r.year}
                   </Chip>
                 ))}
               </View>
