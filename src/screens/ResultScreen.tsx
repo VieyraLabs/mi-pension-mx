@@ -332,11 +332,11 @@ export default function ResultScreen() {
         <View style={styles.secondaryActions}>
           <Button
             mode="outlined"
-            icon="calculator"
-            onPress={() => navigation.navigate('NewSimulation' as never)}
+            icon="compare-horizontal"
+            onPress={() => navigation.navigate('Comparison', { simulationId })}
             style={styles.actionBtn}
           >
-            Nueva simulación
+            Comparar
           </Button>
           <Button
             mode="outlined"

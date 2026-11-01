@@ -17,6 +17,7 @@ import InfoScreen from '../screens/InfoScreen';
 import FAQScreen from '../screens/FAQScreen';
 import PdfImportScreen from '../screens/PdfImportScreen';
 import ValidationScreen from '../screens/ValidationScreen';
+import ComparisonScreen from '../screens/ComparisonScreen';
 import type { ImportedSimulationData } from '../models';
 
 // ─────────────────────────────────────────────
@@ -27,6 +28,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   NewSimulation: { importedData?: ImportedSimulationData } | undefined;
   Result: { simulationId?: string };
+  Comparison: { simulationId?: string };
   PdfImport: undefined;
   Validation: { extractedText: string };
   FAQ: undefined;
@@ -123,6 +125,11 @@ export default function RootNavigator() {
         name="Result"
         component={ResultScreen}
         options={{ title: 'Resultado de Pensión' }}
+      />
+      <Stack.Screen
+        name="Comparison"
+        component={ComparisonScreen}
+        options={{ title: 'Comparativa M10 vs Pensionarse Antes' }}
       />
       <Stack.Screen
         name="PdfImport"

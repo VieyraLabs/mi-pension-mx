@@ -403,6 +403,29 @@ export const RIGHTS_PRESERVATION_MAX_WEEKS = 60;
 export const DECREE_11_INCREMENT = 0.11;
 
 // ─────────────────────────────────────────────
+// Incremento anual post-retiro por inflación (comparativa M10 vs pensionarse antes)
+// ─────────────────────────────────────────────
+
+/**
+ * Incremento anual post-retiro por inflación (promedio INPC 2022–2026).
+ *
+ * Las pensiones del régimen de la Ley 73 en curso de pago se incrementan
+ * cada febrero conforme a la inflación (INPC) del año anterior. Para la
+ * comparativa «contratar Modalidad 10 vs pensionarse lo antes posible» se
+ * usa una constante fija: el promedio aritmético simple de los incrementos
+ * de los últimos 5 años (febrero 2022 a febrero 2026) ≈ 5.55% anual.
+ *
+ * ⚠️ ESTIMACIÓN: valor de modelado; NO es una proyección neutral ni una
+ * garantía de los próximos años. El dato de 2025 (+3.69%) queda pendiente de
+ * confirmación contra el INPC publicado por INEGI (NOTE-004).
+ *
+ * Fuente: docs/investigacion/incremento-anual-pensiones-ley73-decretos.md.
+ * Vigencia: referencia a la serie 2022–2026; revisar anualmente según el
+ * runbook 05 (docs/runbooks/05-actualizar-uma-y-constantes-legales.md).
+ */
+export const ANNUAL_POST_RETIREMENT_INCREMENT = 0.0555; // ESTIMACIÓN
+
+// ─────────────────────────────────────────────
 // Modalidad 10 — incorporación voluntaria al régimen obligatorio
 // ─────────────────────────────────────────────
 

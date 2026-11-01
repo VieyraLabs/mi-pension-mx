@@ -47,6 +47,26 @@ export function formatCurrency(value: number): string {
   return CURRENCY_FORMATTER.format(value);
 }
 
+/**
+ * Formatea moneda de forma COMPACTA para ejes y espacios reducidos.
+ * Ej: 1234567 → "$1.2M", 12345 → "$12.3k", 999 → "$999.00".
+ *
+ * La usan los ejes de gráficas (react-native-chart-kit), donde el formato
+ * completo ($1,234,567.89) no cabe sin recortarse. El valor exacto sigue
+ * disponible en la tabla y en el detalle del punto seleccionado.
+ */
+export function formatCompactCurrency(value: number): string {
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) {
+    return `${sign}$${(abs / 1_000_000).toFixed(1)}M`;
+  }
+  if (abs >= 1_000) {
+    return `${sign}$${(abs / 1_000).toFixed(1)}k`;
+  }
+  return `${sign}$${abs.toFixed(2)}`;
+}
+
 /** Formatea un número con 2 decimales. Ej: 1,234.56 */
 export function formatNumber(value: number): string {
   return NUMBER_FORMATTER.format(value);

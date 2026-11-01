@@ -21,7 +21,7 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 import React from 'react';
-import { screen, waitFor } from '@testing-library/react-native';
+import { screen, waitFor, fireEvent } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { renderScreen } from '../test-utils/renderScreen';
 import ResultScreen from '../screens/ResultScreen';
@@ -382,5 +382,20 @@ describe('ResultScreen', () => {
     expect(screen.getByText('Semanas cotizadas registradas')).toBeTruthy();
     expect(screen.queryByText('Semanas estimadas al pensionarte')).toBeNull();
     expect(screen.getAllByText('600 sem.').length).toBeGreaterThan(0);
+  });
+
+  test('el botón «Comparar» reemplaza a «Nueva simulación» y navega a la comparativa', async () => {
+    const saved = await saveSimulation(buildResult(), 'María López');
+    mockRouteParams = { simulationId: saved.id };
+
+    renderScreen(<ResultScreen />);
+
+    await waitFor(() => expect(screen.getByText('María López')).toBeTruthy());
+
+    expect(screen.getByText('Comparar')).toBeTruthy();
+    expect(screen.queryByText('Nueva simulación')).toBeNull();
+
+    fireEvent.press(screen.getByText('Comparar'));
+    expect(mockNavigate).toHaveBeenCalledWith('Comparison', { simulationId: saved.id });
   });
 });
