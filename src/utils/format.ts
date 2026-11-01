@@ -108,6 +108,18 @@ export function formatDateShort(date: Date): string {
   return DATE_SHORT_FORMATTER.format(date);
 }
 
+/**
+ * Formatea la hora en formato de 24 horas (HH:mm) en la zona horaria local.
+ * Ej: 14:05. Se forma manualmente para garantizar el formato exacto pedido
+ * por la UI (el `Intl` con es-MX no siempre entrega HH:mm fijo).
+ */
+export function formatTime(date: Date): string {
+  if (isNaN(date.getTime())) return '';
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
 /** Formatea un porcentaje. Ej: 75.50% */
 export function formatPercent(value: number): string {
   return PERCENT_FORMATTER.format(value / 100);

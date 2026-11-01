@@ -11,7 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/RootNavigator';
 import { useHistory } from '../hooks/useHistory';
 import { MAX_SIMULATIONS } from '../storage/simulationStorage';
-import { formatAge, formatCurrency, formatDateLong, formatDateShort, formatInteger, formatWeeksTargetText, getWeeksLabel } from '../utils/format';
+import { formatAge, formatCurrency, formatDateLong, formatDateShort, formatInteger, formatTime, formatUMAs, formatWeeksTargetText, getWeeksLabel } from '../utils/format';
 import { DataRow } from '../components/DataRow';
 import { normalizeLocalCalendarDate } from '../utils/weeksProjection';
 
@@ -112,7 +112,7 @@ export default function HistoryScreen() {
                       {sim.name}
                     </Text>
                     <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                      {formatDateShort(new Date(sim.creationDate))}
+                      {formatDateShort(new Date(sim.creationDate))} · {formatTime(new Date(sim.creationDate))}
                     </Text>
                   </View>
                   <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -162,6 +162,17 @@ export default function HistoryScreen() {
                     value={formatCurrency(
                       sim.result.input.projectedAverageDailySalary ?? sim.result.input.averageSalary.dailySalary,
                     )}
+                    theme={theme}
+                  />
+                  <DataRow
+                    label="Modalidad 10"
+                    value={
+                      sim.result.input.modalidad10.active
+                        ? sim.result.input.modalidad10.contributionSalaryInUMAs != null
+                          ? `Sí · ${formatUMAs(sim.result.input.modalidad10.contributionSalaryInUMAs)} UMA`
+                          : 'Sí'
+                        : 'No'
+                    }
                     theme={theme}
                   />
                 </View>

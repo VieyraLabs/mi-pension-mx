@@ -332,19 +332,19 @@ export default function ResultScreen() {
         <View style={styles.secondaryActions}>
           <Button
             mode="outlined"
-            icon="compare-horizontal"
-            onPress={() => navigation.navigate('Comparison', { simulationId })}
-            style={styles.actionBtn}
-          >
-            Comparar
-          </Button>
-          <Button
-            mode="outlined"
             icon="home"
             onPress={() => navigation.popToTop()}
             style={styles.actionBtn}
           >
             Ir al inicio
+          </Button>
+          <Button
+            mode="outlined"
+            icon="compare-horizontal"
+            onPress={() => navigation.navigate('Comparison', { simulationId })}
+            style={styles.actionBtn}
+          >
+            Comparar
           </Button>
         </View>
       </View>
