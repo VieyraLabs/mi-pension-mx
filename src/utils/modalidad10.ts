@@ -23,7 +23,8 @@ import {
   M10_CUOTA_RATES,
   M10_SEM_EXCEDENTE_UMAS,
 } from '../constants/modalidad10Cuota';
-import type { RiskClass } from '../models';
+import { getMinimumDailySalary } from '../constants/uma';
+import type { RiskClass, SalaryZone } from '../models';
 import { round2, round4 } from './format';
 import { countCotizedWeeksInDateRange } from './weeksProjection';
 
@@ -402,4 +403,43 @@ export function calculateM10MonthlyBreakdown(
  */
 export function calculateM10MonthlyCost(params: M10MonthlyCostParams): number {
   return calculateM10MonthlyBreakdown(params).total;
+}
+
+/** Campos de la Modalidad 10 de una simulación que determinan su costo. */
+export interface M10CostSource {
+  /** SBC diario declarado en la Modalidad 10. */
+  contributionSalary?: number;
+  /** Clase de riesgo laboral de la ocupación (fija la prima de RT). */
+  riskClass?: RiskClass;
+  /** Zona de salario mínimo usada como piso del SBC declarado. */
+  salaryZone?: SalaryZone;
+}
+
+/** Configuración de UMA de la simulación: valor diario, año y salarios mínimos. */
+export interface M10CostUMAContext {
+  dailyUMA: number;
+  year: number;
+  smgCdmx?: number;
+  smgFronteraNorte?: number;
+}
+
+/**
+ * Desglose del costo mensual de la Modalidad 10 de una simulación, con los
+ * mismos parámetros con los que se capturó: SBC declarado, clase de riesgo,
+ * UMA vigente y salario mínimo de la zona elegida.
+ *
+ * Es el punto único de verdad de la cifra: ResultScreen y el historial muestran
+ * el mismo costo sin decidir los parámetros cada uno por su lado.
+ */
+export function m10MonthlyCostFromInput(
+  modalidad10: M10CostSource,
+  uma: M10CostUMAContext,
+): M10MonthlyCostBreakdown {
+  return calculateM10MonthlyBreakdown({
+    dailySalary: modalidad10.contributionSalary ?? 0,
+    riskClass: modalidad10.riskClass ?? 1,
+    dailyUMA: uma.dailyUMA,
+    minimumDailySalary: getMinimumDailySalary(uma, modalidad10.salaryZone),
+    year: uma.year,
+  });
 }

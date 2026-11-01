@@ -29,12 +29,17 @@ import HistoryScreen from '../screens/HistoryScreen';
 import { MAX_SIMULATIONS, saveSimulation } from '../storage/simulationStorage';
 import { calculatePension } from '../services/pension/PensionCalculator';
 import type { PensionInput, PensionResult, SavedSimulation } from '../models';
+import { calculateM10MonthlyCost } from '../utils/modalidad10';
+import { getMinimumDailySalary } from '../constants/uma';
+import { formatCurrency, formatUMAs } from '../utils/format';
 
 /** Resultado de una persona con Modalidad 10 activa (SBC declarado distinto). */
 function buildResult(params: {
   name: string;
   birthDate: Date;
   contributionSalary: number;
+  /** UMAs declaradas; el historial solo muestra el costo cuando existen. */
+  contributionSalaryInUMAs?: number;
 }): PensionResult {
   const input: PensionInput = {
     personalData: {
@@ -57,6 +62,7 @@ function buildResult(params: {
     modalidad10: {
       active: true,
       contributionSalary: params.contributionSalary,
+      contributionSalaryInUMAs: params.contributionSalaryInUMAs,
       continuesWorkingWhileContributing: false,
       expectedMonths: 120,
       riskClass: 3,
@@ -120,6 +126,36 @@ describe('HistoryScreen', () => {
     fireEvent.press(screen.getAllByLabelText('Ver simulación')[0]!);
     expect(mockNavigate).toHaveBeenCalledWith('Result', { simulationId: expect.any(String) });
     expect(screen.getAllByLabelText('Eliminar simulación')).toHaveLength(3);
+  });
+
+  test('muestra el costo mensual de la Modalidad 10 junto a las UMAs declaradas', async () => {
+    const umasDeclaradas = 7.96;
+    await saveSimulation(
+      buildResult({
+        name: 'María López',
+        birthDate: MARIA_BIRTH,
+        contributionSalary: 900,
+        contributionSalaryInUMAs: umasDeclaradas,
+      }),
+      'María · Modalidad 10',
+    );
+    renderScreen(<HistoryScreen />);
+
+    // El costo se calcula con los parámetros guardados: SBC declarado, clase de
+    // riesgo, UMA (2025) y salario mínimo de la zona general.
+    const costo = calculateM10MonthlyCost({
+      dailySalary: 900,
+      riskClass: 3,
+      dailyUMA: 113.14,
+      minimumDailySalary: getMinimumDailySalary({}, 'general'),
+      year: 2025,
+    });
+
+    expect(
+      await screen.findByText(
+        `Sí · ${formatUMAs(umasDeclaradas)} UMA (${formatCurrency(costo)}/mes)`,
+      ),
+    ).toBeTruthy();
   });
 
   test('bloquea y atenúa simulaciones de otra persona y solo confirma con 2+ (SCN-004)', async () => {

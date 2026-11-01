@@ -14,6 +14,7 @@ import { MAX_SIMULATIONS } from '../storage/simulationStorage';
 import { formatAge, formatCurrency, formatDateLong, formatDateShort, formatInteger, formatTime, formatUMAs, formatWeeksTargetText, getWeeksLabel } from '../utils/format';
 import { DataRow } from '../components/DataRow';
 import { normalizeLocalCalendarDate } from '../utils/weeksProjection';
+import { m10MonthlyCostFromInput } from '../utils/modalidad10';
 import { isSamePerson } from '../services/pension/comparison/personIdentity';
 import type { PersonIdentity } from '../services/pension/comparison/personIdentity';
 import type { SavedSimulation } from '../models';
@@ -48,6 +49,23 @@ function getPersonIdentity(sim: SavedSimulation): PersonIdentity {
     name: personalData.name ?? sim.name,
     birthDate: personalData.birthDate,
   };
+}
+
+/**
+ * Resumen de la Modalidad 10 de una simulación: si está activa, las UMAs del
+ * SBC declarado y, entre paréntesis, el costo mensual de contratarla (la misma
+ * cifra que ResultScreen). Los registros anteriores a la captura en UMAs
+ * conservan el "Sí" sin monto.
+ */
+function formatModalidad10Summary(sim: SavedSimulation): string {
+  const { modalidad10, uma } = sim.result.input;
+  if (!modalidad10.active) return 'No';
+
+  const umas = modalidad10.contributionSalaryInUMAs;
+  if (umas == null) return 'Sí';
+
+  const { total } = m10MonthlyCostFromInput(modalidad10, uma);
+  return `Sí · ${formatUMAs(umas)} UMA (${formatCurrency(total)}/mes)`;
 }
 
 export default function HistoryScreen() {
@@ -285,17 +303,7 @@ export default function HistoryScreen() {
                     )}
                     theme={theme}
                   />
-                  <DataRow
-                    label="Modalidad 10"
-                    value={
-                      sim.result.input.modalidad10.active
-                        ? sim.result.input.modalidad10.contributionSalaryInUMAs != null
-                          ? `Sí · ${formatUMAs(sim.result.input.modalidad10.contributionSalaryInUMAs)} UMA`
-                          : 'Sí'
-                        : 'No'
-                    }
-                    theme={theme}
-                  />
+                  <DataRow label="Modalidad 10" value={formatModalidad10Summary(sim)} theme={theme} />
                 </View>
               </Card.Content>
             </Card>

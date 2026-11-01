@@ -22,8 +22,7 @@ import {
   getWeeksLabel,
 } from '../utils/format';
 import { showAlert } from '../utils/alert';
-import { calculateM10MonthlyBreakdown } from '../utils/modalidad10';
-import { getMinimumDailySalary } from '../constants/uma';
+import { m10MonthlyCostFromInput } from '../utils/modalidad10';
 import { MODALIDAD_10_RISK_CLASS_LABELS } from '../constants/ley73';
 import { normalizeLocalCalendarDate } from '../utils/weeksProjection';
 import { BUTTON_RADIUS, getBannerColors, getBrandGradient, BRAND_ON_COLOR } from '../theme';
@@ -187,13 +186,7 @@ export default function ResultScreen() {
             const m10 = result.input.modalidad10;
             const breakdown = result.input.projectedAverageBreakdown;
             const riskClass = m10.riskClass ?? 1;
-            const costBreakdown = calculateM10MonthlyBreakdown({
-              dailySalary: m10.contributionSalary ?? 0,
-              riskClass,
-              dailyUMA: result.input.uma.dailyUMA,
-              minimumDailySalary: getMinimumDailySalary(result.input.uma, m10.salaryZone),
-              year: result.input.uma.year,
-            });
+            const costBreakdown = m10MonthlyCostFromInput(m10, result.input.uma);
             return (
               <View style={[styles.m10Block, { borderTopColor: theme.colors.outlineVariant }]}>
                 <Text
