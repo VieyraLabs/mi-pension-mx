@@ -13,7 +13,7 @@ llega al motor cumple las reglas de la ley.
 La captura se organiza como un **flujo por pasos** (`NewSimulationScreen`), en lugar de un
 formulario largo. Son **cuatro pasos**, con estos títulos exactos:
 
-1. **Datos personales** (nombre, sexo, fecha de nacimiento).
+1. **Datos personales** (nombre y fecha de nacimiento, ambos obligatorios).
 2. **Historial laboral** (semanas cotizadas **y** salario base de cotización, en el mismo paso).
 3. **Edad de retiro** (fecha de retiro y **beneficiarios**).
 4. **UMA** (valor por año o personalizado, **y Modalidad 10**).
@@ -48,6 +48,12 @@ esa fecha es la que queda.
 
 ## Reglas de negocio
 
+- **El nombre es obligatorio.** Identifica la persona y su simulación en el historial: sin
+  él, «Siguiente» queda deshabilitado en el paso 1 y el esquema de Zod lo rechaza con
+  «El nombre es requerido». Se guarda recortado de espacios, con un máximo de 100
+  caracteres, y es lo que se usa como nombre de la simulación al guardarla. No participa en
+  el cálculo de la pensión, y por eso `PersonalData.name` sigue siendo opcional en el
+  modelo: las simulaciones guardadas por versiones anteriores pueden no traerlo.
 - **La validación es la de Zod**, y es la misma que usa el motor
   ([ADR-0004](../adr/0004-validacion-con-zod-como-fuente-unica.md)). Los mensajes de
   error citan el artículo legal cuando la regla tiene uno.
@@ -64,7 +70,7 @@ esa fecha es la que queda.
   planeadas en Modalidad 10 = 500)" (ver [Spec-01](01-motor-de-calculo-ley-73.md)).
 - **La edad de retiro NO es un dato personal: es una decisión sobre cuándo se jubila la
   persona usuaria.** Por eso vive en su propio paso (el 3) y no en «Datos personales»:
-  el paso 1 se llama «Datos personales» y solo lleva nombre, sexo y fecha de nacimiento. El
+  el paso 1 se llama «Datos personales» y solo lleva nombre y fecha de nacimiento. El
   paso «Edad de retiro» muestra la **fecha de retiro** que el formulario lleva
   (`personalData.estimatedRetirementDate`, calculada por `usePensionForm`): la UI solo la
   muestra, no la recalcula (RNF-013).

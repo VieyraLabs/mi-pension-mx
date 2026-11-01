@@ -133,12 +133,11 @@ export default function NewSimulationScreen() {
     const importedData = route.params?.importedData;
     if (!importedData) return;
 
-    const { name, sex, birthDate, totalWeeks, averageSBC } = importedData;
+    const { name, birthDate, totalWeeks, averageSBC } = importedData;
 
     const parsedBirthDate = birthDate ? new Date(birthDate + 'T00:00:00') : undefined;
     updatePersonalData({
       ...(name ? { name } : {}),
-      ...(sex ? { sex } : {}),
       ...(parsedBirthDate && !isNaN(parsedBirthDate.getTime()) ? { birthDate: parsedBirthDate } : {}),
     });
     if (totalWeeks) {
@@ -160,9 +159,9 @@ export default function NewSimulationScreen() {
   const canGoToNextStep = (() => {
     switch (step) {
       case 0: {
-        const { sex, birthDate } = input.personalData;
+        const { name, birthDate } = input.personalData;
         return (
-          (sex === 'masculino' || sex === 'femenino') &&
+          (name?.trim().length ?? 0) > 0 &&
           birthDate instanceof Date &&
           !isNaN(birthDate.getTime())
         );
@@ -206,7 +205,7 @@ export default function NewSimulationScreen() {
       return;
     }
     const result = calculatePension(inputWithProjection);
-    const saved = await save(result, input.personalData.name ?? 'Simulación');
+    const saved = await save(result, input.personalData.name?.trim() || 'Simulación');
     navigation.navigate('Result', { simulationId: saved.id });
   };
 

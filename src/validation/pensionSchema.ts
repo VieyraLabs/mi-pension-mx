@@ -15,13 +15,12 @@ import {
 // Esquemas base
 // ─────────────────────────────────────────────
 
-export const SexSchema = z.enum(['masculino', 'femenino'], {
-  errorMap: () => ({ message: 'Selecciona el sexo' }),
-});
-
 export const PersonalDataSchema = z.object({
-  name: z.string().max(100, 'El nombre no puede exceder 100 caracteres').optional(),
-  sex: SexSchema,
+  name: z
+    .string({ required_error: 'El nombre es requerido' })
+    .trim()
+    .min(1, 'El nombre es requerido')
+    .max(100, 'El nombre no puede exceder 100 caracteres'),
   birthDate: z.date({ required_error: 'La fecha de nacimiento es requerida' }),
   age: z.number().int().min(0).max(120),
   estimatedRetirementDate: z.date({ required_error: 'La fecha de retiro estimada es requerida' }),

@@ -103,20 +103,6 @@ Nombre del patrón EMPRESA DE PRUEBA SA DE CV`;
     expect(result.data?.lastSBC).toBe(2172);
   });
 
-  test('extrae el sexo desde el 10° carácter del CURP', () => {
-    const result = ConstanciaIMSSParser.parse(TEXTO_CONSTANCIA);
-    expect(result.data?.sex).toBe('masculino');
-  });
-
-  test('extrae el sexo "femenino" cuando el CURP lleva M en el 10° carácter', () => {
-    const conCurpFemenino = TEXTO_CONSTANCIA.replace(
-      'CURP: XEXX010101HNEXXX04',
-      'CURP: XEXX010101MNEXXX04',
-    );
-    const result = ConstanciaIMSSParser.parse(conCurpFemenino);
-    expect(result.data?.sex).toBe('femenino');
-  });
-
   test('deriva la fecha de nacimiento del CURP cuando el documento no la incluye directamente', () => {
     // CURP de prueba "XEXX010101...": los primeros 6 dígitos (AAMMDD) son
     // 01/01/01 → como este documento no trae un campo explícito de fecha de

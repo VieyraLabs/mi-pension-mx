@@ -14,8 +14,6 @@ import type { WeeksProjection } from '../utils/weeksProjection';
 // Enums
 // ─────────────────────────────────────────────
 
-export type Sex = 'masculino' | 'femenino';
-
 export type RetirementType = 'vejez' | 'cesantia';
 
 export type PensionType = 'vejez' | 'cesantia_edad_avanzada';
@@ -45,8 +43,12 @@ export type DocumentType =
 // ─────────────────────────────────────────────
 
 export interface PersonalData {
+  /**
+   * Nombre de la persona. El formulario lo exige, pero se mantiene opcional
+   * en el modelo porque las simulaciones ya guardadas en el dispositivo
+   * pueden no traerlo.
+   */
   name?: string;
-  sex: Sex;
   birthDate: Date;
   age: number;
   estimatedRetirementDate: Date;
@@ -275,7 +277,6 @@ export interface ImportedSBCPeriodSegment extends Omit<SBCPeriodSegment, 'startD
 /** Datos ya revisados/corregidos por el usuario en ValidationScreen, para precargar NewSimulationScreen. */
 export interface ImportedSimulationData {
   name?: string;
-  sex?: Sex;
   /** Fecha en formato AAAA-MM-DD */
   birthDate?: string;
   totalWeeks?: number;
@@ -296,7 +297,6 @@ export interface ExtractedData {
   curp?: string;
   nss?: string;
   birthDate?: Date;
-  sex?: Sex;
   totalWeeks?: number;
   recognizedWeeks?: number;
   deductedWeeks?: number;

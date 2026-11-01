@@ -17,7 +17,6 @@ import type { PensionInput } from '../models';
 function buildResult() {
   const input: PensionInput = {
     personalData: {
-      sex: 'masculino',
       birthDate: new Date(1960, 0, 1),
       age: 65,
       estimatedRetirementDate: new Date(2025, 0, 1),

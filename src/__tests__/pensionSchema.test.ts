@@ -37,7 +37,6 @@ function buildValidInput(): PensionInputForm {
   return {
     personalData: {
       name: 'Usuario de Prueba',
-      sex: 'masculino' as const,
       birthDate: new Date(1965, 0, 1),
       age: 60,
       estimatedRetirementDate: new Date(2025, 0, 1),
@@ -226,16 +225,6 @@ describe('PensionInputSchema — límites del SBC de Modalidad 10 (Art. 28 LSS v
 });
 
 describe('PensionInputSchema — mínimo de 500 semanas (con proyección al jubilarse)', () => {
-  test('rechaza un sexo no soportado con el mensaje del errorMap (enum SexSchema)', () => {
-    const input = buildValidInput();
-    input.personalData.sex = 'otro' as typeof input.personalData.sex;
-    const result = PensionInputSchema.safeParse(input);
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error.issues.some((i) => i.message.includes('Selecciona el sexo'))).toBe(true);
-    }
-  });
-
   test('rechaza edad de retiro menor a 60 citando el límite legal (Cesantía en Edad Avanzada)', () => {
     const input = buildValidInput();
     input.personalData.retirementAge = 58;

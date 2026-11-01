@@ -53,7 +53,6 @@ function expectedMonthsForHorizon(referenceDate: Date, personalData: PersonalDat
 
 const INITIAL_STATE: PensionInput = {
   personalData: {
-    sex: 'masculino',
     birthDate: DEFAULT_BIRTH_DATE,
     // La edad se conserva como metadato; las semanas futuras usan la fecha de retiro exacta.
     age: calculateAge(DEFAULT_BIRTH_DATE),

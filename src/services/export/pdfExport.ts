@@ -119,7 +119,6 @@ function generateHtml(result: PensionResult): string {
   <table>
     <tr><th>Campo</th><th>Valor</th></tr>
     ${input.personalData.name ? `<tr><td>Nombre</td><td>${input.personalData.name}</td></tr>` : ''}
-    <tr><td>Sexo</td><td>${input.personalData.sex === 'masculino' ? 'Masculino' : 'Femenino'}</td></tr>
     <tr><td>Edad de retiro</td><td>${formatAge(input.personalData.retirementAge)} años</td></tr>
     <tr><td>Tipo de pensión</td><td>${result.pensionType === 'vejez' ? 'Vejez (Art. 138 LSS 1973)' : 'Cesantía en Edad Avanzada (Art. 145 LSS 1973)'}</td></tr>
     <tr><td>Semanas cotizadas actuales</td><td>${formatInteger(currentWeeks)} sem.</td></tr>

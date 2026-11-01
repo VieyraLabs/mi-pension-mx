@@ -38,7 +38,6 @@ function buildResult(
   const input: PensionInput = {
     personalData: {
       name: 'Juan Pérez',
-      sex: 'masculino',
       birthDate: new Date(1960, 0, 1),
       age,
       estimatedRetirementDate,

@@ -425,6 +425,7 @@ describe('usePensionForm', () => {
       const { result } = renderHook(() => usePensionForm());
       act(() => {
         result.current.updatePersonalData({
+          name: 'Persona de prueba',
           birthDate: new Date(1960, 5, 12),
           retirementAge: 65,
         });

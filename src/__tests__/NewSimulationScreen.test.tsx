@@ -41,8 +41,16 @@ import {
 /** Fecha de nacimiento de referencia: 15 de enero de 1960. */
 const NACIMIENTO = new Date(1960, 0, 15);
 
-function advanceToRetirementStep() {
+/**
+ * El nombre es obligatorio desde el paso 1: escribe uno y avanza al paso 2.
+ */
+function advanceToWorkHistoryStep() {
+  fireEvent.changeText(screen.getAllByDisplayValue('')[0]!, 'Persona de prueba');
   fireEvent.press(screen.getByText('Siguiente'));
+}
+
+function advanceToRetirementStep() {
+  advanceToWorkHistoryStep();
   fireEvent.changeText(screen.getAllByDisplayValue('')[0]!, '500');
   fireEvent.changeText(screen.getAllByDisplayValue('')[0]!, '200');
   fireEvent.press(screen.getByText('Siguiente'));
@@ -65,16 +73,17 @@ describe('NewSimulationScreen', () => {
     expect(screen.getByText('Información personal')).toBeTruthy();
   });
 
-  test('en el paso de datos personales «Siguiente» está habilitado con sexo y fecha válidos aunque el nombre quede vacío', () => {
+  test('en el paso de datos personales «Siguiente» exige el nombre además de la fecha válida', () => {
     renderScreen(<NewSimulationScreen />);
 
-    // El sexo solo ofrece los dos valores válidos y la fecha trae un valor
-    // válido por defecto; el nombre es opcional y vacío, y no bloquea.
-    expect(screen.getAllByText('Nombre (opcional)').length).toBeGreaterThan(0);
-    expect(screen.getByText('Masculino')).toBeTruthy();
-    expect(screen.getByText('Femenino')).toBeTruthy();
+    // La fecha trae un valor válido por defecto, pero el nombre es
+    // obligatorio: sin él no se avanza.
+    expect(screen.getAllByText('Nombre *').length).toBeGreaterThan(0);
 
     const nextButton = screen.getByText('Siguiente');
+    expect(nextButton).toBeDisabled();
+
+    fireEvent.changeText(screen.getAllByDisplayValue('')[0]!, 'María López');
     expect(nextButton).toBeEnabled();
 
     fireEvent.press(nextButton);
@@ -83,6 +92,9 @@ describe('NewSimulationScreen', () => {
 
   test('la fecha de nacimiento del paso 1 se elige con el mismo calendario que la de retiro', () => {
     renderScreen(<NewSimulationScreen />);
+
+    // El nombre es obligatorio; la fecha por defecto ya es válida.
+    fireEvent.changeText(screen.getAllByDisplayValue('')[0]!, 'María López');
 
     // El campo no se escribe a mano: muestra la fecha por defecto del
     // formulario en formato largo y es de solo lectura.
@@ -107,7 +119,7 @@ describe('NewSimulationScreen', () => {
 
   test('bloquea «Siguiente» en el paso laboral hasta completar campos obligatorios válidos', () => {
     renderScreen(<NewSimulationScreen />);
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToWorkHistoryStep();
 
     const nextButton = screen.getByText('Siguiente');
     expect(nextButton).toBeDisabled();
@@ -125,7 +137,7 @@ describe('NewSimulationScreen', () => {
   test('el botón "Siguiente" avanza al paso de historial laboral', () => {
     renderScreen(<NewSimulationScreen />);
 
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToWorkHistoryStep();
 
     expect(screen.getByText('Paso 2 de 4: Historial laboral')).toBeTruthy();
     expect(screen.getByText('Historial laboral')).toBeTruthy();
@@ -147,7 +159,7 @@ describe('NewSimulationScreen', () => {
   test('el paso 2 reúne el historial laboral y el SBC', () => {
     renderScreen(<NewSimulationScreen />);
 
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToWorkHistoryStep();
 
     expect(screen.getByText('Paso 2 de 4: Historial laboral')).toBeTruthy();
     // Semanas cotizadas (tarjeta de historial laboral).
@@ -159,7 +171,7 @@ describe('NewSimulationScreen', () => {
   test('el paso 2 NO narra la proyección de semanas (la edad de retiro aún no está decidida)', () => {
     renderScreen(<NewSimulationScreen />);
 
-    fireEvent.press(screen.getByText('Siguiente'));
+    advanceToWorkHistoryStep();
 
     expect(screen.getByText('Paso 2 de 4: Historial laboral')).toBeTruthy();
     expect(screen.queryByText(/Al jubilarte tendrás/)).toBeNull();

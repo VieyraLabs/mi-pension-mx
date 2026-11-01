@@ -72,7 +72,7 @@ function buildInput(overrides: Partial<{
 
   return {
     personalData: {
-      sex: 'masculino',
+      name: 'Persona de prueba',
       birthDate: fechaNacimiento,
       age: edadActual,
       estimatedRetirementDate: fechaRetiro,

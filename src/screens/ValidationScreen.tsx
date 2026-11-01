@@ -53,7 +53,6 @@ export default function ValidationScreen() {
     averageSBC: '',
     lastSBC: '',
     birthDate: '',
-    sex: undefined as 'masculino' | 'femenino' | undefined,
   });
   const [warnings, setWarnings] = useState<string[]>([]);
   const [missingFields, setMissingFields] = useState<string[]>([]);
@@ -75,7 +74,6 @@ export default function ValidationScreen() {
         averageSBC: d.averageSBC ? String(d.averageSBC) : '',
         lastSBC: d.lastSBC ? String(d.lastSBC) : '',
         birthDate: d.birthDate ? d.birthDate.toISOString().split('T')[0] ?? '' : '',
-        sex: d.sex,
       });
       setWarnings(result.warnings);
       setMissingFields(result.missingFields);
@@ -109,7 +107,6 @@ export default function ValidationScreen() {
             navigation.navigate('NewSimulation', {
               importedData: {
                 name: data.name || undefined,
-                sex: data.sex,
                 birthDate: data.birthDate || undefined,
                 totalWeeks: !isNaN(totalWeeks) ? totalWeeks : undefined,
                 averageSBC: averageSBC && !isNaN(averageSBC) ? averageSBC : undefined,

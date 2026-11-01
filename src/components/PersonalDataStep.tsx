@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { Card, Text, TextInput, SegmentedButtons, HelperText } from 'react-native-paper';
+import { Card, Text, TextInput, HelperText } from 'react-native-paper';
 import type { MD3Theme } from 'react-native-paper';
 import type { PersonalData } from '../models';
 import { calculateAge } from '../utils/date';
@@ -24,23 +24,11 @@ export function PersonalDataStep({ personalData, onChange, theme }: PersonalData
           Información personal
         </Text>
         <TextInput
-          label="Nombre (opcional)"
+          label="Nombre *"
           value={personalData.name ?? ''}
           onChangeText={(v) => onChange({ name: v })}
           mode="outlined"
           style={styles.input}
-        />
-        <Text variant="labelMedium" style={{ marginBottom: 8, color: theme.colors.onSurfaceVariant }}>
-          Sexo *
-        </Text>
-        <SegmentedButtons
-          value={personalData.sex}
-          onValueChange={(v) => onChange({ sex: v as PersonalData['sex'] })}
-          buttons={[
-            { value: 'masculino', label: 'Masculino' },
-            { value: 'femenino', label: 'Femenino' },
-          ]}
-          style={{ marginBottom: 16 }}
         />
         {/* La fecha no se escribe a mano: se elige con el calendario
             (DateField), igual que la fecha de retiro del paso 3. */}

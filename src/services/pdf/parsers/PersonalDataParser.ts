@@ -231,14 +231,6 @@ export const ConstanciaIMSSParser: DocumentParser<ExtractedData> = {
       data.lastEmployer = employerMatch[1].trim();
     }
 
-    // ─── Sexo ───────────────────────────────────────────
-    if (data.curp) {
-      // El 11° carácter de la CURP (índice 10) indica el sexo: H=masculino, M=femenino
-      const sexChar = data.curp[10];
-      if (sexChar === 'H') data.sex = 'masculino';
-      else if (sexChar === 'M') data.sex = 'femenino';
-    }
-
     const fieldsFound = Object.values(data).filter(
       (v) => v !== undefined && v !== '' && v !== null && (Array.isArray(v) ? v.length > 0 : true),
     ).length;
