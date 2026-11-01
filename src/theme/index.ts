@@ -77,6 +77,29 @@ export function getBannerColors(variant: keyof typeof BANNER_COLORS, isDark: boo
   return isDark ? c.dark : { background: c.background, text: c.text };
 }
 
+/**
+ * Paleta categórica para las series de las gráficas comparativas (una línea por
+ * simulación). Debe ser distinguible entre sí y del violeta del escenario base
+ * «Pensionarse lo antes posible» (`secondary`), que NO se reutiliza aquí.
+ *
+ * Son 5 tonos separados por hue —verde, naranja, azul, rosa y cian— elegidos para
+ * que sigan distinguiéndose con daltonismo rojo-verde; el color nunca es la única
+ * señal porque la leyenda y la tabla etiquetan cada serie con «M10 con X UMAs».
+ *
+ * ADR-0008: este es el ÚNICO lugar que define estos colores; las pantallas los
+ * piden con `getSeriesColors(isDark)`. La variante oscura es más luminosa para
+ * mantener contraste sobre el azul pizarra del modo oscuro.
+ */
+const SERIES_COLORS = {
+  light: ['#047857', '#D97706', '#0284C7', '#E11D48', '#0891B2'] as const,
+  dark: ['#34D399', '#FBBF24', '#38BDF8', '#FB7185', '#22D3EE'] as const,
+} as const;
+
+/** Devuelve la paleta de series de las gráficas según el modo (claro/oscuro). */
+export function getSeriesColors(isDark: boolean): readonly string[] {
+  return isDark ? SERIES_COLORS.dark : SERIES_COLORS.light;
+}
+
 /** Tema claro (Material Design 3). */
 export const lightTheme: MD3Theme = {
   ...MD3LightTheme,

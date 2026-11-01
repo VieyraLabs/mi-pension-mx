@@ -120,6 +120,19 @@ export function formatTime(date: Date): string {
   return `${hh}:${mm}`;
 }
 
+/**
+ * Formatea una cantidad de meses como «N años M meses». Ej: 73 → «6 años 1 mes»,
+ * 60 → «5 años». La comparten las pantallas de comparación (punto de equilibrio).
+ */
+export function formatYearsMonths(monthIndex: number): string {
+  const years = Math.floor(monthIndex / 12);
+  const months = monthIndex % 12;
+  const yearsText = years === 1 ? '1 año' : `${years} años`;
+  if (months === 0) return yearsText;
+  const monthsText = months === 1 ? '1 mes' : `${months} meses`;
+  return `${yearsText} ${monthsText}`;
+}
+
 /** Formatea un porcentaje. Ej: 75.50% */
 export function formatPercent(value: number): string {
   return PERCENT_FORMATTER.format(value / 100);

@@ -7,7 +7,7 @@
  * la tabla con un aviso.
  */
 import React, { useMemo, useRef, useState } from 'react';
-import { PanResponder, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { PanResponder, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Card, Divider, Icon, IconButton, Text, useTheme } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LineChart } from 'react-native-chart-kit';
@@ -22,39 +22,9 @@ import type { ComparisonResult, ComparisonScenario } from '../services/pension/c
 import { EstimationDisclaimerCard } from '../components/EstimationDisclaimerCard';
 import { EmptyState } from '../components/EmptyState';
 import { SummaryRow } from '../components/SummaryRow';
-import { formatCompactCurrency, formatCurrency, formatInteger } from '../utils/format';
+import { formatCompactCurrency, formatCurrency, formatInteger, formatYearsMonths } from '../utils/format';
 import { BUTTON_RADIUS } from '../theme';
-
-/** Convierte un color hex (#RRGGBB o #RRGGBBAA) a `rgba(...)` con opacidad. */
-function withAlpha(hex: string, opacity: number): string {
-  const clean = hex.replace('#', '');
-  const rgb = clean.length === 6 ? clean : clean.slice(0, 6);
-  const r = parseInt(rgb.slice(0, 2), 16);
-  const g = parseInt(rgb.slice(2, 4), 16);
-  const b = parseInt(rgb.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-}
-
-/** Etiqueta del eje de tiempo: años enteros sin decimales, fracciones con 2. */
-function yearLabel(monthIndex: number): string {
-  const years = monthIndex / 12;
-  return Number.isInteger(years) ? String(years) : years.toFixed(2);
-}
-
-/** Formatea un mes como «N años M meses» (ej. «6 años 1 mes», «5 años»). */
-function formatYearsMonths(monthIndex: number): string {
-  const years = Math.floor(monthIndex / 12);
-  const months = monthIndex % 12;
-  const yearsText = years === 1 ? '1 año' : `${years} años`;
-  if (months === 0) return yearsText;
-  const monthsText = months === 1 ? '1 mes' : `${months} meses`;
-  return `${yearsText} ${monthsText}`;
-}
-
-// Geometría fija de la gráfica (react-native-chart-kit). Se fijan explícitamente
-// para que el overlay táctil y los puntos coincidan píxel a píxel.
-const CHART_HEIGHT = 220;
-const CHART_PADDING_RIGHT = 64; // margen izquierdo donde van las etiquetas del eje Y
+import { CHART_HEIGHT, CHART_PADDING_RIGHT, ChartBoundary, ChartTouchOverlay, withAlpha, yearLabel } from '../components/ComparisonChartPrimitives';
 
 /** Línea principal del punto de equilibrio: tiempo desde pensionarse «antes». */
 function breakEvenHeadline(comparison: ComparisonResult): string {
@@ -71,75 +41,6 @@ function breakEvenAgeLine(comparison: ComparisonResult): string | null {
   if (!b) return null;
   const ageMonths = Math.round(b.age * 12);
   return `~${formatYearsMonths(ageMonths)} de edad (${b.year})`;
-}
-
-/**
- * Overlay táctil de la gráfica: una columna transparente por punto, para que
- * tocar un punto funcione igual en web y en nativo (el `onDataPointClick` de
- * react-native-chart-kit no dispara de forma confiable en web).
- */
-function ChartTouchOverlay({
-  count,
-  width,
-  startMonth,
-  onSelect,
-}: {
-  count: number;
-  width: number;
-  startMonth: number;
-  onSelect: (index: number) => void;
-}) {
-  if (count < 1) return null;
-  const step = (width - CHART_PADDING_RIGHT) / count;
-  return (
-    <>
-      {Array.from({ length: count }, (_, i) => {
-        const center = CHART_PADDING_RIGHT + i * step;
-        return (
-          <Pressable
-            key={i}
-            onPress={() => onSelect(i)}
-            accessibilityRole="button"
-            accessibilityLabel={`Ver detalle del mes ${startMonth + i}`}
-            style={{
-              position: 'absolute',
-              left: center - step / 2,
-              top: 0,
-              width: step,
-              height: CHART_HEIGHT,
-            }}
-          />
-        );
-      })}
-    </>
-  );
-}
-
-/** Límite de la gráfica: degrada a un aviso si falla el SVG nativo. */
-class ChartBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  componentDidCatch(error: unknown) {
-    console.warn('[ComparisonScreen] Gráfica no disponible:', error);
-  }
-
-  render() {
-    if (this.state.failed) {
-      return (
-        <View style={styles.chartFallback}>
-          <Text variant="bodySmall" style={{ textAlign: 'center' }}>
-            La gráfica no está disponible en este dispositivo. La tabla inferior conserva toda la
-            información.
-          </Text>
-        </View>
-      );
-    }
-    return this.props.children;
-  }
 }
 
 function ChartSection({
@@ -200,7 +101,7 @@ function ChartSection({
       },
       {
         data: monthlyEarly,
-        color: (opacity = 1) => withAlpha(theme.colors.secondary, opacity),
+        color: (opacity = 1) => withAlpha(theme.colors.onSurface, opacity),
         strokeWidth: 2,
       },
     ],
@@ -336,6 +237,7 @@ function ChartSection({
                 height={CHART_HEIGHT}
                 chartConfig={chartConfig}
                 fromZero
+                withShadow={false}
                 yLabelsOffset={0}
                 formatYLabel={(value) => formatCompactCurrency(Number(value))}
                 hidePointsAtIndex={hidePointsAtIndex}
@@ -375,7 +277,7 @@ function ChartSection({
         </Text>
 
         <Legend scenario={comparison.m10Scenario} color={theme.colors.primary} />
-        <Legend scenario={comparison.earlyScenario} color={theme.colors.secondary} />
+        <Legend scenario={comparison.earlyScenario} color={theme.colors.onSurface} />
 
         <View style={styles.zoomRow}>
           <IconButton
@@ -633,10 +535,4 @@ const styles = StyleSheet.create({
   breakEvenBlock: { marginTop: 4 },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 2 },
   zoomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 4 },
-  chartFallback: {
-    minHeight: 220,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
 });

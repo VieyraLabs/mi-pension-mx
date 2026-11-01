@@ -58,7 +58,6 @@ function buildM10Result(): PensionResult {
   const input: PensionInput = {
     personalData: {
       name: 'María López',
-      sex: 'femenino',
       birthDate: new Date(1970, 0, 1),
       age: 55,
       estimatedRetirementDate: new Date(2035, 0, 1),
@@ -169,8 +168,8 @@ describe('ComparisonScreen', () => {
     expect(screen.getByText('Años')).toBeTruthy();
     // El punto de equilibrio se muestra como tiempo desde pensionarse «antes»
     // (callout sobre la gráfica y bloque del resumen), con la edad en línea aparte.
-    expect(screen.getAllByText(/En \d+ años?( \d+ meses?)? de que se hubiera pensionado lo antes posible\./).length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText(/~\d+ años?( \d+ meses?)? de edad \(\d{4}\)/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/En \d+ años?( \d+ mes(es)?)? de que se hubiera pensionado lo antes posible\./).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/~\d+ años?( \d+ mes(es)?)? de edad \(\d{4}\)/).length).toBeGreaterThanOrEqual(2);
     expect(screen.queryByText(/en \d+\.\d+/)).toBeNull();
   });
 

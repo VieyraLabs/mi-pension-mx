@@ -17,12 +17,16 @@ import {
   normalizeLocalCalendarDate,
 } from '../../../utils/weeksProjection';
 import { addMonths, calculateRetirementDate } from '../../../utils/date';
-import { round2 } from '../../../utils/format';
+import { formatUMAs, round2 } from '../../../utils/format';
 import type {
   BreakEvenPoint,
   ComparisonResult,
   ComparisonSeriesConfig,
   ComparisonSeriesPoint,
+  MultiComparisonEntry,
+  MultiComparisonInput,
+  MultiComparisonMetrics,
+  MultiComparisonResult,
 } from './types';
 
 /** Edad a la que la persona puede pensionarse «lo antes posible» (DEC-011). */
@@ -70,8 +74,16 @@ export function getDefaultHorizonYears(result: PensionResult): number {
 
 /**
  * Construye el input «sin Modalidad 10, pensionarse a los 60» a partir del
- * resultado actual. El SBC proyectado sin M10 es el promedio ordinario del
- * desglose (`ordinaryDailySalary`), una aproximación documentada.
+ * resultado actual.
+ *
+ * La base es ESCENARIO-INDEPENDIENTE (DEC-014): usa el SBC promedio declarado
+ * de la persona (`averageSalary.dailySalary`) —su salario ordinario de
+ * referencia— y NO el «sobrante ordinario» del desglose de la simulación
+ * (`projectedAverageBreakdown.ordinaryDailySalary`). Ese sobrante depende de
+ * cuántas semanas de M10 entren en la ventana de 250 semanas: con un horizonte
+ * largo de M10 puede ser 0, y por eso dos simulaciones de la MISMA persona
+ * daban montos base distintos. Con el salario declarado, todas las simulaciones
+ * de una persona comparten el mismo monto «pensionarse lo antes posible».
  */
 export function buildEarlyRetirementInput(result: PensionResult): PensionInput {
   const input = result.input;
@@ -96,9 +108,6 @@ export function buildEarlyRetirementInput(result: PensionResult): PensionInput {
     earlyRetirementAge = currentAge;
   }
 
-  const breakdown = input.projectedAverageBreakdown;
-  const ordinaryDailySalary = breakdown?.ordinaryDailySalary ?? input.averageSalary.dailySalary;
-
   return {
     ...input,
     personalData: {
@@ -107,15 +116,8 @@ export function buildEarlyRetirementInput(result: PensionResult): PensionInput {
       estimatedRetirementDate: earlyRetirementDate,
     },
     modalidad10: { active: false },
-    projectedAverageDailySalary: ordinaryDailySalary,
-    projectedAverageBreakdown: breakdown
-      ? {
-          ...breakdown,
-          m10Weeks: 0,
-          m10DailySalary: 0,
-          totalWeeks: breakdown.ordinaryWeeks,
-        }
-      : undefined,
+    projectedAverageDailySalary: input.averageSalary.dailySalary,
+    projectedAverageBreakdown: undefined,
   };
 }
 
@@ -283,5 +285,89 @@ export function calculateComparison(result: PensionResult, horizonYears: number)
     forgonePension,
     earlyMonthlyPension,
     m10MonthlyPension,
+  };
+}
+
+/**
+ * Horizonte común de una comparación múltiple: el mayor horizonte individual
+ * (hasta los 90 años de edad), para que todas las columnas compartan el mismo
+ * eje temporal (DEC-015).
+ */
+export function getMultiComparisonHorizonYears(results: PensionResult[]): number {
+  return results.reduce((max, result) => Math.max(max, getMaxHorizonYears(result)), 0);
+}
+
+/**
+ * Etiqueta identificadora de una simulación según su Modalidad 10: «M10 con
+ * X UMAs» (el SBC declarado en UMAs), «M10» si está activa pero sin UMA
+ * declarada, o «Sin Modalidad 10» si no está activa (DEC-015).
+ */
+export function getM10Label(input: PensionInput): string {
+  const m10 = input.modalidad10;
+  if (!m10.active) return 'Sin Modalidad 10';
+  if (m10.contributionSalaryInUMAs != null) {
+    return `M10 con ${formatUMAs(m10.contributionSalaryInUMAs)} UMAs`;
+  }
+  return 'M10';
+}
+
+/**
+ * Métricas del resumen de una simulación, derivadas de su comparación y de su
+ * propio input (DEC-015). La UI no recalcula ninguna de estas cifras.
+ */
+export function getMultiComparisonMetrics(
+  result: PensionResult,
+  comparison: ComparisonResult,
+): MultiComparisonMetrics {
+  const input = result.input;
+  return {
+    m10Label: getM10Label(input),
+    monthlyPension: result.monthlyPension,
+    retirementDate: normalizeLocalCalendarDate(
+      coerceDate(input.personalData.estimatedRetirementDate),
+    ),
+    retirementAge: input.personalData.retirementAge,
+    totalWeeks: result.weeksProjection?.targetWeeks ?? input.workHistory.totalWeeks,
+    projectedDailySalary:
+      input.projectedAverageDailySalary ?? input.averageSalary.dailySalary,
+    totalM10Cost: comparison.totalM10Cost,
+    forgonePension: comparison.forgonePension,
+    realM10Cost: round2(comparison.totalM10Cost + comparison.forgonePension),
+    earlyMonthlyPension: comparison.earlyMonthlyPension,
+    breakEven: comparison.breakEven,
+  };
+}
+
+/**
+ * Compara N simulaciones del historial contra la MISMA base «pensionarse lo
+ * antes posible», cada una con su propio punto de equilibrio (DEC-014) y con
+ * un horizonte temporal común (DEC-015).
+ *
+ * Es una función pura: reutiliza `calculateComparison` por simulación (y con
+ * ella el break-even existente) y no usa red ni estado global.
+ */
+export function calculateMultiComparison(
+  simulations: MultiComparisonInput[],
+  horizonYears: number,
+): MultiComparisonResult {
+  const entries: MultiComparisonEntry[] = simulations.map((simulation) => {
+    const comparison = calculateComparison(simulation.result, horizonYears);
+    return {
+      simulationId: simulation.simulationId,
+      name: simulation.name,
+      birthDate: normalizeLocalCalendarDate(
+        coerceDate(simulation.result.input.personalData.birthDate),
+      ),
+      comparison,
+      metrics: getMultiComparisonMetrics(simulation.result, comparison),
+    };
+  });
+
+  return {
+    // Todas las comparaciones se calcularon con la misma fecha de referencia.
+    referenceDate: entries[0]?.comparison.referenceDate ?? getLocalReferenceDate(),
+    horizonYears,
+    horizonMonths: Math.max(1, Math.round(horizonYears * 12)),
+    entries,
   };
 }

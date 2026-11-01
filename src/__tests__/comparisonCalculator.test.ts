@@ -16,7 +16,6 @@ function buildM10Result(): PensionResult {
   const input: PensionInput = {
     personalData: {
       name: 'Persona de prueba',
-      sex: 'masculino',
       birthDate: new Date(1970, 0, 1),
       age: 55,
       estimatedRetirementDate: new Date(2035, 0, 1),
@@ -91,13 +90,38 @@ describe('comparisonCalculator', () => {
 
     expect(early.modalidad10.active).toBe(false);
     expect(early.personalData.retirementAge).toBe(60);
-    expect(early.projectedAverageDailySalary).toBe(
-      result.input.projectedAverageBreakdown!.ordinaryDailySalary,
-    );
-    expect(early.projectedAverageBreakdown!.m10Weeks).toBe(0);
-    expect(early.projectedAverageBreakdown!.totalWeeks).toBe(
-      result.input.projectedAverageBreakdown!.ordinaryWeeks,
-    );
+    // La base es escenario-independiente: usa el SBC promedio DECLARADO de la
+    // persona, no el «sobrante ordinario» de la simulación (que varía con M10).
+    expect(early.projectedAverageDailySalary).toBe(result.input.averageSalary.dailySalary);
+    expect(early.projectedAverageBreakdown).toBeUndefined();
+  });
+
+  test('la base «pensionarse lo antes posible» es común entre simulaciones de la misma persona', () => {
+    const resultA = buildM10Result();
+    // Dos simulaciones de la misma persona: mismo SBC declarado, pero el
+    // «sobrante ordinario» del desglose difiere. Con una M10 larga la ventana
+    // queda sin semanas ordinarias (ordinaryDailySalary = 0); con una corta
+    // queda un sobrante. Antes esto producía montos base distintos.
+    const resultB: PensionResult = {
+      ...resultA,
+      input: {
+        ...resultA.input,
+        projectedAverageBreakdown: {
+          ...resultA.input.projectedAverageBreakdown!,
+          m10Weeks: 250,
+          ordinaryWeeks: 0,
+          ordinaryDailySalary: 0,
+          totalWeeks: 250,
+        },
+      },
+    };
+
+    const baseA = buildEarlyRetirementInput(resultA);
+    const baseB = buildEarlyRetirementInput(resultB);
+
+    expect(baseA.projectedAverageDailySalary).toBe(resultA.input.averageSalary.dailySalary);
+    expect(baseB.projectedAverageDailySalary).toBe(resultB.input.averageSalary.dailySalary);
+    expect(calculatePension(baseA).monthlyPension).toBe(calculatePension(baseB).monthlyPension);
   });
 
   test('si ya tiene 60+, se pensiona el mes siguiente', () => {

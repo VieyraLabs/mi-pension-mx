@@ -2,6 +2,7 @@
  * Tipos del dominio de comparación «contratar Modalidad 10 vs pensionarse
  * lo antes posible». Son tipos puros: no dependen de la UI ni de la red.
  */
+import type { PensionResult } from '../../../models';
 
 export type ComparisonScenarioId = 'm10' | 'early';
 
@@ -79,4 +80,70 @@ export interface ComparisonResult {
   earlyMonthlyPension: number;
   /** Pensión mensual inicial del escenario M10. */
   m10MonthlyPension: number;
+}
+
+/**
+ * Simulación de entrada para la comparación múltiple: el id y el nombre vienen
+ * del historial, el resultado del motor de pensión.
+ */
+export interface MultiComparisonInput {
+  /** Id de la simulación en el historial. */
+  simulationId: string;
+  /** Etiqueta con la que se guardó en el historial (opcional). */
+  name?: string;
+  result: PensionResult;
+}
+
+/**
+ * Métricas del resumen de UNA simulación, listas para la fila de la tabla
+ * comparativa (DEC-015). No se recalculan en la UI.
+ */
+export interface MultiComparisonMetrics {
+  /** Etiqueta identificadora de la simulación: tipo de Modalidad 10 («M10 con X UMAs»). */
+  m10Label: string;
+  /** Pensión mensual estimada de la simulación (con su propia Modalidad 10). */
+  monthlyPension: number;
+  /** Fecha de retiro de la simulación. */
+  retirementDate: Date;
+  /** Edad de retiro declarada en la simulación. */
+  retirementAge: number;
+  /** Semanas con las que se jubila (proyección) o las registradas. */
+  totalWeeks: number;
+  /** SBC diario proyectado al retiro (o el promedio declarado). */
+  projectedDailySalary: number;
+  /** Costo total de la Modalidad 10 de la simulación. */
+  totalM10Cost: number;
+  /** Pensión que se deja de percibir por contratar la Modalidad 10. */
+  forgonePension: number;
+  /** Costo real: cuotas pagadas + pensión no percibida. */
+  realM10Cost: number;
+  /** Pensión mensual del escenario base (sin Modalidad 10). */
+  earlyMonthlyPension: number;
+  /** Punto de equilibrio contra la base, o `null` si no se alcanza. */
+  breakEven: BreakEvenPoint | null;
+}
+
+/** Una simulación dentro de la comparación múltiple. */
+export interface MultiComparisonEntry {
+  simulationId: string;
+  name?: string;
+  birthDate: Date;
+  /** Comparación de esta simulación contra la base «pensionarse lo antes posible». */
+  comparison: ComparisonResult;
+  /** Métricas derivadas para la tabla (calculadas por el motor). */
+  metrics: MultiComparisonMetrics;
+}
+
+/**
+ * Resultado de comparar N simulaciones contra una base común y con un mismo
+ * horizonte temporal (DEC-014 / DEC-015).
+ */
+export interface MultiComparisonResult {
+  /** Fecha de referencia compartida por todas las columnas. */
+  referenceDate: Date;
+  /** Horizonte común en años. */
+  horizonYears: number;
+  /** Horizonte común en meses (el de las series). */
+  horizonMonths: number;
+  entries: MultiComparisonEntry[];
 }
