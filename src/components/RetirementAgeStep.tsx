@@ -90,13 +90,19 @@ export function mesesCumplidos(birthDate: FechaNacimiento, fecha: Date): number 
  * Edad que se MUESTRA en pantalla.
  *
  * Regla: la media edad solo se muestra cuando la edad cumplida cae en
- * [60, 65]; en ese caso se redondea al medio año MÁS CERCANO (en un empate
- * exacto, hacia abajo). A partir de 65 solo se muestran enteros, y fuera del
- * rango se muestra la edad entera cumplida.
+ * [60, 65]; en ese caso se redondea HACIA ABAJO al medio año YA CUMPLIDO.
+ * Razón legal (Art. 171 LSS 1973: "Se aumentará un año a los cumplidos
+ * cuando la edad los exceda en seis meses"): la media edad solo computa con
+ * 6 meses o más cumplidos desde el cumpleaños, así que la presentación nunca
+ * redondea hacia arriba (hacerlo adelantaría la edad legal que aplica el
+ * motor). A partir de 65 solo se muestran enteros, y fuera del rango se
+ * muestra la edad entera cumplida.
  *
- * - 60 años y 3 meses → 60
+ * - 60 años y 3 meses → 60 (sin 6 meses cumplidos, no hay media edad)
+ * - 60 años y 5 meses → 60 (la media edad exige 6 meses cumplidos)
  * - 60 años y 6 meses → 60.5
- * - 60 años y 9 meses → 60.5 (60.5 está más cerca que 61)
+ * - 60 años y 9 meses → 60.5 (el medio año ya está cumplido)
+ * - 60 años y 11 meses → 60.5 (nunca adelanta a 61)
  * - 64 años y 7 meses → 64.5
  * - 65 años y 6 meses → 65 (a partir de 65, solo enteros)
  * - 66 años y 2 meses → 66 (fuera del rango de medios años)
@@ -108,10 +114,13 @@ export function edadMostrada(birthDate: FechaNacimiento, fecha: Date): number {
   if (entera < EDAD_MEDIA_MIN || entera > EDAD_MEDIA_MAX) {
     return entera;
   }
-  // Redondeo al medio año más cercano; en el empate exacto (3 o 9 meses) el
-  // redondeo va hacia abajo, que es como `Math.floor` resuelve el caso.
+  // Redondeo HACIA ABAJO al medio año ya cumplido: la media edad solo se
+  // computa con 6 meses o más cumplidos desde el cumpleaños (Art. 171 LSS
+  // 1973: "Se aumentará un año a los cumplidos cuando la edad los exceda en
+  // seis meses"). Redondear al medio año más cercano adelantaría la edad
+  // legal antes de tiempo, por eso nunca se redondea hacia arriba.
   const mesesRedondeados =
-    Math.floor((meses + 2) / MESES_POR_MEDIO_ANIO) * MESES_POR_MEDIO_ANIO;
+    Math.floor(meses / MESES_POR_MEDIO_ANIO) * MESES_POR_MEDIO_ANIO;
   const conMedioAnio = mesesRedondeados / 12;
   if (conMedioAnio > EDAD_MEDIA_MAX) {
     // A partir de 65 la edad se muestra como entero.

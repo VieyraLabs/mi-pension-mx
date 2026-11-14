@@ -462,12 +462,32 @@ describe('RetirementAgeStep — reglas de presentación de la edad', () => {
     expect(edadMostrada(NACIMIENTO, new Date(2020, 6, 15))).toBe(60.5);
   });
 
-  test('60 años y 9 meses → 60.5 (el medio año más cercano, no 61)', () => {
+  test('60 años y 4 meses → 60 (sin 6 meses cumplidos, no hay media edad)', () => {
+    expect(edadMostrada(NACIMIENTO, new Date(2020, 4, 15))).toBe(60);
+  });
+
+  test('60 años y 5 meses → 60 (la media edad exige 6 meses cumplidos)', () => {
+    expect(edadMostrada(NACIMIENTO, new Date(2020, 5, 15))).toBe(60);
+  });
+
+  test('60 años y 9 meses → 60.5 (el medio año ya cumplido, no 61)', () => {
     expect(edadMostrada(NACIMIENTO, new Date(2020, 9, 15))).toBe(60.5);
+  });
+
+  test('60 años y 10 meses → 60.5 (no salta a 61 antes de tiempo)', () => {
+    expect(edadMostrada(NACIMIENTO, new Date(2020, 10, 15))).toBe(60.5);
+  });
+
+  test('60 años y 11 meses → 60.5 (no salta a 61 antes de tiempo)', () => {
+    expect(edadMostrada(NACIMIENTO, new Date(2020, 11, 15))).toBe(60.5);
   });
 
   test('64 años y 7 meses → 64.5', () => {
     expect(edadMostrada(NACIMIENTO, new Date(2024, 7, 15))).toBe(64.5);
+  });
+
+  test('64 años y 11 meses → 64.5 (no adelanta la vejez a 65)', () => {
+    expect(edadMostrada(NACIMIENTO, new Date(2024, 11, 15))).toBe(64.5);
   });
 
   test('65 años y 6 meses → 65 (a partir de 65, solo enteros)', () => {
