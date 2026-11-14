@@ -90,18 +90,18 @@ describe('comparisonCalculator', () => {
 
     expect(early.modalidad10.active).toBe(false);
     expect(early.personalData.retirementAge).toBe(60);
-    // La base es escenario-independiente: usa el SBC promedio DECLARADO de la
-    // persona, no el «sobrante ordinario» de la simulación (que varía con M10).
-    expect(early.projectedAverageDailySalary).toBe(result.input.averageSalary.dailySalary);
+    // La base es el promedio ORDINARIO proyectado por la simulación (historial
+    // + SBC vigente hasta el retiro, sin semanas M10); no el declarado.
+    expect(early.projectedAverageDailySalary).toBe(
+      result.input.projectedAverageBreakdown!.ordinaryDailySalary,
+    );
     expect(early.projectedAverageBreakdown).toBeUndefined();
   });
 
-  test('la base «pensionarse lo antes posible» es común entre simulaciones de la misma persona', () => {
+  test('la base «pensionarse lo antes posible» usa el promedio ordinario proyectado; sin semanas ordinarias, cae al declarado', () => {
     const resultA = buildM10Result();
-    // Dos simulaciones de la misma persona: mismo SBC declarado, pero el
-    // «sobrante ordinario» del desglose difiere. Con una M10 larga la ventana
-    // queda sin semanas ordinarias (ordinaryDailySalary = 0); con una corta
-    // queda un sobrante. Antes esto producía montos base distintos.
+    // Misma persona: una simulación con semanas ordinarias en su ventana y otra
+    // donde M10 cubre la ventana completa (ordinaryDailySalary = 0).
     const resultB: PensionResult = {
       ...resultA,
       input: {
@@ -119,9 +119,15 @@ describe('comparisonCalculator', () => {
     const baseA = buildEarlyRetirementInput(resultA);
     const baseB = buildEarlyRetirementInput(resultB);
 
-    expect(baseA.projectedAverageDailySalary).toBe(resultA.input.averageSalary.dailySalary);
+    // Con semanas ordinarias, la base es el promedio ordinario proyectado.
+    expect(baseA.projectedAverageDailySalary).toBe(
+      resultA.input.projectedAverageBreakdown!.ordinaryDailySalary,
+    );
+    // Sin semanas ordinarias, la base cae al SBC promedio declarado.
     expect(baseB.projectedAverageDailySalary).toBe(resultB.input.averageSalary.dailySalary);
-    expect(calculatePension(baseA).monthlyPension).toBe(calculatePension(baseB).monthlyPension);
+    expect(calculatePension(baseA).monthlyPension).not.toBe(
+      calculatePension(baseB).monthlyPension,
+    );
   });
 
   test('si ya tiene 60+, se pensiona el mes siguiente', () => {

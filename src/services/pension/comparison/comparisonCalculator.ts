@@ -76,14 +76,14 @@ export function getDefaultHorizonYears(result: PensionResult): number {
  * Construye el input «sin Modalidad 10, pensionarse a los 60» a partir del
  * resultado actual.
  *
- * La base es ESCENARIO-INDEPENDIENTE (DEC-014): usa el SBC promedio declarado
- * de la persona (`averageSalary.dailySalary`) —su salario ordinario de
- * referencia— y NO el «sobrante ordinario» del desglose de la simulación
- * (`projectedAverageBreakdown.ordinaryDailySalary`). Ese sobrante depende de
- * cuántas semanas de M10 entren en la ventana de 250 semanas: con un horizonte
- * largo de M10 puede ser 0, y por eso dos simulaciones de la MISMA persona
- * daban montos base distintos. Con el salario declarado, todas las simulaciones
- * de una persona comparten el mismo monto «pensionarse lo antes posible».
+ * La base del escenario «antes» es el promedio ordinario YA proyectado por la
+ * simulación (`projectedAverageBreakdown.ordinaryDailySalary`): historial real
+ * importado más el SBC vigente mantenido hasta el retiro, excluyendo las
+ * semanas de Modalidad 10. Así el «antes» es consistente con la metodología de
+ * proyección que la persona ya ve en su simulación (sustituye la base común
+ * declarada de DEC-014). Sin desglose —simulaciones anteriores— o sin semanas
+ * ordinarias (la M10 cubre la ventana completa), la base cae al SBC promedio
+ * declarado (`averageSalary.dailySalary`).
  */
 export function buildEarlyRetirementInput(result: PensionResult): PensionInput {
   const input = result.input;
@@ -108,6 +108,18 @@ export function buildEarlyRetirementInput(result: PensionResult): PensionInput {
     earlyRetirementAge = currentAge;
   }
 
+  // Base salarial del escenario «antes»: el promedio ordinario ya proyectado
+  // por la simulación (historial real + SBC vigente mantenido hasta el retiro,
+  // excluyendo las semanas de Modalidad 10). Sin desglose —simulaciones
+  // anteriores— o sin semanas ordinarias (M10 cubre la ventana completa), la
+  // base cae al SBC promedio declarado. Sustituye la base común de DEC-014.
+  const ordinaryProjectedDailySalary =
+    input.projectedAverageBreakdown?.ordinaryDailySalary ?? 0;
+  const earlyBaseDailySalary =
+    ordinaryProjectedDailySalary > 0
+      ? ordinaryProjectedDailySalary
+      : input.averageSalary.dailySalary;
+
   return {
     ...input,
     personalData: {
@@ -116,7 +128,7 @@ export function buildEarlyRetirementInput(result: PensionResult): PensionInput {
       estimatedRetirementDate: earlyRetirementDate,
     },
     modalidad10: { active: false },
-    projectedAverageDailySalary: input.averageSalary.dailySalary,
+    projectedAverageDailySalary: earlyBaseDailySalary,
     projectedAverageBreakdown: undefined,
   };
 }
